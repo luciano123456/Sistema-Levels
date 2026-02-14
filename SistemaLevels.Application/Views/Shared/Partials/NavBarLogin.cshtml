@@ -43,91 +43,190 @@
 </nav>
 
 
- <!-- Modal Configuraciones -->
-    <div class="modal fade" id="modalConfiguracion" tabindex="-1" role="dialog" aria-labelledby="modalConfiguracionLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalConfiguracionLabel">Configuracion</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
+<!-- ===============================
+     MODAL: PANEL DE CONFIGURACIONES
+================================ -->
+<div class="modal fade rp-modal" id="ModalEdicionConfiguraciones" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rp-modal-content">
 
-                <label id="lblListaVacia" for="txtListaVacia" class="lblNombreInput" hidden></label>
-
-                <div class="list-container">
-                    <div id="configuracion-list">
-                        <!-- Lista de categorías se llenará dinámicamente -->
+            <!-- HEADER -->
+            <div class="modal-header rp-modal-header">
+                <div>
+                    <div class="rp-modal-title">
+                        <i class="fa fa-sliders"></i>
+                        Configuraciones
+                    </div>
+                    <div class="rp-modal-subtitle">
+                        Ajustes generales del sistema
                     </div>
                 </div>
 
-                <div id="contenedorNombreConfiguracion" class="form-group" hidden>
-                    <label id="lblNombre" for="txtNombre" class="lblNombreInput">Nombre</label>
-                    <input type="text" class="input-nuevomodif" id="txtNombreConfiguracion" required>
-                    <input type="text" class="input-nuevomodif" id="txtIdConfiguracion" hidden>
-
-
-                    <div class="btnModificarConfiguracion-container">
-                        <button id="btnRegistrarModificarConfiguracion" class="btnModificarConfiguracion" onclick="guardarCambiosConfiguracion()">Modificar</button>
-                        <button class="btnCancelarConfiguracion ml-2" onclick="cancelarModificarConfiguracion()">Cancelar</button>
-                    </div>
-                </div>
-
-                <div class="btnAgregarConfiguracion-container">
-                    <button id="agregarConfiguracion" class="btnAgregarConfiguracion" onclick="agregarConfiguracion()">Añadir</button>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-<!-- Modal Configuraciones -->
-<div class="modal fade" id="ModalEdicionConfiguraciones" tabindex="-1" role="dialog" aria-labelledby="ModalEdicionConfiguracionesLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="ModalEdicionConfiguracionesLabel">Configuraciones</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
+                <button type="button"
+                        class="btn-close rp-btn-close"
+                        data-bs-dismiss="modal">
                 </button>
             </div>
+
+            <!-- BODY -->
             <div class="modal-body">
-                <form>
-                    <button type="button" class="btnConfiguraciones" onclick="abrirConfiguracion('Moneda', 'Monedas')">
-                        <img src="/Imagenes/Monedas.png" alt="Icono Categorias" class="imgConfiguraciones">
-                        <span>Monedas</span>
-                    </button>
-                   
-                    <button type="button" class="btnConfiguraciones mt-2" onclick="abrirConfiguracion('UsuariosRole', 'Roles')">
-                        <img src="/Imagenes/Roles.png" alt="Icono Roles" class="imgConfiguraciones">
-                        <span>Roles</span>
+                <div class="rp-config-grid">
+
+                    <button class="rp-config-card"
+                            onclick="abrirConfiguracion('Roles', 'Roles')">
+                        <div class="rp-config-icon blue">
+                            <i class="fa fa-users"></i>
+                        </div>
+                        <div>
+                            <div class="rp-config-title">Roles</div>
+                            <div class="rp-config-sub">
+                                Permisos de usuarios
+                            </div>
+                        </div>
                     </button>
 
-                    <button type="button" class="btnConfiguraciones" onclick="abrirConfiguracion('Tipos de Gastos', 'GastosTipos')">
-                        <img src="/Imagenes/configuraciones.png" alt="Icono Gastos" class="imgConfiguraciones">
-                        <span>Tipos de Gastos</span>
+
+                    <button class="rp-config-card"
+                            onclick="abrirConfiguracion('Paises', 'Paises')">
+                        <div class="rp-config-icon blue">
+                            <i class="fa fa-users"></i>
+                        </div>
+                        <div>
+                            <div class="rp-config-title">Paises</div>
+                            <div class="rp-config-sub">
+                                Paises
+                            </div>
+                        </div>
                     </button>
 
-                    <button type="button" class="btnConfiguraciones" onclick="abrirConfiguracion('Tipos de Conceptos', 'MovimientosTiposConcepto')">
-                        <img src="/Imagenes/configuraciones.png" alt="Icono Conceptos" class="imgConfiguraciones">
-                        <span>Tipos de Conceptos</span>
-                    </button>
-                    @* <button type="button" class="btnConfiguraciones mt-2" onclick="abrirConfiguracion('Estados de Usuarios', 'EstadosUsuarios')">
-                    <img src="/Imagenes/Roles.png" alt="Icono Roles" class="imgConfiguraciones">
-                    <span>Estados de Usuarios</span>
-                    </button> *@
-
-                </form>
+                </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+
+            <!-- FOOTER -->
+            <div class="modal-footer rp-modal-footer">
+                <button class="rp-btn rp-btn-soft" data-bs-dismiss="modal">
+                    <i class="fa fa-times"></i>
+                    Cerrar
+                </button>
             </div>
+
         </div>
     </div>
 </div>
+
+
+<!-- ===============================
+     MODAL: LISTA DE CONFIGURACION
+================================ -->
+<div class="modal fade rp-modal" id="modalConfiguracion" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content rp-modal-content">
+
+            <!-- HEADER -->
+            <div class="modal-header rp-modal-header">
+                <div>
+                    <div class="rp-modal-title" id="modalConfiguracionLabel">
+                        <i class="fa fa-cogs"></i>
+                        Configuración
+                    </div>
+                    <div class="rp-modal-subtitle">
+                        Editá los valores disponibles
+                    </div>
+                </div>
+
+                <button type="button"
+                        class="btn-close rp-btn-close"
+                        data-bs-dismiss="modal">
+                </button>
+            </div>
+
+            <!-- BODY -->
+            <div class="modal-body">
+
+                <!-- MENSAJE LISTA VACIA -->
+                <label id="lblListaVacia"
+                       class="rp-empty-label"
+                       hidden>
+                </label>
+
+                <!-- LISTA -->
+                <div class="rp-list-container" id="configuracion-list">
+                    <!-- Se llena dinámicamente -->
+                </div>
+
+                <!-- PANEL EDICION -->
+                <div id="contenedorNombreConfiguracion"
+                     class="rp-edit-panel"
+                     hidden>
+
+                    <label id="lblNombreConfiguracion"
+                           class="rp-label"
+                           for="txtNombreConfiguracion">
+                        Nombre
+                    </label>
+
+                    <input type="text"
+                           class="rp-input"
+                           id="txtNombreConfiguracion">
+
+                    <input type="hidden"
+                           id="txtIdConfiguracion">
+
+                    <!-- COMBO OPCIONAL -->
+                    <div id="divConfiguracionCombo" style="margin-top:12px;" hidden>
+                        <label id="lblConfiguracionCombo"
+                               class="rp-label">
+                        </label>
+
+                        <select id="cmbConfiguracion"
+                                class="rp-input">
+                        </select>
+                    </div>
+
+                    <!-- BOTONES -->
+                    <div class="rp-edit-actions">
+                        <button id="btnRegistrarModificarConfiguracion"
+                                class="rp-btn rp-btn-primary"
+                                onclick="guardarCambiosConfiguracion()">
+                            <i class="fa fa-check"></i>
+                            Guardar
+                        </button>
+
+                        <button class="rp-btn rp-btn-soft"
+                                onclick="cancelarModificarConfiguracion()">
+                            <i class="fa fa-times"></i>
+                            Cancelar
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- BOTON AÑADIR -->
+                <div class="rp-add-container">
+                    <button id="agregarConfiguracion"
+                            class="rp-btn rp-btn-primary"
+                            onclick="agregarConfiguracion()">
+                        <i class="fa fa-plus"></i>
+                        Añadir nuevo
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- FOOTER -->
+            <div class="modal-footer rp-modal-footer">
+                <button class="rp-btn rp-btn-soft"
+                        data-bs-dismiss="modal"
+                        onclick="abrirConfiguraciones()">
+                    <i class="fa fa-arrow-left"></i>
+                    Volver
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
 
 <script src="~/js/NavBarLogin.js?v=1.2" asp-append-version="true"></script>

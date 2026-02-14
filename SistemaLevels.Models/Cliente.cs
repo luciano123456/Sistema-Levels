@@ -49,7 +49,7 @@ public partial class Cliente
 
     public virtual PaisesCondicionesIva? IdCondicionIvaNavigation { get; set; }
 
-    public virtual Paise IdPaisNavigation { get; set; } = null!;
+    public virtual Pais IdPaisNavigation { get; set; } = null!;
 
     public virtual Productora IdProductoraNavigation { get; set; } = null!;
 
