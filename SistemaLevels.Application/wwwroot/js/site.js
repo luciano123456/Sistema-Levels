@@ -193,6 +193,7 @@ function toggleAcciones(id) {
 
 
 
+
 function formatearFechaParaInput(fecha) {
     const m = moment(fecha, [moment.ISO_8601, 'YYYY-MM-DD HH:mm:ss', 'YYYY-MM-DD']);
     return m.isValid() ? m.format('YYYY-MM-DD') : '';

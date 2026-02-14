@@ -9,15 +9,8 @@ const columnConfig = [
     { index: 6, filterType: 'text' },
     { index: 7, filterType: 'select', fetchDataFunc: listaRolesFilter },
     { index: 8, filterType: 'select', fetchDataFunc: listaEstadosFilter },
-    { index: 9, filterType: 'text' },
+    { index: 9, filterType: 'text' }, // (nota: tu tabla llega hasta 8, lo dejo por compatibilidad)
 ];
-
-const Modelo_base = {
-    Id: 0,
-    Nombre: "",
-    Telefono: "",
-    Direccion: "",
-}
 
 $(document).ready(() => {
 
@@ -30,79 +23,81 @@ $(document).ready(() => {
         el.addEventListener("blur", () => validarCampoIndividual(el));
     });
 
-})
+});
+
+/* =========================
+   CRUD
+========================= */
 
 function guardarCambios() {
-    if (validarCampos()) {
-        const idUsuario = $("#txtId").val();
-        const nuevoModelo = {
-            "Id": idUsuario !== "" ? idUsuario : 0,
-            "Usuario": $("#txtUsuario").val(),
-            "Nombre": $("#txtNombre").val(),
-            "Apellido": $("#txtApellido").val(),
-            "DNI": $("#txtDni").val(),
-            "Telefono": $("#txtTelefono").val(),
-            "Direccion": $("#txtDireccion").val(),
-            "IdRol": $("#Roles").val(),
-            "IdEstado": $("#Estados").val(),
-            "Contrasena": idUsuario === "" ? $("#txtContrasena").val() : "",
-            "ContrasenaNueva": $("#txtContrasenaNueva").val(),
-            "CambioAdmin": 1
-        };
+    if (!validarCampos()) return false;
 
-        const url = idUsuario === "" ? "/Usuarios/Insertar" : "/Usuarios/Actualizar";
-        const method = idUsuario === "" ? "POST" : "PUT";
+    const idUsuario = $("#txtId").val();
 
+    const nuevoModelo = {
+        "Id": idUsuario !== "" ? idUsuario : 0,
+        "Usuario": $("#txtUsuario").val(),
+        "Nombre": $("#txtNombre").val(),
+        "Apellido": $("#txtApellido").val(),
+        "DNI": $("#txtDni").val(),
+        "Telefono": $("#txtTelefono").val(),
+        "Direccion": $("#txtDireccion").val(),
+        "IdRol": $("#Roles").val(),
+        "IdEstado": $("#Estados").val(),
+        "Contrasena": idUsuario === "" ? $("#txtContrasena").val() : "",
+        "ContrasenaNueva": $("#txtContrasenaNueva").val(),
+        "CambioAdmin": 1
+    };
 
-        fetch(url, {
-            method: method,
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json;charset=utf-8'
-            },
-            body: JSON.stringify(nuevoModelo)
+    const url = idUsuario === "" ? "/Usuarios/Insertar" : "/Usuarios/Actualizar";
+    const method = idUsuario === "" ? "POST" : "PUT";
+
+    fetch(url, {
+        method: method,
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: JSON.stringify(nuevoModelo)
+    })
+        .then(r => {
+            if (!r.ok) throw new Error(r.statusText);
+            return r.json();
         })
-            .then(response => {
-                if (!response.ok) throw new Error(response.statusText);
-                return response.json();
-            })
-            .then(dataJson => {
-                let mensaje = idUsuario === "" ? "Usuario registrado correctamente" : "Usuario modificado correctamente";
-                if (dataJson.valor === 'Contrasena') {
-                    mensaje = "Contrasena incorrecta";
-                    errorModal(mensaje);
-                    return false;
-                } else {
-                    $('#modalEdicion').modal('hide');
-                    exitoModal(mensaje);
-                }
-                listaUsuarios();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-            });
-    } else {
-        return false;
-    }
+        .then(dataJson => {
+            let mensaje = idUsuario === "" ? "Usuario registrado correctamente" : "Usuario modificado correctamente";
+
+            if (dataJson.valor === 'Contrasena') {
+                errorModal("Contraseña incorrecta");
+                return;
+            }
+
+            $('#modalEdicion').modal('hide');
+            exitoModal(mensaje);
+            listaUsuarios();
+        })
+        .catch(err => {
+            console.error('Error:', err);
+            errorModal("Ha ocurrido un error.");
+        });
 }
-
-
 
 function nuevoUsuario() {
     limpiarModal();
     listaEstados();
     listaRoles();
     $('#modalEdicion').modal('show');
-    $("#btnGuardar").text("Registrar");
+
+    $("#btnGuardar").html(`<i class="fa fa-check"></i> Registrar`);
     $("#modalEdicionLabel").text("Nuevo Usuario");
 
     document.getElementById("divContrasena").removeAttribute("hidden");
     document.getElementById("divContrasenaNueva").setAttribute("hidden", "hidden");
-
 }
-async function mostrarModal(modelo) {
 
+async function mostrarModal(modelo) {
     limpiarModal();
+
     const campos = ["Id", "Usuario", "Nombre", "Apellido", "Dni", "Telefono", "Direccion", "Contrasena", "ContrasenaNueva"];
     campos.forEach(campo => {
         $(`#txt${campo}`).val(modelo[campo]);
@@ -111,22 +106,76 @@ async function mostrarModal(modelo) {
     await listaEstados();
     await listaRoles();
 
+    // seleccionar rol/estado si vienen
+    if (modelo.IdRol != null) $("#Roles").val(modelo.IdRol);
+    if (modelo.IdEstado != null) $("#Estados").val(modelo.IdEstado);
+
     $('#modalEdicion').modal('show');
-    $("#btnGuardar").text("Guardar");
+
+    $("#btnGuardar").html(`<i class="fa fa-check"></i> Guardar`);
     $("#modalEdicionLabel").text("Editar Usuario");
 
     document.getElementById("divContrasena").setAttribute("hidden", "hidden");
     document.getElementById("divContrasenaNueva").removeAttribute("hidden");
-
-
-
 }
+
+const editarUsuario = id => {
+    $('.rp-actions-dropdown').hide();
+
+    fetch("/Usuarios/EditarInfo?id=" + id, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ha ocurrido un error.");
+            return r.json();
+        })
+        .then(dataJson => {
+            if (dataJson) mostrarModal(dataJson);
+            else throw new Error("Ha ocurrido un error.");
+        })
+        .catch(_ => errorModal("Ha ocurrido un error."));
+};
+
+async function eliminarUsuario(id) {
+    $('.rp-actions-dropdown').hide();
+
+    const confirmado = await confirmarModal("¿Desea eliminar este usuario?");
+    if (!confirmado) return;
+
+    try {
+        const response = await fetch("/Usuarios/Eliminar?id=" + id, {
+            method: "DELETE",
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) throw new Error("Error al eliminar el Usuario.");
+
+        const dataJson = await response.json();
+        if (dataJson.valor) {
+            listaUsuarios();
+            exitoModal("Usuario eliminado correctamente");
+        }
+    } catch (e) {
+        console.error("Ha ocurrido un error:", e);
+        errorModal("Ha ocurrido un error.");
+    }
+}
+
+/* =========================
+   LISTA + DATATABLE
+========================= */
 
 async function listaUsuarios() {
     let paginaActual = gridUsuarios != null ? gridUsuarios.page() : 0;
-    const url = `/Usuarios/Lista`;
 
-    const response = await fetch(url, {
+    const response = await fetch(`/Usuarios/Lista`, {
         method: 'GET',
         headers: {
             'Authorization': 'Bearer ' + token,
@@ -134,9 +183,7 @@ async function listaUsuarios() {
         }
     });
 
-    if (!response.ok) {
-        throw new Error(`Error en la solicitud: ${response.statusText}`);
-    }
+    if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
 
     const data = await response.json();
     await configurarDataTable(data);
@@ -146,77 +193,29 @@ async function listaUsuarios() {
     }
 }
 
-const editarUsuario = id => {
-    $('.acciones-dropdown').hide(); // Cerrar todos los dropdowns
-
-    fetch("/Usuarios/EditarInfo?id=" + id, {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(response => {
-            if (!response.ok) throw new Error("Ha ocurrido un error.");
-            return response.json();
-        })
-        .then(dataJson => {
-            if (dataJson !== null) {
-                mostrarModal(dataJson);
-            } else {
-                throw new Error("Ha ocurrido un error.");
-            }
-        })
-        .catch(error => {
-            errorModal("Ha ocurrido un error.");
-        });
-};
-
-
-async function eliminarUsuario(id) {
-    $('.acciones-dropdown').hide(); // Cerrar todos los dropdowns
-    const confirmado = await confirmarModal("¿Desea eliminar este usuario?");
-    if (!confirmado) return;
-
-    if (confirmado) {
-        try {
-
-            const response = await fetch("/Usuarios/Eliminar?id=" + id, {
-                method: "DELETE",
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error("Error al eliminar el Usuario.");
-            }
-
-            const dataJson = await response.json();
-
-            if (dataJson.valor) {
-                listaUsuarios();
-                exitoModal("Usuario eliminado correctamente");
-            }
-        } catch (error) {
-            console.error("Ha ocurrido un error:", error);
-        }
-    }
+function rpBadgeEstado(estado) {
+    const s = (estado || "").toString().toLowerCase();
+    if (s.includes("bloq")) return `<span class="rp-badge rp-badge-danger">Bloqueado</span>`;
+    if (s.includes("acti")) return `<span class="rp-badge rp-badge-success">Activo</span>`;
+    return `<span class="rp-badge rp-badge-soft">${estado || "—"}</span>`;
 }
 
 async function configurarDataTable(data) {
+
     if (!gridUsuarios) {
+
+        // Header filtros clon
         $('#grd_Usuarios thead tr').clone(true).addClass('filters').appendTo('#grd_Usuarios thead');
+
         gridUsuarios = $('#grd_Usuarios').DataTable({
             data: data,
             language: {
                 sLengthMenu: "Mostrar MENU registros",
-                lengthMenu: "Anzeigen von _MENU_ Einträgen",
                 url: "//cdn.datatables.net/plug-ins/2.0.7/i18n/es-MX.json"
             },
-            scrollX: "100px",
+            scrollX: true,
             scrollCollapse: true,
+
             columns: [
                 {
                     data: "Id",
@@ -250,218 +249,210 @@ async function configurarDataTable(data) {
                 { data: 'UsuariosRole' },
                 {
                     data: 'Estado',
-                    render: function (data, type, row) {
-                        // Verificar si el estado es "Bloqueado" y aplicar el color rojo
-                        return data === "Bloqueado" ? `<span style="color: red">${data}</span>` : data;
+                    render: function (data) {
+                        return rpBadgeEstado(data);
                     }
                 },
-
             ],
+
             dom: 'Bfrtip',
             buttons: [
                 {
                     extend: 'excelHtml5',
-                    text: 'Exportar Excel',
+                    text: 'Excel',
                     filename: 'Reporte Usuarios',
                     title: '',
-                    exportOptions: {
-                        columns: [0, 1, 2]
-                    },
-                    className: 'btn-exportar-excel',
+                    className: 'rp-dt-btn'
                 },
                 {
                     extend: 'pdfHtml5',
-                    text: 'Exportar PDF',
+                    text: 'PDF',
                     filename: 'Reporte Usuarios',
                     title: '',
-                    exportOptions: {
-                        columns: [0, 1, 2]
-                    },
-                    className: 'btn-exportar-pdf',
+                    className: 'rp-dt-btn'
                 },
                 {
                     extend: 'print',
                     text: 'Imprimir',
                     title: '',
-                    exportOptions: {
-                        columns: [0, 1, 2]
-                    },
-                    className: 'btn-exportar-print'
+                    className: 'rp-dt-btn'
                 },
                 'pageLength'
             ],
+
             orderCellsTop: true,
             fixedHeader: true,
 
             initComplete: async function () {
-                var api = this.api();
+                const api = this.api();
 
-                // Iterar sobre las columnas y aplicar la configuración de filtros
-                columnConfig.forEach(async (config) => {
-                    var cell = $('.filters th').eq(config.index);
+                // filtros por columna
+                for (const config of columnConfig) {
+
+                    // si index excede columnas existentes, ignorar
+                    if (config.index > 8) continue;
+
+                    const cell = $('.filters th').eq(config.index);
 
                     if (config.filterType === 'select') {
-                        var select = $('<select id="filter' + config.index + '"><option value="">Seleccionar</option></select>')
+
+                        const select = $(`<select class="rp-filter-select" id="filter${config.index}">
+                                            <option value="">Todos</option>
+                                          </select>`)
                             .appendTo(cell.empty())
                             .on('change', async function () {
-                                var val = $(this).val();
-                                var selectedText = $(this).find('option:selected').text(); // Obtener el texto del nombre visible
-                                await api.column(config.index).search(val ? '^' + selectedText + '$' : '', true, false).draw(); // Buscar el texto del nombre
+                                const val = $(this).val();
+                                const selectedText = $(this).find('option:selected').text();
+
+                                await api.column(config.index)
+                                    .search(val ? '^' + selectedText + '$' : '', true, false)
+                                    .draw();
                             });
 
-                        var data = await config.fetchDataFunc(); // Llamada a la función para obtener los datos
-                        data.forEach(function (item) {
-                            select.append('<option value="' + item.Id + '">' + item.Nombre + '</option>')
+                        const datos = await config.fetchDataFunc();
+                        (datos || []).forEach(item => {
+                            select.append(`<option value="${item.Id}">${item.Nombre}</option>`);
                         });
 
-                    } else if (config.filterType === 'text') {
-                        var input = $('<input type="text" placeholder="Buscar..." />')
+                    } else {
+
+                        const input = $(`<input class="rp-filter-input" type="text" placeholder="Buscar...">`)
                             .appendTo(cell.empty())
-                            .off('keyup change') // Desactivar manejadores anteriores
+                            .off('keyup change')
                             .on('keyup change', function (e) {
                                 e.stopPropagation();
-                                var regexr = '({search})';
-                                var cursorPosition = this.selectionStart;
+                                const cursorPosition = this.selectionStart;
+
                                 api.column(config.index)
-                                    .search(this.value != '' ? regexr.replace('{search}', '(((' + this.value + ')))') : '', this.value != '', this.value == '')
+                                    .search(this.value ? this.value : '', true, false)
                                     .draw();
-                                $(this).focus()[0].setSelectionRange(cursorPosition, cursorPosition);
+
+                                this.setSelectionRange(cursorPosition, cursorPosition);
                             });
                     }
-                });
+                }
 
+                // primer filtro vacío (acciones)
                 $('.filters th').eq(0).html('');
 
                 configurarOpcionesColumnas();
 
-                setTimeout(function () {
-                    gridUsuarios.columns.adjust();
-                }, 10);
+                setTimeout(() => gridUsuarios.columns.adjust(), 10);
 
-                $('body').on('mouseenter', '#grd_Usuarios .fa-map-marker', function () {
-                    $(this).css('cursor', 'pointer');
-                });
-
-
-
-                $('body').on('click', '#grd_Usuarios .fa-map-marker', function () {
-                    var locationText = $(this).parent().text().trim().replace(' ', ' '); // Obtener el texto visible
-                    var url = 'https://www.google.com/maps?q=' + encodeURIComponent(locationText);
-                    window.open(url, '_blank');
-                });
-
-            },
+                actualizarKpis(data)
+            }
         });
+
     } else {
         gridUsuarios.clear().rows.add(data).draw();
     }
 }
 
+/* =========================
+   ROLES / ESTADOS
+========================= */
 
 async function listaRoles() {
-    const url = `/Roles/Lista`;
-    const response = await fetch(url);
+    const response = await fetch(`/Roles/Lista`);
     const data = await response.json();
 
     $('#Roles option').remove();
+    const select = document.getElementById("Roles");
 
-    select = document.getElementById("Roles");
+    // placeholder
+    const op0 = document.createElement("option");
+    op0.value = "";
+    op0.text = "Seleccionar";
+    select.appendChild(op0);
 
-    for (i = 0; i < data.length; i++) {
-        option = document.createElement("option");
+    for (let i = 0; i < data.length; i++) {
+        const option = document.createElement("option");
         option.value = data[i].Id;
         option.text = data[i].Nombre;
         select.appendChild(option);
-
     }
 }
 
 async function listaEstados() {
-    const url = `/EstadosUsuarios/Lista`;
-    const response = await fetch(url);
+    const response = await fetch(`/EstadosUsuarios/Lista`);
     const data = await response.json();
 
     $('#Estados option').remove();
+    const select = document.getElementById("Estados");
 
-    select = document.getElementById("Estados");
+    // placeholder
+    const op0 = document.createElement("option");
+    op0.value = "";
+    op0.text = "Seleccionar";
+    select.appendChild(op0);
 
-    for (i = 0; i < data.length; i++) {
-        option = document.createElement("option");
+    for (let i = 0; i < data.length; i++) {
+        const option = document.createElement("option");
         option.value = data[i].Id;
         option.text = data[i].Nombre;
         select.appendChild(option);
-
     }
 }
 
 async function listaEstadosFilter() {
-    const url = `/EstadosUsuarios/Lista`;
-    const response = await fetch(url);
+    const response = await fetch(`/EstadosUsuarios/Lista`);
     const data = await response.json();
-
-    return data.map(estado => ({
-        Id: estado.Id,
-        Nombre: estado.Nombre
-    }));
-
+    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 }
 
 async function listaRolesFilter() {
-    const url = `/Roles/Lista`;
-    const response = await fetch(url);
+    const response = await fetch(`/Roles/Lista`);
     const data = await response.json();
-
-    return data.map(UsuariosRole => ({
-        Id: UsuariosRole.Id,
-        Nombre: UsuariosRole.Nombre
-    }));
-
+    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 }
 
+/* =========================
+   CONFIG COLUMNAS
+========================= */
+
 function configurarOpcionesColumnas() {
-    const grid = $('#grd_Usuarios').DataTable(); // Accede al objeto DataTable utilizando el id de la tabla
-    const columnas = grid.settings().init().columns; // Obtiene la configuración de columnas
-    const container = $('#configColumnasMenu'); // El contenedor del dropdown específico para configurar columnas
+    const grid = $('#grd_Usuarios').DataTable();
+    const columnas = grid.settings().init().columns;
+    const container = $('#configColumnasMenu');
 
-    const storageKey = `Usuarios_Columnas`; // Clave única para esta pantalla
+    const storageKey = `Usuarios_Columnas`;
+    const savedConfig = JSON.parse(localStorage.getItem(storageKey)) || {};
 
-    const savedConfig = JSON.parse(localStorage.getItem(storageKey)) || {}; // Recupera configuración guardada o inicializa vacía
-
-    container.empty(); // Limpia el contenedor
+    container.empty();
 
     columnas.forEach((col, index) => {
-        if (col.data && col.data !== "Id") { // Solo agregar columnas que no sean "Id"
-            // Recupera el valor guardado en localStorage, si existe. Si no, inicializa en 'false' para no estar marcado.
-            const isChecked = savedConfig && savedConfig[`col_${index}`] !== undefined ? savedConfig[`col_${index}`] : true;
+        if (col.data && col.data !== "Id") {
 
-            // Asegúrate de que la columna esté visible si el valor es 'true'
+            const isChecked = savedConfig[`col_${index}`] !== undefined ? savedConfig[`col_${index}`] : true;
             grid.column(index).visible(isChecked);
 
-            const columnName = index != 6 ? col.data : "Direccion";
+            const name = (index === 6) ? "Direccion" : (col.data || "Col");
 
-            // Ahora agregamos el checkbox, asegurándonos de que se marque solo si 'isChecked' es 'true'
             container.append(`
-                <li>
-                    <label class="dropdown-item">
+                <li class="rp-dd-item">
+                    <label class="rp-dd-label">
                         <input type="checkbox" class="toggle-column" data-column="${index}" ${isChecked ? 'checked' : ''}>
-                        ${columnName}
+                        <span>${name}</span>
                     </label>
                 </li>
             `);
         }
     });
 
-    // Asocia el evento para ocultar/mostrar columnas
     $('.toggle-column').on('change', function () {
         const columnIdx = parseInt($(this).data('column'), 10);
         const isChecked = $(this).is(':checked');
+
         savedConfig[`col_${columnIdx}`] = isChecked;
         localStorage.setItem(storageKey, JSON.stringify(savedConfig));
+
         grid.column(columnIdx).visible(isChecked);
     });
 }
 
-
+/* =========================
+   ACCIONES DROPDOWN
+========================= */
 
 function toggleAcciones(id) {
     var $dropdown = $(`.acciones-menu[data-id="${id}"] .acciones-dropdown`);
@@ -482,38 +473,33 @@ $(document).on('click', function (e) {
         $('.acciones-dropdown').hide(); // Cerrar todos los dropdowns
     }
 });
-
+/* =========================
+   VALIDACIONES (TU LÓGICA)
+========================= */
 
 function limpiarModal() {
     const formulario = document.querySelector("#modalEdicion");
     if (!formulario) return;
 
     formulario.querySelectorAll("input, select, textarea").forEach(el => {
-        if (el.tagName === "SELECT") {
-            el.selectedIndex = 0;
-        } else {
-            el.value = "";
-        }
+        if (el.tagName === "SELECT") el.selectedIndex = 0;
+        else el.value = "";
+
         el.classList.remove("is-invalid", "is-valid");
     });
 
-    // Ocultar mensaje general de error
     const errorMsg = document.getElementById("errorCampos");
     if (errorMsg) errorMsg.classList.add("d-none");
 }
 
-
 function validarCampoIndividual(el) {
     const tag = el.tagName.toLowerCase();
     const id = el.id;
-    const valor = el.value ? el.value.trim() : ""; // Para inputs/selects
-
+    const valor = el.value ? el.value.trim() : "";
     const feedback = el.nextElementSibling;
 
-    if (id != "txtNombre" && id != "txtContrasena" && id != "txtUsuario") return //Solo valida el nombre
+    if (id !== "txtNombre" && id !== "txtContrasena" && id !== "txtUsuario") return;
 
-
-    // Validación para inputs/selects normales
     if (tag === "input" || tag === "select" || tag === "textarea") {
         if (feedback && feedback.classList.contains("invalid-feedback")) {
             feedback.textContent = "Campo obligatorio";
@@ -536,18 +522,11 @@ function verificarErroresGenerales() {
     const hayInvalidos = document.querySelectorAll("#modalEdicion .is-invalid").length > 0;
     if (!errorMsg) return;
 
-    if (!hayInvalidos) {
-        errorMsg.classList.add("d-none");
-    }
+    if (!hayInvalidos) errorMsg.classList.add("d-none");
 }
 
 function validarCampos() {
-    const campos = [
-        "#txtNombre",
-        "#txtUsuario",
-        "#txtContrasena"
-    ];
-
+    const campos = ["#txtNombre", "#txtUsuario", "#txtContrasena"];
     let valido = true;
 
     campos.forEach(selector => {
@@ -556,8 +535,8 @@ function validarCampos() {
         const feedback = campo?.nextElementSibling;
 
         if (!campo || !valor || valor === "Seleccionar") {
-            campo.classList.add("is-invalid");
-            campo.classList.remove("is-valid");
+            campo?.classList.add("is-invalid");
+            campo?.classList.remove("is-valid");
             if (feedback) feedback.textContent = "Campo obligatorio";
             valido = false;
         } else {
@@ -570,3 +549,10 @@ function validarCampos() {
     return valido;
 }
 
+
+
+function actualizarKpis(data) {
+    const cant = Array.isArray(data) ? data.length : 0;
+    const el = document.getElementById('kpiCantUsuarios');
+    if (el) el.textContent = cant;
+}
