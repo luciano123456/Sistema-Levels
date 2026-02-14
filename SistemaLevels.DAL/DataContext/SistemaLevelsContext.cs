@@ -38,7 +38,7 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<OpcionesBinaria> OpcionesBinarias { get; set; }
 
-    public virtual DbSet<Paise> Paises { get; set; }
+    public virtual DbSet<Pais> Paises { get; set; }
 
     public virtual DbSet<PaisesCondicionesIva> PaisesCondicionesIvas { get; set; }
 
@@ -511,7 +511,7 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
         });
 
-        modelBuilder.Entity<Paise>(entity =>
+        modelBuilder.Entity<Pais>(entity =>
         {
             entity.Property(e => e.Nombre)
                 .HasMaxLength(100)

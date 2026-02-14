@@ -63,104 +63,93 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
-function abrirConfiguraciones() {
-    $('#ModalEdicionConfiguraciones').modal('show');
-    $("#btnGuardarConfiguracion").text("Aceptar");
-    $("#modalEdicionLabel").text("Configuraciones");
-}
-async function abrirConfiguracion(_nombreConfiguracion, _controllerConfiguracion) {
-    $('#ModalEdicionConfiguraciones').modal('hide');
-    $('#modalConfiguracion').modal('show');
 
-    cancelarModificarConfiguracion();
-
-    $('#txtNombreConfiguracion').on('input', function () {
-        validarCamposConfiguracion()
-    });
-
-    nombreConfiguracion = _nombreConfiguracion;
-    controllerConfiguracion = _controllerConfiguracion
-    llenarConfiguraciones()
-
-
-    document.getElementById("modalConfiguracionLabel").innerText = "Configuracion de " + nombreConfiguracion;
-
-}
-
-async function llenarConfiguraciones() {
-    let configuraciones = await listaConfiguracion();
-
-    document.getElementById("lblListaVacia").innerText = "";
-    document.getElementById("lblListaVacia").setAttribute("hidden", "hidden");
-
-    $("#configuracion-list").empty();
-
-    if (configuraciones.length == 0) {
-        document.getElementById("lblListaVacia").innerText = `La lista de ${nombreConfiguracion} esta vacia.`;
-
-        document.getElementById("lblListaVacia").style.color = 'red';
-        document.getElementById("lblListaVacia").removeAttribute("hidden");
-        listaVacia = true;
-
-    } else {
-
-        listaVacia = false;
-        configuraciones.forEach((configuracion, index) => {
-            var indexado = configuracion.Id
-            $("#configuracion-list").append(`
-                         <div class="list-item" data-id="${configuracion.Id}">
-                    <span>${configuracion.Nombre}</span>
-                    
-                    <i class="fa fa-pencil-square-o edit-icon text-white" data-index="${indexado}" onclick="editarConfiguracion(${indexado})" style="float: right;"></i>
-                    <i class="fa fa-trash eliminar-icon text-danger" data-index="${indexado}" onclick="eliminarConfiguracion(${indexado})"></i>
-                </div>
-                    `);
-        });
-    }
-}
-
-async function eliminarConfiguracion(id) {
-    let resultado = window.confirm("¿Desea eliminar la " + nombreConfiguracion + "?");
-
-    if (resultado) {
-        try {
-            const controller = controllerConfiguracion.replace(/^\/+/, "");
-
-            const response = await fetch("/" + controller + "/Eliminar?id=" + id, {
-                method: "DELETE"
-            });
-
-            if (!response.ok) {
-                throw new Error("Error al eliminar la " + nombreConfiguracion);
-            }
-
-            const dataJson = await response.json();
-
-            if (dataJson.valor) {
-                llenarConfiguraciones();
-                exitoModal(nombreConfiguracion + " eliminada correctamente");
-            }
-        } catch (error) {
-            console.error("Ha ocurrido un error:", error);
+async function listaConfiguracion() {
+    const url = `/${controllerConfiguracion}/Lista`;
+    const response = await fetch(url, {
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
         }
-    }
+    });
+    if (!response.ok) throw new Error('Error al cargar configuraciones');
+
+    const data = await response.json();
+    return data.map(configuracion => ({
+        Id: configuracion.Id,
+        Nombre: configuracion.Nombre,
+        NombreCombo: configuracion.NombreCombo
+    }));
 }
 
-const editarConfiguracion = id => {
-    const controller = controllerConfiguracion.replace(/^\/+/, ""); // limpia posibles barras
 
-    fetch("/" + controller + "/EditarInfo?id=" + id)
+async function abrirConfiguracion(_nombreConfiguracion, _controllerConfiguracion, _comboNombre = null, _comboController = null, _lblComboNombre) {
+
+    try {
+
+        nombreConfiguracion = _nombreConfiguracion;
+        controllerConfiguracion = _controllerConfiguracion,
+            comboNombre = _comboNombre,
+            comboController = _comboController,
+            lblComboNombre = _lblComboNombre;
+
+        var result = await llenarConfiguraciones()
+
+        if (!result) {
+            await errorModal("Ha ocurrido un error al cargar la lista")
+            return;
+        }
+
+        $('#ModalEdicionConfiguraciones').modal('hide');
+        $('#modalConfiguracion').modal('show');
+
+        cancelarModificarConfiguracion();
+
+        $('#txtNombreConfiguracion').on('input', function () {
+            validarCamposConfiguracion()
+        });
+
+
+        $('#cmbConfiguracion').on('change', function () {
+            validarCamposConfiguracion()
+        });
+
+
+        document.getElementById("modalConfiguracionLabel").innerText = "Configuracion de " + nombreConfiguracion;
+    } catch (ex) {
+        errorModal("Ha ocurrido un error al cargar la lista")
+    }
+
+}
+
+async function editarConfiguracion(id) {
+    fetch(controllerConfiguracion + "/EditarInfo?id=" + id, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token // 👈 tu token aquí
+        }
+    })
         .then(response => {
             if (!response.ok) throw new Error("Ha ocurrido un error.");
             return response.json();
         })
         .then(dataJson => {
             if (dataJson !== null) {
+
                 document.getElementById("btnRegistrarModificarConfiguracion").textContent = "Modificar";
                 document.getElementById("agregarConfiguracion").setAttribute("hidden", "hidden");
                 document.getElementById("txtNombreConfiguracion").value = dataJson.Nombre;
                 document.getElementById("txtIdConfiguracion").value = dataJson.Id;
+
                 document.getElementById("contenedorNombreConfiguracion").removeAttribute("hidden");
+
+                if (comboNombre != null) {
+                    document.getElementById("lblConfiguracionCombo").innerText = lblComboNombre;
+                    document.getElementById("cmbConfiguracion").value = dataJson.IdCombo;
+                }
+
+                validarCamposConfiguracion();
             } else {
                 throw new Error("Ha ocurrido un error.");
             }
@@ -170,32 +159,164 @@ const editarConfiguracion = id => {
         });
 }
 
+
+async function llenarConfiguraciones() {
+
+    try {
+        let configuraciones = await listaConfiguracion();
+
+        if (comboNombre != null) {
+            llenarComboConfiguracion();
+            document.getElementById("divConfiguracionCombo").removeAttribute("hidden", "");
+        } else {
+            document.getElementById("divConfiguracionCombo").setAttribute("hidden", "hidden");
+        }
+
+
+        document.getElementById("lblListaVacia").innerText = "";
+        document.getElementById("lblListaVacia").setAttribute("hidden", "hidden");
+
+        $("#configuracion-list").empty();
+
+        if (configuraciones.length == 0) {
+            document.getElementById("lblListaVacia").innerText = `La lista de ${nombreConfiguracion} esta vacia.`;
+
+            document.getElementById("lblListaVacia").style.color = 'red';
+            document.getElementById("lblListaVacia").removeAttribute("hidden");
+            listaVacia = true;
+
+        } else {
+
+            listaVacia = false;
+            configuraciones.forEach((configuracion, index) => {
+
+                nombreConfig = configuracion.Nombre;
+
+                if (configuracion.NombreCombo != null) {
+                    nombreConfig += " - " + configuracion.NombreCombo;
+                }
+
+                var indexado = configuracion.Id
+                $("#configuracion-list").append(`
+    <div class="rp-list-item">
+        <div class="rp-item-left">
+            <div class="rp-item-icon">
+                <i class="fa fa-tag"></i>
+            </div>
+            <div class="rp-item-text">${nombreConfig}</div>
+        </div>
+
+        <div class="rp-list-actions">
+            <button class="rp-icon-btn"
+                onclick="editarConfiguracion(${indexado})">
+                <i class="fa fa-pencil"></i>
+            </button>
+
+            <button class="rp-icon-btn danger"
+                onclick="eliminarConfiguracion(${indexado})">
+                <i class="fa fa-trash"></i>
+            </button>
+        </div>
+    </div>
+`);
+
+            });
+
+
+        }
+        return true;
+    } catch (ex) {
+        return false;
+
+    }
+}
+
+async function eliminarConfiguracion(id) {
+
+
+    let resultado = await confirmarModal("¿Desea eliminar el/la" + nombreConfiguracion + "?");
+    if (!resultado) return;
+
+    if (resultado) {
+        try {
+            const response = await fetch(controllerConfiguracion + "/Eliminar?id=" + id, {
+                method: "DELETE",
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error("Error al eliminar " + nombreConfiguracion);
+            }
+
+            const dataJson = await response.json();
+
+            if (dataJson.valor) {
+                llenarConfiguraciones()
+
+                exitoModal(nombreConfiguracion + " eliminada correctamente")
+            }
+        } catch (error) {
+            console.error("Ha ocurrido un error:", error);
+        }
+    }
+}
+
+
+async function llenarComboConfiguracion() {
+    const res = await fetch(`${comboController}/Lista`, {
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    });
+    if (!res.ok) throw new Error('Error al cargar combo');
+
+    const data = await res.json();
+    llenarSelect("cmbConfiguracion", data);
+}
+
 function validarCamposConfiguracion() {
     const nombre = $("#txtNombreConfiguracion").val();
-    const camposValidos = nombre !== "";
+    const combo = $("#cmbConfiguracion").val();
 
+    const camposValidos = nombre !== "";
+    const selectValido = combo !== "";
+
+    // estilos
     $("#lblNombreConfiguracion").css("color", camposValidos ? "" : "red");
     $("#txtNombreConfiguracion").css("border-color", camposValidos ? "" : "red");
+    $("#cmbConfiguracion").css("border-color", selectValido ? "" : "red");
 
-    return camposValidos;
+    // lógica de validación
+    if (comboNombre != null) {
+        return camposValidos && selectValido;
+    } else {
+        return camposValidos;
+    }
 }
+
 
 function guardarCambiosConfiguracion() {
     if (validarCamposConfiguracion()) {
         const idConfiguracion = $("#txtIdConfiguracion").val();
+        const idCombo = $("#cmbConfiguracion").val();
         const nuevoModelo = {
             "Id": idConfiguracion !== "" ? idConfiguracion : 0,
+            "IdCombo": comboNombre !== "" ? idCombo : 0,
             "Nombre": $("#txtNombreConfiguracion").val(),
         };
 
-        const controller = controllerConfiguracion.replace(/^\/+/, ""); // quita barras si las tiene
-        const url = "/" + controller + (idConfiguracion === "" ? "/Insertar" : "/Actualizar");
+        const url = idConfiguracion === "" ? controllerConfiguracion + "/Insertar" : controllerConfiguracion + "/Actualizar";
         const method = idConfiguracion === "" ? "POST" : "PUT";
 
         fetch(url, {
             method: method,
             headers: {
-                'Content-Type': 'application/json;charset=utf-8'
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(nuevoModelo)
         })
@@ -204,7 +325,7 @@ function guardarCambiosConfiguracion() {
                 return response.json();
             })
             .then(dataJson => {
-                const mensaje = idConfiguracion === "" ? nombreConfiguracion + " registrada correctamente" : nombreConfiguracion + " modificada correctamente";
+                const mensaje = idConfiguracion === "" ? nombreConfiguracion + " registrado/a correctamente" : nombreConfiguracion + " modificado/a correctamente";
                 llenarConfiguraciones()
                 cancelarModificarConfiguracion();
                 exitoModal(mensaje)
@@ -216,7 +337,6 @@ function guardarCambiosConfiguracion() {
         errorModal('Debes completar los campos requeridos');
     }
 }
-
 
 function cancelarModificarConfiguracion() {
     document.getElementById("txtNombreConfiguracion").value = "";
@@ -242,19 +362,18 @@ function agregarConfiguracion() {
 
     $('#lblNombreConfiguracion').css('color', 'red');
     $('#txtNombreConfiguracion').css('border-color', 'red');
-} 
 
+    if (comboNombre != null) {
+        document.getElementById("lblConfiguracionCombo").innerText = lblComboNombre;
+        document.getElementById("cmbConfiguracion").value = "";
+        $('#cmbConfiguracion').css('border-color', 'red');
+    }
+}
 
-async function listaConfiguracion() {
-    const url = `/${controllerConfiguracion}/Lista`;
-    const response = await fetch(url);
-    const data = await response.json();
-
-    return data.map(configuracion => ({
-        Id: configuracion.Id,
-        Nombre: configuracion.Nombre
-    }));
-
+function abrirConfiguraciones() {
+    $('#ModalEdicionConfiguraciones').modal('show');
+    $("#btnGuardarConfiguracion").text("Aceptar");
+    $("#modalEdicionLabel").text("Configuraciones");
 }
 
     document.querySelectorAll('.nav-item.dropdown').forEach(dropdown => {

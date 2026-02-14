@@ -15,7 +15,7 @@ public partial class PaisesProvincia
 
     public virtual ICollection<Cliente> Clientes { get; set; } = new List<Cliente>();
 
-    public virtual Paise IdPaisNavigation { get; set; } = null!;
+    public virtual Pais IdPaisNavigation { get; set; } = null!;
 
     public virtual ICollection<Productora> Productoras { get; set; } = new List<Productora>();
 }

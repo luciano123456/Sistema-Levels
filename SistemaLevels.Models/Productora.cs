@@ -57,7 +57,7 @@ public partial class Productora
 
     public virtual User IdUsuarioRegistraNavigation { get; set; } = null!;
 
-    public virtual Paise? IdpaisNavigation { get; set; }
+    public virtual Pais? IdpaisNavigation { get; set; }
 
     public virtual ICollection<Presupuesto> Presupuestos { get; set; } = new List<Presupuesto>();
 

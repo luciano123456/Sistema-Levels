@@ -15,7 +15,7 @@ public partial class PaisesTiposDocumento
 
     public virtual ICollection<Cliente> Clientes { get; set; } = new List<Cliente>();
 
-    public virtual Paise IdPaisNavigation { get; set; } = null!;
+    public virtual Pais IdPaisNavigation { get; set; } = null!;
 
     public virtual ICollection<Personal> Personals { get; set; } = new List<Personal>();
 

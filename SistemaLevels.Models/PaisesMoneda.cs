@@ -27,7 +27,7 @@ public partial class PaisesMoneda
 
     public virtual ICollection<Gasto> Gastos { get; set; } = new List<Gasto>();
 
-    public virtual Paise IdPaisNavigation { get; set; } = null!;
+    public virtual Pais IdPaisNavigation { get; set; } = null!;
 
     public virtual ICollection<MonedasCuenta> MonedasCuenta { get; set; } = new List<MonedasCuenta>();
 

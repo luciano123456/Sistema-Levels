@@ -34,6 +34,12 @@ builder.Services.AddScoped<IEstadosUsuariosService, EstadosUsuariosService>();
 builder.Services.AddScoped<IRolesRepository<UsuariosRole>, RolesRepository>();
 builder.Services.AddScoped<IRolesService, RolesService>();
 
+
+builder.Services.AddScoped<IPaisRepository<Pais>, PaisRepository>();
+builder.Services.AddScoped<IPaisService, PaisService>();
+
+
+
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 
