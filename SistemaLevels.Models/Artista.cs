@@ -65,7 +65,11 @@ public partial class Artista
 
     public virtual PaisesCondicionesIva? IdCondicionIvaNavigation { get; set; }
 
+    public virtual PaisesMoneda IdMonedaNavigation { get; set; } = null!;
+
     public virtual Pais IdPaisNavigation { get; set; } = null!;
+
+    public virtual Productora IdProductoraNavigation { get; set; } = null!;
 
     public virtual PaisesProvincia IdProvinciaNavigation { get; set; } = null!;
 

@@ -23,6 +23,7 @@ public partial class MonedasCuenta
 
     public virtual PaisesMoneda? IdMonedaNavigation { get; set; }
 
+
     public virtual ICollection<PersonalPago> PersonalPagos { get; set; } = new List<PersonalPago>();
 
     public virtual ICollection<PersonalSueldosPago> PersonalSueldosPagos { get; set; } = new List<PersonalSueldosPago>();
