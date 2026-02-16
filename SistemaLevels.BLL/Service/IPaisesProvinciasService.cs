@@ -9,6 +9,7 @@ namespace SistemaLevels.BLL.Service
         Task<bool> Insertar(PaisesProvincia model);
 
         Task<PaisesProvincia> Obtener(int id);
+        Task<IQueryable<PaisesProvincia>> ObtenerPais(int idPais);
 
         Task<IQueryable<PaisesProvincia>> ObtenerTodos();
     }

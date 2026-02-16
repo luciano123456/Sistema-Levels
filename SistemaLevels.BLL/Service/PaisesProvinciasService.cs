@@ -32,6 +32,11 @@ namespace SistemaLevels.BLL.Service
             return await _contactRepo.Obtener(id);
         }
 
+        public async Task<IQueryable<PaisesProvincia>> ObtenerPais(int idPais)
+        {
+            return await _contactRepo.ObtenerPais(idPais);
+        }
+
         public async Task<IQueryable<PaisesProvincia>> ObtenerTodos()
         {
             return await _contactRepo.ObtenerTodos();

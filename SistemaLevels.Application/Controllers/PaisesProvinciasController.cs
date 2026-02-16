@@ -36,6 +36,24 @@ namespace SistemaLevels.Application.Controllers
         }
 
 
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> ListaPais(int idPais)
+        {
+            var PaisesProvincia = await _PaisesProvinciaService.ObtenerPais(idPais);
+
+            var lista = PaisesProvincia.Select(c => new VMGenericModelConfCombo
+            {
+                Id = c.Id,
+                IdCombo = c.IdPais,
+                NombreCombo = c.IdPaisNavigation.Nombre,
+                Nombre = c.Nombre,
+            }).ToList();
+
+            return Ok(lista);
+        }
+
+
         [HttpPost]
         public async Task<IActionResult> Insertar([FromBody] VMGenericModelConfCombo model)
         {

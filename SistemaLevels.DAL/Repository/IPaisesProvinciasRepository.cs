@@ -14,6 +14,7 @@ namespace SistemaLevels.DAL.Repository
         Task<bool> Actualizar(PaisesProvincia model);
         Task<bool> Insertar(PaisesProvincia model);
         Task<PaisesProvincia> Obtener(int id);
+        Task<IQueryable<PaisesProvincia>> ObtenerPais(int idPais);
         Task<IQueryable<PaisesProvincia>> ObtenerTodos();
     }
 }
