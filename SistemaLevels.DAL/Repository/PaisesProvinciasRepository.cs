@@ -1,4 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿
+
+
+
+using Microsoft.EntityFrameworkCore;
 using SistemaLevels.DAL.DataContext;
 using SistemaLevels.Models;
 using System;
@@ -11,20 +15,20 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace SistemaLevels.DAL.Repository
 {
-    public class PaisesMonedaRepository : IPaisesMonedaRepository<PaisesMoneda>
+    public class PaisesProvinciaRepository : IPaisesProvinciaRepository<PaisesProvincia>
     {
 
         private readonly SistemaLevelsContext _dbcontext;
 
-        public PaisesMonedaRepository(SistemaLevelsContext context)
+        public PaisesProvinciaRepository(SistemaLevelsContext context)
         {
             _dbcontext = context;
         }
-        public async Task<bool> Actualizar(PaisesMoneda model)
+        public async Task<bool> Actualizar(PaisesProvincia model)
         {
             try
             {
-                _dbcontext.PaisesMonedas.Update(model);
+                _dbcontext.PaisesProvincias.Update(model);
                 await _dbcontext.SaveChangesAsync();
                 return true;
             }
@@ -38,8 +42,8 @@ namespace SistemaLevels.DAL.Repository
         {
             try
             {
-                PaisesMoneda model = _dbcontext.PaisesMonedas.First(c => c.Id == id);
-                _dbcontext.PaisesMonedas.Remove(model);
+                PaisesProvincia model = _dbcontext.PaisesProvincias.First(c => c.Id == id);
+                _dbcontext.PaisesProvincias.Remove(model);
                 await _dbcontext.SaveChangesAsync();
                 return true;
             }
@@ -49,11 +53,11 @@ namespace SistemaLevels.DAL.Repository
             }
         }
 
-        public async Task<bool> Insertar(PaisesMoneda model)
+        public async Task<bool> Insertar(PaisesProvincia model)
         {
             try
             {
-                _dbcontext.PaisesMonedas.Add(model);
+                _dbcontext.PaisesProvincias.Add(model);
                 await _dbcontext.SaveChangesAsync();
                 return true;
             }
@@ -63,11 +67,11 @@ namespace SistemaLevels.DAL.Repository
             }
         }
 
-        public async Task<PaisesMoneda> Obtener(int id)
+        public async Task<PaisesProvincia> Obtener(int id)
         {
             try
             {
-                PaisesMoneda model = await _dbcontext.PaisesMonedas
+                PaisesProvincia model = await _dbcontext.PaisesProvincias
                     .Include(x => x.IdPaisNavigation)
                     .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -79,12 +83,26 @@ namespace SistemaLevels.DAL.Repository
             }
         }
 
-
-        public async Task<IQueryable<PaisesMoneda>> ObtenerTodos()
+        public async Task<IQueryable<PaisesProvincia>> ObtenerPais(int idPais)
         {
             try
             {
-                IQueryable<PaisesMoneda> query = _dbcontext.PaisesMonedas;
+                return _dbcontext.PaisesProvincias
+                    .Include(x => x.IdPaisNavigation)
+                    .Where(x => x.IdPais == idPais);
+            }
+            catch (Exception)
+            {
+                return Enumerable.Empty<PaisesProvincia>().AsQueryable();
+            }
+        }
+
+
+        public async Task<IQueryable<PaisesProvincia>> ObtenerTodos()
+        {
+            try
+            {
+                IQueryable<PaisesProvincia> query = _dbcontext.PaisesProvincias;
 
                 return await Task.FromResult(query);
 
@@ -95,8 +113,6 @@ namespace SistemaLevels.DAL.Repository
             }
         }
 
-
-
-
+        
     }
 }

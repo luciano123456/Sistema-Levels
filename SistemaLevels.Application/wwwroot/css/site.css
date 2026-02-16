@@ -601,3 +601,164 @@ input:disabled {
     border-radius: 0 0 0.5rem 0.5rem;
     box-shadow: none;
 }
+
+
+/* =========================
+   FILTROS DATATABLE
+========================= */
+
+thead tr.filters th {
+    padding: 6px !important;
+}
+
+.rp-filter-input,
+.rp-filter-select,
+.select2-container--default .select2-selection--single {
+    height: 45px !important;
+    min-height: 36px !important;
+    border-radius: 8px !important;
+    background: rgba(20, 30, 60, 0.6) !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    color: #fff !important;
+    font-size: 13px !important;
+}
+
+    /* texto interno del select2 */
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #fff !important;
+        line-height: 34px !important;
+        padding-left: 10px !important;
+    }
+
+    /* flechita */
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 34px !important;
+    }
+
+/* ancho completo del filtro */
+.rp-filter-select,
+.rp-filter-input,
+.select2-container {
+    width: 100% !important;
+}
+
+/* dropdown select2 */
+.select2-dropdown {
+    background: #0e1a3a !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
+    color: white !important;
+}
+
+.select2-results__option {
+    color: white !important;
+}
+
+.select2-results__option--highlighted {
+    background: #2d5bff !important;
+}
+
+/* que todos los filtros tengan mismo ancho */
+#grd_Productoras thead tr.filters th input,
+#grd_Productoras thead tr.filters th .select2-container {
+    width: 100% !important;
+}
+
+
+/* Asegura que el select2 sea clickeable */
+.select2-container {
+    pointer-events: auto !important;
+}
+
+/* El área del texto debe ser clickeable */
+.select2-container--default .select2-selection--single {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+    /* El texto interno (rendered) NO debe bloquear clics */
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        pointer-events: none !important; /* <- clave */
+    }
+
+    /* La flechita sí debe recibir clic */
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        pointer-events: auto !important;
+    }
+
+    /* La X debe seguir funcionando */
+    .select2-container--default .select2-selection--single .select2-selection__clear {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+
+/* Muy importante en Datatables con fixedHeader/scroll */
+.select2-container--open {
+    z-index: 999999 !important;
+}
+
+.select2-dropdown {
+    z-index: 999999 !important;
+}
+
+
+.select2-container .select2-selection.is-invalid {
+    border: 1px solid #dc3545 !important;
+    box-shadow: 0 0 0 0.15rem rgba(220,53,69,.25);
+}
+
+.select2-container .select2-selection.is-valid {
+    border: 1px solid #198754 !important;
+}
+
+:root {
+    --rp-h: 44px; /* altura uniforme */
+    --rp-radius: 14px; /* radio uniforme (igual a select2 tuyo) */
+    --rp-bg: rgba(20, 28, 55, .55);
+    --rp-bd: rgba(255,255,255,.12);
+    --rp-bd-focus: rgba(59, 130, 246, .7);
+    --rp-tx: #e9eefc;
+    --rp-ph: rgba(233,238,252,.45);
+}
+
+#modalEdicion .is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 .18rem rgba(220,53,69,.18) !important;
+}
+
+#modalEdicion .is-valid {
+    border-color: #198754 !important;
+}
+
+#modalEdicion .form-control,
+#modalEdicion input[type="text"],
+#modalEdicion input[type="email"],
+#modalEdicion input[type="number"],
+#modalEdicion textarea {
+    height: var(--rp-h);
+    border-radius: var(--rp-radius);
+    background: var(--rp-bg);
+    border: 1px solid var(--rp-bd);
+    color: var(--rp-tx);
+    padding: 0 14px;
+    outline: none;
+    box-shadow: none;
+}
+
+#modalEdicion textarea {
+    height: auto; /* textarea no fijo */
+    min-height: 44px;
+    padding: 10px 14px;
+}
+
+    #modalEdicion .form-control::placeholder,
+    #modalEdicion input::placeholder,
+    #modalEdicion textarea::placeholder {
+        color: var(--rp-ph);
+    }
+
+    #modalEdicion .form-control:focus,
+    #modalEdicion input:focus,
+    #modalEdicion textarea:focus {
+        border-color: var(--rp-bd-focus);
+        box-shadow: 0 0 0 .18rem rgba(59,130,246,.18);
+    }
