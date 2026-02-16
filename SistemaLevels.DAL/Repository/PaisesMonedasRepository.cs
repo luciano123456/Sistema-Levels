@@ -1,52 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SistemaLevels.DAL.DataContext;
 using SistemaLevels.Models;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics.Contracts;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace SistemaLevels.DAL.Repository
 {
     public class PaisesMonedaRepository : IPaisesMonedaRepository<PaisesMoneda>
     {
-
         private readonly SistemaLevelsContext _dbcontext;
 
         public PaisesMonedaRepository(SistemaLevelsContext context)
         {
             _dbcontext = context;
-        }
-        public async Task<bool> Actualizar(PaisesMoneda model)
-        {
-            try
-            {
-                _dbcontext.PaisesMonedas.Update(model);
-                await _dbcontext.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                return false;
-            }
-        }
-
-        public async Task<bool> Eliminar(int id)
-        {
-            try
-            {
-                PaisesMoneda model = _dbcontext.PaisesMonedas.First(c => c.Id == id);
-                _dbcontext.PaisesMonedas.Remove(model);
-                await _dbcontext.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                return false;
-            }
         }
 
         public async Task<bool> Insertar(PaisesMoneda model)
@@ -57,48 +21,66 @@ namespace SistemaLevels.DAL.Repository
                 await _dbcontext.SaveChangesAsync();
                 return true;
             }
-            catch (Exception ex)
+            catch
             {
                 return false;
             }
         }
 
-     
-
-        public async Task<PaisesMoneda> Obtener(int id)
+        public async Task<bool> Actualizar(PaisesMoneda model)
         {
             try
             {
-                PaisesMoneda model = await _dbcontext.PaisesMonedas
-                    .Include(x => x.IdPaisNavigation)
-                    .FirstOrDefaultAsync(x => x.Id == id);
+                var entity = await _dbcontext.PaisesMonedas
+                    .FirstOrDefaultAsync(x => x.Id == model.Id);
 
-                return model;
+                if (entity == null) return false;
+
+                entity.IdPais = model.IdPais;
+                entity.Nombre = model.Nombre;
+                entity.Cotizacion = model.Cotizacion;
+
+                await _dbcontext.SaveChangesAsync();
+                return true;
             }
-            catch (Exception)
+            catch
             {
-                return null;
+                return false;
             }
         }
 
+        public async Task<bool> Eliminar(int id)
+        {
+            try
+            {
+                var entity = await _dbcontext.PaisesMonedas
+                    .FirstOrDefaultAsync(x => x.Id == id);
+
+                if (entity == null) return false;
+
+                _dbcontext.PaisesMonedas.Remove(entity);
+                await _dbcontext.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public async Task<PaisesMoneda?> Obtener(int id)
+        {
+            return await _dbcontext.PaisesMonedas
+                .Include(x => x.IdPaisNavigation)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
 
         public async Task<IQueryable<PaisesMoneda>> ObtenerTodos()
         {
-            try
-            {
-                IQueryable<PaisesMoneda> query = _dbcontext.PaisesMonedas;
+            IQueryable<PaisesMoneda> query = _dbcontext.PaisesMonedas
+                .Include(x => x.IdPaisNavigation);
 
-                return await Task.FromResult(query);
-
-            }
-            catch (Exception ex)
-            {
-                return null;
-            }
+            return await Task.FromResult(query);
         }
-
-
-
-
     }
 }

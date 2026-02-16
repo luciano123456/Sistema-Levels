@@ -1,0 +1,173 @@
+﻿@{
+    ViewData["Title"] = "Monedas por País";
+}
+
+@section Estilos {
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <link href="~/css/usuarios.css" rel="stylesheet" />
+    <link href="~/css/disenopantallas.css" rel="stylesheet" />
+
+    <style>
+        .monedas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 24px;
+        }
+
+        .moneda-card {
+            background: linear-gradient(145deg, #0f172a, #020617);
+            border-radius: 22px;
+            padding: 28px;
+            position: relative;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.45);
+            transition: all 0.25s ease;
+            min-height: 190px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+            .moneda-card:hover {
+                transform: translateY(-6px) scale(1.02);
+                box-shadow: 0 22px 55px rgba(0,0,0,0.6);
+            }
+
+        .moneda-icon {
+            font-size: 38px;
+            color: #22c55e;
+            margin-bottom: 12px;
+        }
+
+        .moneda-nombre {
+            font-size: 24px;
+            font-weight: 900;
+            color: white;
+        }
+
+        .moneda-pais {
+            color: #9ca3af;
+            font-size: 15px;
+            margin-top: 6px;
+        }
+
+        .moneda-cotizacion {
+            font-size: 30px;
+            font-weight: 900;
+            color: #22c55e;
+            margin-top: 14px;
+        }
+
+        .moneda-acciones {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-card {
+            background: rgba(255,255,255,0.10);
+            border: none;
+            color: white;
+            padding: 8px 10px;
+            border-radius: 10px;
+        }
+
+            .btn-card:hover {
+                background: rgba(255,255,255,0.18);
+            }
+    </style>
+}
+
+<div class="container-fluid mt-5">
+
+    <div class="container page-99" style="margin-top:40px">
+        <div class="cc-header shadow-lg rounded-4 p-4 mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <span class="cc-badge"><i class="fa fa-money"></i></span>
+                <div>
+                    <h2 class="m-0 fw-800">Monedas</h2>
+                    <small class="text-muted-cc">Monedas por país</small>
+                </div>
+
+                <div class="ms-auto">
+                    <button class="btn btn-success" onclick="nuevaMoneda()">
+                        <i class="fa fa-plus"></i> Nueva moneda
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-glass p-4">
+            <div id="contenedorMonedas" class="monedas-grid"></div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL EDICION -->
+<div class="modal fade" id="modalEdicion" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header colorEncabezado">
+                <h5 class="modal-title fw-bold" id="modalEdicionLabel">
+                    Nueva moneda
+                </h5>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <input type="hidden" id="txtId">
+
+                <div class="alert alert-danger d-none" id="errorCampos">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    Completá los campos obligatorios.
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">País</label>
+                    <select id="cmbPais" class="form-control"></select>
+                    <div class="invalid-feedback">Campo obligatorio</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nombre</label>
+                    <input id="txtNombre" class="form-control" maxlength="100">
+                    <div class="invalid-feedback">Campo obligatorio</div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Cotización</label>
+                    <input id="txtCotizacion" class="form-control" inputmode="decimal">
+                    <div class="invalid-feedback">Campo obligatorio</div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    <i class="fa fa-arrow-left"></i> Volver
+                </button>
+
+                <button id="btnGuardar"
+                        class="btn btn-primary"
+                        onclick="guardarMoneda()">
+                    <i class="fa fa-check"></i> Registrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="~/Views/Utils/Modals.cshtml" />
+
+@section Scripts {
+    <script src="~/js/PaisesMonedas.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+}

@@ -1,110 +1,117 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SistemaLevels.Application.Models;
 using SistemaLevels.Application.Models.ViewModels;
 using SistemaLevels.BLL.Service;
 using SistemaLevels.Models;
-using System.Diagnostics;
 
 namespace SistemaLevels.Application.Controllers
 {
     [Authorize]
     public class PaisesMonedaController : Controller
     {
-        private readonly IPaisesMonedaService _PaisesMonedaService;
+        private readonly IPaisesMonedaService _service;
 
-        public PaisesMonedaController(IPaisesMonedaService PaisesMonedaService)
+        public PaisesMonedaController(IPaisesMonedaService service)
         {
-            _PaisesMonedaService = PaisesMonedaService;
+            _service = service;
         }
 
         [AllowAnonymous]
+        public IActionResult Index()
+        {
+            return View();
+        }
+
         [HttpGet]
         public async Task<IActionResult> Lista()
         {
-            var PaisesMoneda = await _PaisesMonedaService.ObtenerTodos();
+            var monedas = await _service.ObtenerTodos();
 
-            var lista = PaisesMoneda.Select(c => new VMGenericModelConfCombo
+            var lista = monedas.Select(m => new VMPaisesMoneda
             {
-                Id = c.Id,
-                IdCombo = c.IdPais,
-                NombreCombo = c.IdPaisNavigation.Nombre,
-                Nombre = c.Nombre,
+                Id = m.Id,
+                IdPais = m.IdPais,
+                Pais = m.IdPaisNavigation != null ? m.IdPaisNavigation.Nombre : "",
+                Nombre = m.Nombre,
+                Cotizacion = m.Cotizacion
             }).ToList();
 
             return Ok(lista);
         }
 
-
-        [HttpPost]
-        public async Task<IActionResult> Insertar([FromBody] VMGenericModelConfCombo model)
+        [HttpGet]
+        public async Task<IActionResult> EditarInfo(int id)
         {
-            var pais = new PaisesMoneda
+            var m = await _service.Obtener(id);
+            if (m == null) return Ok(null);
+
+            var vm = new VMPaisesMoneda
             {
-                Id = model.Id,
-                IdPais = model.IdCombo,
-                Nombre = model.Nombre,
+                Id = m.Id,
+                IdPais = m.IdPais,
+                Pais = m.IdPaisNavigation != null ? m.IdPaisNavigation.Nombre : "",
+                Nombre = m.Nombre,
+                Cotizacion = m.Cotizacion
             };
 
-            bool respuesta = await _PaisesMonedaService.Insertar(pais);
+            return Ok(vm);
+        }
 
-            return Ok(new { valor = respuesta });
+        [HttpPost]
+        public async Task<IActionResult> Insertar([FromBody] VMPaisesMoneda model)
+        {
+            try
+            {
+                var entidad = new PaisesMoneda
+                {
+                    IdPais = model.IdPais,
+                    Nombre = model.Nombre,
+                    Cotizacion = model.Cotizacion
+                };
+
+                bool ok = await _service.Insertar(entidad);
+                return Ok(new { valor = ok });
+            }
+            catch
+            {
+                return Ok(new { valor = false });
+            }
         }
 
         [HttpPut]
-        public async Task<IActionResult> Actualizar([FromBody] VMGenericModelConfCombo model)
+        public async Task<IActionResult> Actualizar([FromBody] VMPaisesMoneda model)
         {
-            var pais = new PaisesMoneda
+            try
             {
-                Id = model.Id,
-                IdPais = model.IdCombo,
-                Nombre = model.Nombre,
-            };
+                var entidad = new PaisesMoneda
+                {
+                    Id = model.Id,
+                    IdPais = model.IdPais,
+                    Nombre = model.Nombre,
+                    Cotizacion = model.Cotizacion
+                };
 
-            bool respuesta = await _PaisesMonedaService.Actualizar(pais);
-
-            return Ok(new { valor = respuesta });
+                bool ok = await _service.Actualizar(entidad);
+                return Ok(new { valor = ok });
+            }
+            catch
+            {
+                return Ok(new { valor = false });
+            }
         }
 
         [HttpDelete]
         public async Task<IActionResult> Eliminar(int id)
         {
-            bool respuesta = await _PaisesMonedaService.Eliminar(id);
-
-            return StatusCode(StatusCodes.Status200OK, new { valor = respuesta });
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> EditarInfo(int id)
-        {
-            var resultBase = await _PaisesMonedaService.Obtener(id);
-
-            var result = new VMGenericModelConfCombo
+            try
             {
-                Id = resultBase.Id,
-                IdCombo = resultBase.IdPais,
-                Nombre = resultBase.Nombre,
-                NombreCombo = resultBase.IdPaisNavigation.Nombre
-            };
-
-            if (result != null)
-            {
-                return StatusCode(StatusCodes.Status200OK, result);
+                bool ok = await _service.Eliminar(id);
+                return Ok(new { valor = ok });
             }
-            else
+            catch
             {
-                return StatusCode(StatusCodes.Status404NotFound);
+                return Ok(new { valor = false });
             }
-        }
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
     }
 }
