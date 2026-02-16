@@ -1,0 +1,219 @@
+﻿@{
+    ViewData["Title"] = "Clientes";
+}
+
+@section Estilos {
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/fixedheader/3.2.2/css/fixedHeader.dataTables.min.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- Estilos base -->
+    <link href="~/css/usuarios.css?v=1.0" rel="stylesheet" />
+    <link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
+}
+
+<div class="container-fluid mt-5">
+
+    <div class="container page-99" style="margin-top:40px">
+        <div class="cc-header shadow-lg rounded-4 p-4 mb-4">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="cc-badge"><i class="fa fa-users"></i></span>
+                    <div>
+                        <h2 class="m-0 fw-800">Clientes</h2>
+                        <small class="text-muted-cc">Gestión de clientes</small>
+                    </div>
+                </div>
+
+                <div class="ms-auto d-flex gap-4 flex-wrap align-items-center">
+                    <div class="cc-stat">
+                        <div class="label">Clientes</div>
+                        <div class="value"><strong id="kpiCantClientes">0</strong></div>
+                    </div>
+
+                    <div class="dropdown cc-dd">
+                        <button class="btn btn-secondary dropdown-toggle"
+                                type="button" id="dropdownColumnas"
+                                data-bs-toggle="dropdown"
+                                data-bs-display="static"
+                                data-bs-auto-close="outside">
+                            <i class="fa fa-cog me-2"></i> Config. Columnas
+                        </button>
+                        <ul class="dropdown-menu cc-dropdown-menu"
+                            id="configColumnasMenu"></ul>
+                    </div>
+
+                    <a class="btn btn-success d-flex align-items-center px-3 py-2 btnnuevo"
+                       onclick="nuevoCliente()">
+                        <i class="fa fa-plus-square me-2"></i> Nuevo
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-glass p-3">
+            <div class="dt-dark-wrap">
+                <table class="dt-dark display nowrap compact"
+                       id="grd_Clientes" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Nombre</th>
+                            <th>Productora</th>
+                            <th>País</th>
+                            <th>Provincia</th>
+                            <th>Tipo Doc</th>
+                            <th>Nro Doc</th>
+                            <th>Condición IVA</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="modalEdicion" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+            <div class="modal-header colorEncabezado">
+                <h5 class="modal-title fw-bold" id="modalEdicionLabel">
+                    Nuevo Cliente
+                </h5>
+                <button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <form class="row g-3">
+
+                    <input type="text" id="txtId" hidden>
+
+                    <!-- FILA 1 -->
+                    <div class="col-md-6">
+                        <label class="form-label">Nombre</label>
+                        <input id="txtNombre" class="form-control" required>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Productora</label>
+                        <select id="cmbProductora" class="form-control"></select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">DNI</label>
+                        <input id="txtDni" class="form-control">
+                    </div>
+
+                    <!-- FILA 2 -->
+                    <div class="col-md-6">
+                        <label class="form-label">País</label>
+                        <select id="cmbPais" class="form-control"></select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Provincia</label>
+                        <select id="cmbProvincia" class="form-control"></select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Localidad</label>
+                        <input id="txtLocalidad" class="form-control">
+                    </div>
+
+                    <!-- FILA 3 -->
+                    <div class="col-md-6">
+                        <label class="form-label">Tipo Documento</label>
+                        <select id="cmbTipoDocumento" class="form-control"></select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Número Documento</label>
+                        <input id="txtNumeroDocumento" class="form-control">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Condición IVA</label>
+                        <select id="cmbCondicionIva" class="form-control"></select>
+                    </div>
+
+                    <!-- FILA 4 -->
+                    <div class="col-md-6">
+                        <label class="form-label">Teléfono</label>
+                        <input id="txtTelefono" class="form-control">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Teléfono Alternativo</label>
+                        <input id="txtTelefonoAlternativo" class="form-control">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Email</label>
+                        <input id="txtEmail" class="form-control">
+                    </div>
+
+                    <!-- FILA 5 -->
+                    <div class="col-md-6">
+                        <label class="form-label">Dirección</label>
+                        <input id="txtDireccion" class="form-control">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Entre Calles</label>
+                        <input id="txtEntreCalles" class="form-control">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Código Postal</label>
+                        <input id="txtCodigoPostal" class="form-control">
+                    </div>
+
+                    <div class="col-12">
+                        <div class="rp-auditoria d-none" id="infoAuditoria">
+                            <div id="infoRegistro"></div>
+                            <div id="infoModificacion"></div>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    <i class="fa fa-arrow-left"></i> Volver
+                </button>
+
+                <button id="btnGuardar"
+                        class="btn btn-primary"
+                        onclick="guardarCliente()">
+                    <i class="fa fa-check"></i> Registrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="~/Views/Utils/Modals.cshtml" />
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="~/js/Clientes.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+}

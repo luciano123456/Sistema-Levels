@@ -70,6 +70,10 @@ builder.Services.AddScoped<ITareasEstadosService, TareasEstadosService>();
 builder.Services.AddScoped<ITareasRepository<Tarea>, TareasRepository>();
 builder.Services.AddScoped<ITareasService, TareasService>();
 
+builder.Services.AddScoped<IClientesRepository<Cliente>, ClientesRepository>();
+builder.Services.AddScoped<IClientesService, ClientesService>();
+
+
 
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();

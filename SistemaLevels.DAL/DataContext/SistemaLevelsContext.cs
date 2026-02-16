@@ -357,6 +357,9 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.Direccion)
                 .HasMaxLength(200)
                 .IsUnicode(false);
+            entity.Property(e => e.Dni)
+                .HasMaxLength(20)
+                .IsUnicode(false);
             entity.Property(e => e.Email)
                 .HasMaxLength(100)
                 .IsUnicode(false);

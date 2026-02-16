@@ -13,6 +13,8 @@ public partial class PaisesMoneda
 
     public decimal Cotizacion { get; set; }
 
+    public virtual ICollection<Artista> Artista { get; set; } = new List<Artista>();
+
     public virtual ICollection<ArtistasCuentaCorriente> ArtistasCuentaCorrientes { get; set; } = new List<ArtistasCuentaCorriente>();
 
     public virtual ICollection<ArtistasPago> ArtistasPagos { get; set; } = new List<ArtistasPago>();
@@ -28,9 +30,6 @@ public partial class PaisesMoneda
     public virtual ICollection<Gasto> Gastos { get; set; } = new List<Gasto>();
 
     public virtual Pais IdPaisNavigation { get; set; } = null!;
-
-    public virtual ICollection<Artista> Artista { get; set; } = new List<Artista>();
-
 
     public virtual ICollection<MonedasCuenta> MonedasCuenta { get; set; } = new List<MonedasCuenta>();
 

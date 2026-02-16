@@ -2,7 +2,7 @@
 
 namespace SistemaLevels.Application.Models.ViewModels
 {
-    public class VMPaisTiposDocumentos
+    public class VMPaisesTiposDocumentos
 
     {
         public int Id { get; set; }
