@@ -150,10 +150,20 @@ public partial class SistemaLevelsContext : DbContext
                 .HasForeignKey(d => d.IdCondicionIva)
                 .HasConstraintName("FK_Artistas_Paises_CondicionesIVA");
 
+            entity.HasOne(d => d.IdMonedaNavigation).WithMany(p => p.Artista)
+                .HasForeignKey(d => d.IdMoneda)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Artistas_Paises_Monedas");
+
             entity.HasOne(d => d.IdPaisNavigation).WithMany(p => p.Artista)
                 .HasForeignKey(d => d.IdPais)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Artistas_Paises");
+
+            entity.HasOne(d => d.IdProductoraNavigation).WithMany(p => p.Artista)
+                .HasForeignKey(d => d.IdProductora)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Artistas_Productoras");
 
             entity.HasOne(d => d.IdProvinciaNavigation).WithMany(p => p.Artista)
                 .HasForeignKey(d => d.IdProvincia)

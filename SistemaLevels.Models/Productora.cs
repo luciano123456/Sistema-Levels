@@ -45,6 +45,8 @@ public partial class Productora
 
     public string? CodigoPostal { get; set; }
 
+    public virtual ICollection<Artista> Artista { get; set; } = new List<Artista>();
+
     public virtual ICollection<Cliente> Clientes { get; set; } = new List<Cliente>();
 
     public virtual PaisesCondicionesIva? IdCondicionIvaNavigation { get; set; }

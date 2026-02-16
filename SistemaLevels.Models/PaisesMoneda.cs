@@ -29,6 +29,9 @@ public partial class PaisesMoneda
 
     public virtual Pais IdPaisNavigation { get; set; } = null!;
 
+    public virtual ICollection<Artista> Artista { get; set; } = new List<Artista>();
+
+
     public virtual ICollection<MonedasCuenta> MonedasCuenta { get; set; } = new List<MonedasCuenta>();
 
     public virtual ICollection<PersonalCuentaCorriente> PersonalCuentaCorrientes { get; set; } = new List<PersonalCuentaCorriente>();
