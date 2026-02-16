@@ -58,6 +58,8 @@ builder.Services.AddScoped<IRepresentantesService, RepresentantesService>();
 builder.Services.AddScoped<IProductorasRepository<Productora>, ProductorasRepository>();
 builder.Services.AddScoped<IProductorasService, ProductorasService>();
 
+builder.Services.AddScoped<IPersonalRepository<Personal>, PersonalRepository>();
+builder.Services.AddScoped<IPersonalService, PersonalService>();
 
 
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
