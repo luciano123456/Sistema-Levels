@@ -1,0 +1,193 @@
+﻿@{
+    ViewData["Title"] = "Representantes";
+}
+
+@section Estilos {
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/fixedheader/3.2.2/css/fixedHeader.dataTables.min.css" rel="stylesheet" />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- Estilos base -->
+    <link href="~/css/usuarios.css?v=1.0" rel="stylesheet" />
+    <link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
+}
+
+<div class="container-fluid mt-5">
+
+    <div class="container page-99" style="margin-top:40px">
+        <div class="cc-header shadow-lg rounded-4 p-4 mb-4">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="cc-badge"><i class="fa fa-id-card"></i></span>
+                    <div>
+                        <h2 class="m-0 fw-800">Representantes</h2>
+                        <small class="text-muted-cc">Gestión de representantes</small>
+                    </div>
+                </div>
+
+                <div class="ms-auto d-flex gap-4 flex-wrap align-items-center">
+                    <div class="cc-stat">
+                        <div class="label">Representantes</div>
+                        <div class="value"><strong id="kpiCantRepresentantes">0</strong></div>
+                    </div>
+
+                    <!-- Config columnas (igual Usuarios) -->
+                    <div class="dropdown cc-dd">
+                        <button class="btn btn-secondary dropdown-toggle d-flex align-items-center"
+                                type="button" id="dropdownColumnas"
+                                data-bs-toggle="dropdown" aria-expanded="false"
+                                data-bs-display="static" data-bs-auto-close="outside">
+                            <i class="fa fa-cog me-2"></i> Config. Columnas
+                        </button>
+                        <ul class="dropdown-menu cc-dropdown-menu" aria-labelledby="dropdownColumnas" id="configColumnasMenu"></ul>
+                    </div>
+
+                    <a class="btn btn-success d-flex align-items-center px-3 py-2 btnnuevo" onclick="nuevoRepresentante()">
+                        <i class="fa fa-plus-square me-2"></i> Nuevo
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card-glass p-3">
+                    <div class="tabla-wrap position-relative">
+                        <div class="dt-dark-wrap">
+                            <table class="dt-dark display nowrap compact" id="grd_Representantes" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Nombre</th>
+                                        <th>DNI</th>
+                                        <th>País</th>
+                                        <th>Tipo Doc.</th>
+                                        <th>Nro Doc.</th>
+                                        <th>Dirección</th>
+                                        <th>Teléfono</th>
+                                        <th>Email</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div><!-- /tabla-wrap -->
+                </div><!-- /card-glass -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL (misma idea que Usuarios) -->
+<div class="modal fade" id="modalEdicion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-edicion" role="document">
+        <div class="modal-content">
+            <div class="modal-header colorEncabezado">
+                <h5 class="modal-title fw-bold" id="modalEdicionLabel">Nuevo Representante</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <form class="row g-3">
+                    <input type="text" id="txtId" readonly hidden>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="txtNombre">Nombre</label>
+                        <input type="text" class="form-control" id="txtNombre" required>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="txtDni">DNI</label>
+                        <input type="text" class="form-control" id="txtDni" required>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="cmbPais">País</label>
+                        <select id="cmbPais" class="form-control" required></select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="cmbTipoDocumento">Tipo Documento</label>
+                        <select id="cmbTipoDocumento" class="form-control"></select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="txtNumeroDocumento">Número Documento</label>
+                        <input type="text" class="form-control" id="txtNumeroDocumento">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="txtTelefono">Teléfono</label>
+                        <input type="text" class="form-control" id="txtTelefono">
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label" for="txtDireccion">Dirección</label>
+                        <input type="text" class="form-control" id="txtDireccion">
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label" for="txtEmail">Email</label>
+                        <input type="text" class="form-control" id="txtEmail">
+                    </div>
+
+                    <div class="col-12">
+                        <div class="rp-auditoria d-none" id="infoAuditoria">
+                            <div class="rp-auditoria-item" id="infoRegistro"></div>
+                            <div class="rp-auditoria-item" id="infoModificacion"></div>
+                        </div>
+                    </div>
+
+
+                    <div id="errorCampos" class="alert alert-danger d-none">
+                        Debes completar los campos obligatorios.
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fa fa-arrow-left"></i> Volver
+                </button>
+                <button type="button" id="btnGuardar" class="btn btn-primary" onclick="guardarCambios()">
+                    <i class="fa fa-check"></i> Registrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="~/Views/Utils/Modals.cshtml" />
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+    <!-- botones -->
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+    <script src="~/js/site.js"></script>
+
+    <!-- excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+
+    <!-- pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+
+    <!-- imprimir -->
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
+
+    <!-- fixedHeader -->
+    <script src="https://cdn.datatables.net/fixedheader/3.2.2/js/dataTables.fixedHeader.min.js"></script>
+
+    <!-- Tu JS -->
+    <script src="~/js/Representantes.js?v=1.0"></script>
+}

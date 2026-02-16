@@ -1670,3 +1670,26 @@ table.dataTable.display tbody tr.selected td {
         height: 16px;
         accent-color: #5664d2; /* check azul del tema (BS5 soporta accent-color) */
     }
+
+
+/* =========================
+   AUDITORÍA MODAL
+========================= */
+
+.rp-auditoria {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #ddd;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.rp-auditoria-item {
+    margin-bottom: 4px;
+}
+
+.rp-auditoria i {
+    margin-right: 6px;
+    opacity: 0.8;
+}

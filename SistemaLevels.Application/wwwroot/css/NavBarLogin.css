@@ -436,3 +436,12 @@
 .rp-modal-subtitle {
     color: rgba(255,255,255,0.75);
 }
+
+
+
+
+/* Si usás clase personalizada */
+.rp-input select,
+.rp-input option {
+    color: #000 !important;
+}
