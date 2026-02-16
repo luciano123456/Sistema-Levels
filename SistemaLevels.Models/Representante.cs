@@ -17,8 +17,6 @@ public partial class Representante
 
     public string Nombre { get; set; } = null!;
 
-    public string Dni { get; set; } = null!;
-
     public int IdPais { get; set; }
 
     public int? IdTipoDocumento { get; set; }
@@ -30,6 +28,8 @@ public partial class Representante
     public string? Telefono { get; set; }
 
     public string? Email { get; set; }
+
+    public string? Dni { get; set; }
 
     public virtual ICollection<Artista> Artista { get; set; } = new List<Artista>();
 

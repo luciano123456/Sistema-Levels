@@ -9,6 +9,7 @@
   <ItemGroup>
     <Content Remove="wwwroot\css\NavBarLogin.css~RF1f800e21.TMP" />
     <Content Remove="wwwroot\js\Artistas.js" />
+    <Content Remove="wwwroot\js\Clientes.js" />
     <Content Remove="wwwroot\js\Home.js" />
     <Content Remove="wwwroot\js\Login.js" />
     <Content Remove="wwwroot\js\NavBarLogin.js" />
@@ -24,6 +25,7 @@
   <ItemGroup>
     <None Include="wwwroot\Imagenes\Clientes.png" />
     <None Include="wwwroot\js\Login.js" />
+    <None Include="wwwroot\js\Clientes.js" />
     <None Include="wwwroot\js\Personal.js" />
     <None Include="wwwroot\js\Tareas.js" />
     <None Include="wwwroot\js\Productoras.js" />
