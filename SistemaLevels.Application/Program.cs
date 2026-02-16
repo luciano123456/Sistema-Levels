@@ -64,6 +64,12 @@ builder.Services.AddScoped<IPersonalService, PersonalService>();
 builder.Services.AddScoped<IArtistasRepository<Artista>, ArtistasRepository>();
 builder.Services.AddScoped<IArtistasService, ArtistasService>();
 
+builder.Services.AddScoped<ITareasEstadosRepository<TareasEstado>, TareasEstadosRepository>();
+builder.Services.AddScoped<ITareasEstadosService, TareasEstadosService>();
+
+builder.Services.AddScoped<ITareasRepository<Tarea>, TareasRepository>();
+builder.Services.AddScoped<ITareasService, TareasService>();
+
 
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();

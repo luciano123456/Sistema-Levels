@@ -35,6 +35,12 @@
                     </a>
                 </li>
 
+                <li class="nav-item" id="seccionTareas">
+                    <a class="nav-link" href="@Url.Action("Index", "Tareas")">
+                        Tareas
+                    </a>
+                </li>
+
                 <!-- CONFIGURACIONES -->
                 <li class="nav-item dropdown" id="seccionConfiguraciones" hidden>
                     <a class="nav-link dropdown-toggle" href="#" id="configDropdownLink" role="button" data-bs-toggle="dropdown">
@@ -188,6 +194,19 @@
                             <div class="rp-config-title">Provincias</div>
                             <div class="rp-config-sub">
                                 Por Pais
+                            </div>
+                        </div>
+                    </button>
+
+                    <button class="rp-config-card"
+                            onclick="abrirConfiguracion('Tareas', 'TareasEstados')">
+                        <div class="rp-config-icon blue">
+                            <i class="fa fa-cog"></i>
+                        </div>
+                        <div>
+                            <div class="rp-config-title">Tareas Estados</div>
+                            <div class="rp-config-sub">
+                                Configuracion de tareas
                             </div>
                         </div>
                     </button>
