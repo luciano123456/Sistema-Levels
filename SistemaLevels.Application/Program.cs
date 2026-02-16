@@ -48,6 +48,9 @@ builder.Services.AddScoped<IPaisesMonedaRepository<PaisesMoneda>, PaisesMonedaRe
 builder.Services.AddScoped<IPaisesMonedaService, PaisesMonedaService>();
 
 
+builder.Services.AddScoped<IPaisesProvinciaRepository<PaisesProvincia>, PaisesProvinciaRepository>();
+builder.Services.AddScoped<IPaisesProvinciaService, PaisesProvinciaService>();
+
 builder.Services.AddScoped<IRepresentantesRepository<Representante>, RepresentantesRepository>();
 builder.Services.AddScoped<IRepresentantesService, RepresentantesService>();
 
