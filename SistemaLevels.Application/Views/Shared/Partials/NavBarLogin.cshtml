@@ -4,43 +4,66 @@
 <nav class="navbar navbar-expand-lg navbar-light" style="background-color: rgba(112, 112, 112, 0.1);">
     <div class="container-fluid">
         <a class="navbar-brand">Sistema Levels</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
             <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-                @* ESTE LO DEJAMOS DE MODO EJEMPLO *@
-               @*  <li class="nav-item" id="seccionOperaciones" hidden>
-                    <a class="nav-link" href="@Url.Action("Index", "Operaciones")">Operaciones</a>
-                </li> *@ 
+                <!-- NUEVA SECCIÓN REPRESENTANTES -->
+                <li class="nav-item" id="seccionRepresentantes">
+                    <a class="nav-link" href="@Url.Action("Index", "Representantes")">
+                        Representantes
+                    </a>
+                </li>
 
+                <!-- CONFIGURACIONES -->
                 <li class="nav-item dropdown" id="seccionConfiguraciones" hidden>
-                    <a class="nav-link dropdown-toggle" href="#" id="configDropdownLink" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <a class="nav-link dropdown-toggle" href="#" id="configDropdownLink" role="button" data-bs-toggle="dropdown">
                         Configuraciones
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="configDropdownLink">
-                        <li><a class="dropdown-item" href="@Url.Action("Index", "Usuarios")">Usuarios</a></li>
-                        <li><a class="dropdown-item" onclick="abrirConfiguraciones()">Otras</a></li>
+                        <li>
+                            <a class="dropdown-item" href="@Url.Action("Index", "Usuarios")">
+                                Usuarios
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" onclick="abrirConfiguraciones()">
+                                Otras
+                            </a>
+                        </li>
                     </ul>
                 </li>
+
             </ul>
 
             <!-- Usuario Dropdown -->
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fa-lg me-2" id="userName"></i> <!-- Ícono de Font Awesome 4.7 -->
+                    <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fa-lg me-2" id="userName"></i>
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="#" onclick="window.location.href='/Usuarios/Configuracion';">Configuración</a></li>
-                        <li><a class="dropdown-item" href="#" onclick="cerrarSesion()">Cerrar Sesión</a></li>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="window.location.href='/Usuarios/Configuracion';">
+                                Configuración
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="cerrarSesion()">
+                                Cerrar Sesión
+                            </a>
+                        </li>
                     </ul>
                 </li>
             </ul>
+
         </div>
     </div>
 </nav>
+
 
 
 <!-- ===============================
@@ -93,6 +116,19 @@
                         </div>
                         <div>
                             <div class="rp-config-title">Paises</div>
+                            <div class="rp-config-sub">
+                                Paises
+                            </div>
+                        </div>
+                    </button>
+
+                    <button class="rp-config-card"
+                            onclick="abrirConfiguracion('Paises Tipos Documentos', 'PaisesTiposDocumentos', 'Paises', 'Paises', 'Pais')">
+                        <div class="rp-config-icon blue">
+                            <i class="fa fa-users"></i>
+                        </div>
+                        <div>
+                            <div class="rp-config-title">Paises Tipos Documentos</div>
                             <div class="rp-config-sub">
                                 Paises
                             </div>

@@ -223,3 +223,16 @@ function formatearSinMiles(valor) {
 
 let audioContext = null;
 let audioBuffer = null;
+
+
+function llenarSelect(selectId, data, valueField = 'Id', textField = 'Nombre', conOpcionVacia = true) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    sel.innerHTML = conOpcionVacia ? '<option value="">Seleccione</option>' : '';
+    (data || []).forEach(it => {
+        const opt = document.createElement('option');
+        opt.value = it[valueField];
+        opt.textContent = it[textField];
+        sel.appendChild(opt);
+    });
+}

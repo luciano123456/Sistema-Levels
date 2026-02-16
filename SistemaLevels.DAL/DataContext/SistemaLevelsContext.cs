@@ -121,9 +121,9 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.EntreCalles)
                 .HasMaxLength(100)
                 .IsUnicode(false);
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
             entity.Property(e => e.FechaNacimiento).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Localidad)
                 .HasMaxLength(100)
                 .IsUnicode(false);
@@ -188,8 +188,8 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Debe).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Haber).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TipoMov)
                 .HasMaxLength(50)
@@ -224,9 +224,9 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Conversion).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Cotizacion).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.IdArtistaCc).HasColumnName("IdArtistaCC");
             entity.Property(e => e.IdMonedaCc).HasColumnName("IdMonedaCC");
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
@@ -268,9 +268,9 @@ public partial class SistemaLevelsContext : DbContext
                 .HasMaxLength(255)
                 .IsUnicode(false);
             entity.Property(e => e.Egrreso).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Ingreso).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Saldo).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TipoMov)
@@ -300,9 +300,9 @@ public partial class SistemaLevelsContext : DbContext
         modelBuilder.Entity<CajasTransferenciasCuenta>(entity =>
         {
             entity.Property(e => e.Cotizacion).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.ImporteDestino).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.ImporteOrigen).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.NotaInterna)
@@ -353,8 +353,8 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.EntreCalles)
                 .HasMaxLength(100)
                 .IsUnicode(false);
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Localidad)
                 .HasMaxLength(100)
                 .IsUnicode(false);
@@ -413,8 +413,8 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Debe).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Haber).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TipoMov)
                 .HasMaxLength(50)
@@ -445,9 +445,9 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.Concepto)
                 .HasMaxLength(255)
                 .IsUnicode(false);
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.NotaInterna)
                 .HasMaxLength(255)
@@ -588,9 +588,9 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.Email)
                 .HasMaxLength(100)
                 .IsUnicode(false);
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
             entity.Property(e => e.FechaNacimiento).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Nombre)
                 .HasMaxLength(100)
                 .IsUnicode(false);
@@ -642,8 +642,8 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Debe).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Haber).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TipoMov)
                 .HasMaxLength(50)
@@ -678,9 +678,9 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Conversion).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Cotizacion).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.IdMonedaCc).HasColumnName("IdMonedaCC");
             entity.Property(e => e.IdPersonalCc).HasColumnName("IdPersonalCC");
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
@@ -723,9 +723,9 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.Concepto)
                 .HasMaxLength(200)
                 .IsUnicode(false);
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.IdPersonalCc).HasColumnName("IdPersonalCC");
             entity.Property(e => e.ImporteTotal).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.NotaInterna)
@@ -761,9 +761,9 @@ public partial class SistemaLevelsContext : DbContext
 
             entity.Property(e => e.Conversion).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Cotizacion).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.IdPersonalCc).HasColumnName("IdPersonalCC");
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
 
@@ -794,9 +794,9 @@ public partial class SistemaLevelsContext : DbContext
 
         modelBuilder.Entity<Presupuesto>(entity =>
         {
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.NotaCliente)
                 .HasMaxLength(200)
                 .IsUnicode(false);
@@ -833,9 +833,9 @@ public partial class SistemaLevelsContext : DbContext
             entity.ToTable("PresupuestosDetalle");
 
             entity.Property(e => e.Duracion).HasColumnType("datetime");
-            entity.Property(e => e.FechaEvento).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaEvento).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.NombreEvento)
                 .HasMaxLength(200)
@@ -901,8 +901,8 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.EntreCalles)
                 .HasMaxLength(100)
                 .IsUnicode(false);
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Localidad)
                 .HasMaxLength(100)
                 .IsUnicode(false);
@@ -960,8 +960,8 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.Email)
                 .HasMaxLength(100)
                 .IsUnicode(false);
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.Nombre)
                 .HasMaxLength(100)
                 .IsUnicode(false);
@@ -996,10 +996,10 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.Descripcion)
                 .HasMaxLength(255)
                 .IsUnicode(false);
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaLimite).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaLimite).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
 
             entity.HasOne(d => d.IdEstadoNavigation).WithMany(p => p.Tareas)
                 .HasForeignKey(d => d.IdEstado)
@@ -1122,10 +1122,10 @@ public partial class SistemaLevelsContext : DbContext
         modelBuilder.Entity<Venta>(entity =>
         {
             entity.Property(e => e.Duracion).HasColumnType("datetime");
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaHasta).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaHasta).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.IdClienteCc).HasColumnName("IdClienteCC");
             entity.Property(e => e.ImporteAbonado).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.ImporteTotal).HasColumnType("decimal(18, 2)");
@@ -1212,9 +1212,9 @@ public partial class SistemaLevelsContext : DbContext
 
             entity.Property(e => e.Conversion).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Cotizacion).HasColumnType("decimal(18, 2)");
-            entity.Property(e => e.Fecha).HasColumnType("date");
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.Fecha).HasColumnType("datetime");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.IdArtistaCc).HasColumnName("IdArtistaCC");
             entity.Property(e => e.IdClienteCc).HasColumnName("IdClienteCC");
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
@@ -1254,8 +1254,8 @@ public partial class SistemaLevelsContext : DbContext
         {
             entity.ToTable("Ventas_Cobros_Comisiones");
 
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.IdPersonalCc).HasColumnName("IdPersonalCC");
             entity.Property(e => e.TotalComision).HasColumnType("decimal(18, 2)");
 
@@ -1292,8 +1292,8 @@ public partial class SistemaLevelsContext : DbContext
         {
             entity.ToTable("Ventas_Personal");
 
-            entity.Property(e => e.FechaModifica).HasColumnType("date");
-            entity.Property(e => e.FechaRegistra).HasColumnType("date");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.PorcComision).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TotalComision).HasColumnType("decimal(18, 2)");
 
