@@ -41,6 +41,9 @@ builder.Services.AddScoped<IPaisService, PaisService>();
 builder.Services.AddScoped<IPaisesTiposDocumentosRepository<PaisesTiposDocumento>, PaisesTiposDocumentosRepository>();
 builder.Services.AddScoped<IPaisesTiposDocumentosService, PaisesTiposDocumentosService>();
 
+builder.Services.AddScoped<IPaisesCondicionesIvaRepository<PaisesCondicionesIva>, PaisesCondicionesIvaRepository>();
+builder.Services.AddScoped<IPaisesCondicionesIvaService, PaisesCondicionesIvaService>();
+
 builder.Services.AddScoped<IRepresentantesRepository<Representante>, RepresentantesRepository>();
 builder.Services.AddScoped<IRepresentantesService, RepresentantesService>();
 
