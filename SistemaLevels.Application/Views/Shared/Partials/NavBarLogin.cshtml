@@ -11,12 +11,6 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-                <li class="nav-item" id="seccionRepresentantes">
-                    <a class="nav-link" href="@Url.Action("Index", "Representantes")">
-                        Representantes
-                    </a>
-                </li>
-
                 <li class="nav-item" id="seccionProductoras">
                     <a class="nav-link" href="@Url.Action("Index", "Productoras")">
                         Productoras
@@ -239,6 +233,19 @@
                             <div class="rp-config-title">Cuentas</div>
                             <div class="rp-config-sub">
                                 Por Monedas
+                            </div>
+                        </div>
+                    </button>
+
+                    <button class="rp-config-card"
+                            onclick="abrirConfiguracion('Personal Rol', 'PersonalRol')">
+                        <div class="rp-config-icon blue">
+                            <i class="fa fa-cog"></i>
+                        </div>
+                        <div>
+                            <div class="rp-config-title">Personal Roles</div>
+                            <div class="rp-config-sub">
+                                Configuracion de roles de personal
                             </div>
                         </div>
                     </button>

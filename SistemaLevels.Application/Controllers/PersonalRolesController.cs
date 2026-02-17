@@ -9,22 +9,22 @@ using System.Diagnostics;
 namespace SistemaLevels.Application.Controllers
 {
     [Authorize]
-    public class RolesController : Controller
+    public class PersonalRolController : Controller
     {
-        private readonly IRolesService _RolesService;
+        private readonly IPersonalRolService _PersonalRolService;
 
-        public RolesController(IRolesService RolesService)
+        public PersonalRolController(IPersonalRolService PersonalRolService)
         {
-            _RolesService = RolesService;
+            _PersonalRolService = PersonalRolService;
         }
 
         [AllowAnonymous]
         [HttpGet]
         public async Task<IActionResult> Lista()
         {
-            var Roles = await _RolesService.ObtenerTodos();
+            var PersonalRol = await _PersonalRolService.ObtenerTodos();
 
-            var lista = Roles.Select(c => new VMRoles
+            var lista = PersonalRol.Select(c => new VMGenericModel
             {
                 Id = c.Id,
                 Nombre = c.Nombre,
@@ -35,29 +35,29 @@ namespace SistemaLevels.Application.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> Insertar([FromBody] VMRoles model)
+        public async Task<IActionResult> Insertar([FromBody] VMGenericModel model)
         {
-            var UsuariosRol = new UsuariosRol
+            var PersonalRol = new PersonalRol
             {
                 Id = model.Id,
                 Nombre = model.Nombre,
             };
 
-            bool respuesta = await _RolesService.Insertar(UsuariosRol);
+            bool respuesta = await _PersonalRolService.Insertar(PersonalRol);
 
             return Ok(new { valor = respuesta });
         }
 
         [HttpPut]
-        public async Task<IActionResult> Actualizar([FromBody] VMRoles model)
+        public async Task<IActionResult> Actualizar([FromBody] VMGenericModel model)
         {
-            var UsuariosRol = new UsuariosRol
+            var PersonalRol = new PersonalRol
             {
                 Id = model.Id,
                 Nombre = model.Nombre,
             };
 
-            bool respuesta = await _RolesService.Actualizar(UsuariosRol);
+            bool respuesta = await _PersonalRolService.Actualizar(PersonalRol);
 
             return Ok(new { valor = respuesta });
         }
@@ -65,7 +65,7 @@ namespace SistemaLevels.Application.Controllers
         [HttpDelete]
         public async Task<IActionResult> Eliminar(int id)
         {
-            bool respuesta = await _RolesService.Eliminar(id);
+            bool respuesta = await _PersonalRolService.Eliminar(id);
 
             return StatusCode(StatusCodes.Status200OK, new { valor = respuesta });
         }
@@ -73,11 +73,11 @@ namespace SistemaLevels.Application.Controllers
         [HttpGet]
         public async Task<IActionResult> EditarInfo(int id)
         {
-             var UsuariosRol = await _RolesService.Obtener(id);
+             var PersonalRol = await _PersonalRolService.Obtener(id);
 
-            if (UsuariosRol != null)
+            if (PersonalRol != null)
             {
-                return StatusCode(StatusCodes.Status200OK, UsuariosRol);
+                return StatusCode(StatusCodes.Status200OK, PersonalRol);
             }
             else
             {

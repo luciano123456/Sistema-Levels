@@ -1,0 +1,106 @@
+﻿/* Tabs */
+.rp-tabs .nav-link {
+    color: #cfd8ff;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+}
+
+    .rp-tabs .nav-link.active {
+        background: linear-gradient(135deg, #1f2b5c, #2c3e90);
+        border-radius: 8px;
+        color: #fff;
+    }
+
+/* checklist */
+.rp-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+}
+
+.rp-check-item {
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: 0.2s;
+}
+
+    .rp-check-item:hover {
+        background: rgba(255,255,255,0.08);
+    }
+
+    .rp-check-item input {
+        width: 18px;
+        height: 18px;
+    }
+
+
+/* ===============================
+   TABS MODERNOS PERSONAL
+=============================== */
+
+.rp-tabs-modern {
+    display: flex;
+    gap: 8px;
+    padding: 6px;
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    border: none;
+}
+
+    .rp-tabs-modern .nav-item {
+        flex: 1;
+    }
+
+    .rp-tabs-modern .nav-link {
+        width: 100%;
+        border: none !important;
+        background: transparent;
+        color: #9fa6c2;
+        font-weight: 600;
+        font-size: 14px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        text-align: center;
+        transition: all .2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+        .rp-tabs-modern .nav-link:hover {
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+        }
+
+        .rp-tabs-modern .nav-link.active {
+            background: linear-gradient(135deg, #2d5cff, #4f7cff);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(45,92,255,0.35);
+        }
+
+        /* Quita la línea inferior de bootstrap */
+        .rp-tabs-modern::after,
+        .rp-tabs-modern .nav-link::after {
+            display: none !important;
+        }
+
+        .rp-tabs-modern .nav-link.active {
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(6px);
+            color: #fff;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);
+        }
+
+
+.rp-tab-count {
+    margin-left: 6px;
+    font-weight: 600;
+    opacity: 0.7;
+}

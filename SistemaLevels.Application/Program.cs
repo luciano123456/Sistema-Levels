@@ -31,7 +31,7 @@ builder.Services.AddScoped<IUsuariosService, UsuariosService>();
 builder.Services.AddScoped<IEstadosUsuariosRepository<UsuariosEstado>, UsuariosEstadosRepository>();
 builder.Services.AddScoped<IEstadosUsuariosService, EstadosUsuariosService>();
 
-builder.Services.AddScoped<IRolesRepository<UsuariosRole>, RolesRepository>();
+builder.Services.AddScoped<IRolesRepository<UsuariosRol>, RolesRepository>();
 builder.Services.AddScoped<IRolesService, RolesService>();
 
 
@@ -58,8 +58,9 @@ builder.Services.AddScoped<IRepresentantesService, RepresentantesService>();
 builder.Services.AddScoped<IProductorasRepository<Productora>, ProductorasRepository>();
 builder.Services.AddScoped<IProductorasService, ProductorasService>();
 
-builder.Services.AddScoped<IPersonalRepository<Personal>, PersonalRepository>();
+builder.Services.AddScoped<IPersonalRepository, PersonalRepository>();
 builder.Services.AddScoped<IPersonalService, PersonalService>();
+
 
 builder.Services.AddScoped<IArtistasRepository<Artista>, ArtistasRepository>();
 builder.Services.AddScoped<IArtistasService, ArtistasService>();
@@ -81,6 +82,9 @@ builder.Services.AddScoped<IGastosService, GastosService>();
 
 builder.Services.AddScoped<IMonedasCuentaRepository<MonedasCuenta>, MonedasCuentaRepository>();
 builder.Services.AddScoped<IMonedasCuentaService, MonedasCuentaService>();
+
+builder.Services.AddScoped<IPersonalRolRepository<PersonalRol>, PersonalRolRepository>();
+builder.Services.AddScoped<IPersonalRolService, PersonalRolService>();
 
 
 

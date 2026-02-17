@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using SistemaLevels.Models;
+
 
 namespace SistemaLevels.DAL.DataContext;
 
@@ -15,19 +15,6 @@ public partial class SistemaLevelsContext : DbContext
     public SistemaLevelsContext(DbContextOptions<SistemaLevelsContext> options)
         : base(options)
     {
-    }
-
-
-    private readonly IConfiguration _configuration;
-
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            var connectionString = _configuration.GetConnectionString("SistemaDB");
-            optionsBuilder.UseSqlServer(connectionString);
-        }
     }
 
     public virtual DbSet<Artista> Artistas { get; set; }
@@ -64,11 +51,17 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<Personal> Personals { get; set; }
 
+    public virtual DbSet<PersonalArtistasAsignado> PersonalArtistasAsignados { get; set; }
+
     public virtual DbSet<PersonalCargo> PersonalCargos { get; set; }
 
     public virtual DbSet<PersonalCuentaCorriente> PersonalCuentaCorrientes { get; set; }
 
     public virtual DbSet<PersonalPago> PersonalPagos { get; set; }
+
+    public virtual DbSet<PersonalRol> PersonalRoles { get; set; }
+
+    public virtual DbSet<PersonalRolesAsignado> PersonalRolesAsignados { get; set; }
 
     public virtual DbSet<PersonalSueldo> PersonalSueldos { get; set; }
 
@@ -92,13 +85,13 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<TiposContrato> TiposContratos { get; set; }
 
-    public virtual DbSet<Ubicacione> Ubicaciones { get; set; }
+    public virtual DbSet<Ubicacion> Ubicacions { get; set; }
 
     public virtual DbSet<User> Usuarios { get; set; }
 
     public virtual DbSet<UsuariosEstado> UsuariosEstados { get; set; }
 
-    public virtual DbSet<UsuariosRole> UsuariosRoles { get; set; }
+    public virtual DbSet<UsuariosRol> UsuariosRols { get; set; }
 
     public virtual DbSet<Venta> Ventas { get; set; }
 
@@ -111,6 +104,10 @@ public partial class SistemaLevelsContext : DbContext
     public virtual DbSet<VentasEstado> VentasEstados { get; set; }
 
     public virtual DbSet<VentasPersonal> VentasPersonals { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=DESKTOP-3MT5F5F; Database=Sistema_Levels; Integrated Security=true; Trusted_Connection=True; Encrypt=False");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -172,7 +169,6 @@ public partial class SistemaLevelsContext : DbContext
 
             entity.HasOne(d => d.IdProductoraNavigation).WithMany(p => p.Artista)
                 .HasForeignKey(d => d.IdProductora)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Artistas_Productoras");
 
             entity.HasOne(d => d.IdProvinciaNavigation).WithMany(p => p.Artista)
@@ -182,7 +178,6 @@ public partial class SistemaLevelsContext : DbContext
 
             entity.HasOne(d => d.IdRepresentanteNavigation).WithMany(p => p.Artista)
                 .HasForeignKey(d => d.IdRepresentante)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Artistas_Representantes");
 
             entity.HasOne(d => d.IdTipoDocumentoNavigation).WithMany(p => p.Artista)
@@ -405,7 +400,6 @@ public partial class SistemaLevelsContext : DbContext
 
             entity.HasOne(d => d.IdProductoraNavigation).WithMany(p => p.Clientes)
                 .HasForeignKey(d => d.IdProductora)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Clientes_Productoras");
 
             entity.HasOne(d => d.IdProvinciaNavigation).WithMany(p => p.Clientes)
@@ -647,6 +641,25 @@ public partial class SistemaLevelsContext : DbContext
                 .HasConstraintName("FK_Personal_UsuariosRegistra");
         });
 
+        modelBuilder.Entity<PersonalArtistasAsignado>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Personal__3214EC073A426D9C");
+
+            entity.ToTable("Personal_Artistas_Asignados");
+
+            entity.HasIndex(e => new { e.IdPersonal, e.IdArtista }, "UQ_Personal_Artista").IsUnique();
+
+            entity.HasOne(d => d.IdArtistaNavigation).WithMany(p => p.PersonalArtistasAsignados)
+                .HasForeignKey(d => d.IdArtista)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PersonalArtistas_Artista");
+
+            entity.HasOne(d => d.IdPersonalNavigation).WithMany(p => p.PersonalArtistasAsignados)
+                .HasForeignKey(d => d.IdPersonal)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PersonalArtistas_Personal");
+        });
+
         modelBuilder.Entity<PersonalCargo>(entity =>
         {
             entity.ToTable("Personal_Cargos");
@@ -737,6 +750,36 @@ public partial class SistemaLevelsContext : DbContext
                 .HasForeignKey(d => d.IdUsuarioRegistra)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Personal_Pagos_UsuariosRegistra");
+        });
+
+        modelBuilder.Entity<PersonalRol>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Personal__3214EC0792E105B6");
+
+            entity.ToTable("Personal_Roles");
+
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<PersonalRolesAsignado>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Personal__3214EC07ACC4FE44");
+
+            entity.ToTable("Personal_Roles_Asignados");
+
+            entity.HasIndex(e => new { e.IdPersonal, e.IdRol }, "UQ_Personal_Rol").IsUnique();
+
+            entity.HasOne(d => d.IdPersonalNavigation).WithMany(p => p.PersonalRolesAsignados)
+                .HasForeignKey(d => d.IdPersonal)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PersonalRoles_Personal");
+
+            entity.HasOne(d => d.IdRolNavigation).WithMany(p => p.PersonalRolesAsignados)
+                .HasForeignKey(d => d.IdRol)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PersonalRoles_Rol");
         });
 
         modelBuilder.Entity<PersonalSueldo>(entity =>
@@ -888,7 +931,7 @@ public partial class SistemaLevelsContext : DbContext
             entity.HasOne(d => d.IdUbicacionNavigation).WithMany(p => p.PresupuestosDetalles)
                 .HasForeignKey(d => d.IdUbicacion)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_PresupuestosDetalle_Ubicaciones");
+                .HasConstraintName("FK_PresupuestosDetalle_Ubicacions");
 
             entity.HasOne(d => d.IdUsuarioModificaNavigation).WithMany(p => p.PresupuestosDetalleIdUsuarioModificaNavigations)
                 .HasForeignKey(d => d.IdUsuarioModifica)
@@ -1069,7 +1112,7 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
         });
 
-        modelBuilder.Entity<Ubicacione>(entity =>
+        modelBuilder.Entity<Ubicacion>(entity =>
         {
             entity.Property(e => e.Descripcion)
                 .HasMaxLength(200)
@@ -1133,7 +1176,7 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
         });
 
-        modelBuilder.Entity<UsuariosRole>(entity =>
+        modelBuilder.Entity<UsuariosRol>(entity =>
         {
             entity.ToTable("Usuarios_Roles");
 
@@ -1195,7 +1238,7 @@ public partial class SistemaLevelsContext : DbContext
             entity.HasOne(d => d.IdUbicacionNavigation).WithMany(p => p.Venta)
                 .HasForeignKey(d => d.IdUbicacion)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Ventas_Ubicaciones");
+                .HasConstraintName("FK_Ventas_Ubicacions");
 
             entity.HasOne(d => d.IdUsuarioModificaNavigation).WithMany(p => p.VentaIdUsuarioModificaNavigations)
                 .HasForeignKey(d => d.IdUsuarioModifica)
@@ -1220,7 +1263,6 @@ public partial class SistemaLevelsContext : DbContext
 
             entity.HasOne(d => d.IdRepresentanteNavigation).WithMany(p => p.VentasArtista)
                 .HasForeignKey(d => d.IdRepresentante)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_VentasArtistas_Representantes");
 
             entity.HasOne(d => d.IdVentaNavigation).WithMany(p => p.VentasArtista)

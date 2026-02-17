@@ -47,9 +47,13 @@ public partial class Personal
 
     public virtual User IdUsuarioRegistraNavigation { get; set; } = null!;
 
+    public virtual ICollection<PersonalArtistasAsignado> PersonalArtistasAsignados { get; set; } = new List<PersonalArtistasAsignado>();
+
     public virtual ICollection<PersonalCuentaCorriente> PersonalCuentaCorrientes { get; set; } = new List<PersonalCuentaCorriente>();
 
     public virtual ICollection<PersonalPago> PersonalPagos { get; set; } = new List<PersonalPago>();
+
+    public virtual ICollection<PersonalRolesAsignado> PersonalRolesAsignados { get; set; } = new List<PersonalRolesAsignado>();
 
     public virtual ICollection<PersonalSueldo> PersonalSueldos { get; set; } = new List<PersonalSueldo>();
 

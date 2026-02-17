@@ -81,6 +81,8 @@ public partial class Artista
 
     public virtual User IdUsuarioRegistraNavigation { get; set; } = null!;
 
+    public virtual ICollection<PersonalArtistasAsignado> PersonalArtistasAsignados { get; set; } = new List<PersonalArtistasAsignado>();
+
     public virtual ICollection<PresupuestosDetalle> PresupuestosDetalles { get; set; } = new List<PresupuestosDetalle>();
 
     public virtual ICollection<VentasArtista> VentasArtista { get; set; } = new List<VentasArtista>();

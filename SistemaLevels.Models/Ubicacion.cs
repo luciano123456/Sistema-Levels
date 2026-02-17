@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SistemaLevels.Models;
 
-public partial class Ubicacione
+public partial class Ubicacion
 {
     public int Id { get; set; }
 

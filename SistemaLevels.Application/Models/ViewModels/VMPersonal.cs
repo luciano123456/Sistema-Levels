@@ -4,7 +4,7 @@
     {
         public int Id { get; set; }
 
-        public string Nombre { get; set; }
+        public string Nombre { get; set; } = "";
         public string? Dni { get; set; }
 
         public int IdPais { get; set; }
@@ -20,18 +20,21 @@
         public DateTime? FechaNacimiento { get; set; }
 
         // textos
-        public string Pais { get; set; }
-        public string TipoDocumento { get; set; }
-        public string CondicionIva { get; set; }
+        public string Pais { get; set; } = "";
+        public string TipoDocumento { get; set; } = "";
+        public string CondicionIva { get; set; } = "";
 
         // auditoría
         public int IdUsuarioRegistra { get; set; }
         public DateTime FechaRegistra { get; set; }
-        public string UsuarioRegistra { get; set; }
+        public string UsuarioRegistra { get; set; } = "";
 
         public int? IdUsuarioModifica { get; set; }
         public DateTime? FechaModifica { get; set; }
-        public string UsuarioModifica { get; set; }
-    }
+        public string UsuarioModifica { get; set; } = "";
 
+        // ✅ NUEVO: Roles y Artistas asignados
+        public List<int> RolesIds { get; set; } = new();
+        public List<int> ArtistasIds { get; set; } = new();
+    }
 }

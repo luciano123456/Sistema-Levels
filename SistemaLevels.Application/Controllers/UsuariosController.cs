@@ -66,7 +66,7 @@ namespace SistemaLevels.Application.Controllers
                 Telefono = c.Telefono,
                 Direccion = c.Direccion,
                 IdRol = c.IdRol,
-                UsuariosRole = c.IdRolNavigation.Nombre,
+                UsuariosRol = c.IdRolNavigation.Nombre,
                 IdEstado = c.IdEstado,
                 Estado = c.IdEstadoNavigation.Nombre,
             }).ToList();

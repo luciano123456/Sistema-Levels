@@ -11,45 +11,45 @@ using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace SistemaLevels.DAL.Repository
 {
-    public class RolesRepository : IRolesRepository<UsuariosRol>
+    public class PersonalRolRepository : IPersonalRolRepository<PersonalRol>
     {
 
         private readonly SistemaLevelsContext _dbcontext;
 
-        public RolesRepository(SistemaLevelsContext context)
+        public PersonalRolRepository(SistemaLevelsContext context)
         {
             _dbcontext = context;
         }
-        public async Task<bool> Actualizar(UsuariosRol model)
+        public async Task<bool> Actualizar(PersonalRol model)
         {
-            _dbcontext.UsuariosRols.Update(model);
+            _dbcontext.PersonalRoles.Update(model);
             await _dbcontext.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> Eliminar(int id)
         {
-            UsuariosRol model = _dbcontext.UsuariosRols.First(c => c.Id == id);
-            _dbcontext.UsuariosRols.Remove(model);
+            PersonalRol model = _dbcontext.PersonalRoles.First(c => c.Id == id);
+            _dbcontext.PersonalRoles.Remove(model);
             await _dbcontext.SaveChangesAsync();
             return true;
         }
 
-        public async Task<bool> Insertar(UsuariosRol model)
+        public async Task<bool> Insertar(PersonalRol model)
         {
-            _dbcontext.UsuariosRols.Add(model);
+            _dbcontext.PersonalRoles.Add(model);
             await _dbcontext.SaveChangesAsync();
             return true;
         }
 
-        public async Task<UsuariosRol> Obtener(int id)
+        public async Task<PersonalRol> Obtener(int id)
         {
-            UsuariosRol model = await _dbcontext.UsuariosRols.FindAsync(id);
+            PersonalRol model = await _dbcontext.PersonalRoles.FindAsync(id);
             return model;
         }
-        public async Task<IQueryable<UsuariosRol>> ObtenerTodos()
+        public async Task<IQueryable<PersonalRol>> ObtenerTodos()
         {
-            IQueryable<UsuariosRol> query = _dbcontext.UsuariosRols;
+            IQueryable<PersonalRol> query = _dbcontext.PersonalRoles;
             return await Task.FromResult(query);
         }
 

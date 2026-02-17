@@ -37,8 +37,8 @@ public class PersonalController : Controller
             FechaNacimiento = c.FechaNacimiento,
 
             Pais = c.IdPaisNavigation.Nombre,
-            TipoDocumento = c.IdTipoDocumentoNavigation.Nombre,
-            CondicionIva = c.IdCondicionIvaNavigation.Nombre,
+            TipoDocumento = c.IdTipoDocumentoNavigation != null ? c.IdTipoDocumentoNavigation.Nombre : "",
+            CondicionIva = c.IdCondicionIvaNavigation != null ? c.IdCondicionIvaNavigation.Nombre : "",
 
             IdUsuarioRegistra = c.IdUsuarioRegistra,
             FechaRegistra = c.FechaRegistra,
@@ -46,7 +46,7 @@ public class PersonalController : Controller
 
             IdUsuarioModifica = c.IdUsuarioModifica,
             FechaModifica = c.FechaModifica,
-            UsuarioModifica = c.IdUsuarioModificaNavigation.Usuario
+            UsuarioModifica = c.IdUsuarioModificaNavigation != null ? c.IdUsuarioModificaNavigation.Usuario : ""
         }).ToList();
 
         return Ok(lista);
@@ -74,7 +74,10 @@ public class PersonalController : Controller
             FechaRegistra = DateTime.Now
         };
 
-        bool respuesta = await _service.Insertar(personal);
+        var rolesIds = model.RolesIds ?? new List<int>();
+        var artistasIds = model.ArtistasIds ?? new List<int>();
+
+        bool respuesta = await _service.Insertar(personal, rolesIds, artistasIds);
         return Ok(new { valor = respuesta });
     }
 
@@ -101,7 +104,10 @@ public class PersonalController : Controller
             FechaModifica = DateTime.Now
         };
 
-        bool respuesta = await _service.Actualizar(personal);
+        var rolesIds = model.RolesIds ?? new List<int>();
+        var artistasIds = model.ArtistasIds ?? new List<int>();
+
+        bool respuesta = await _service.Actualizar(personal, rolesIds, artistasIds);
         return Ok(new { valor = respuesta });
     }
 
@@ -116,9 +122,10 @@ public class PersonalController : Controller
     public async Task<IActionResult> EditarInfo(int id)
     {
         var p = await _service.Obtener(id);
+        if (p == null) return NotFound();
 
-        if (p == null)
-            return NotFound();
+        var rolesIds = await _service.ObtenerRolesIds(id);
+        var artistasIds = await _service.ObtenerArtistasIds(id);
 
         var vm = new VMPersonal
         {
@@ -135,10 +142,13 @@ public class PersonalController : Controller
             FechaNacimiento = p.FechaNacimiento,
 
             FechaRegistra = p.FechaRegistra,
-            UsuarioRegistra = p.IdUsuarioRegistraNavigation?.Usuario,
+            UsuarioRegistra = p.IdUsuarioRegistraNavigation?.Usuario ?? "",
 
             FechaModifica = p.FechaModifica,
-            UsuarioModifica = p.IdUsuarioModificaNavigation?.Usuario
+            UsuarioModifica = p.IdUsuarioModificaNavigation?.Usuario ?? "",
+
+            RolesIds = rolesIds,
+            ArtistasIds = artistasIds
         };
 
         return Ok(vm);

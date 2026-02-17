@@ -5,12 +5,12 @@ namespace SistemaLevels.BLL.Service
     public interface IRolesService
     {
         Task<bool> Eliminar(int id);
-        Task<bool> Actualizar(UsuariosRole model);
-        Task<bool> Insertar(UsuariosRole model);
+        Task<bool> Actualizar(UsuariosRol model);
+        Task<bool> Insertar(UsuariosRol model);
 
-        Task<UsuariosRole> Obtener(int id);
+        Task<UsuariosRol> Obtener(int id);
 
-        Task<IQueryable<UsuariosRole>> ObtenerTodos();
+        Task<IQueryable<UsuariosRol>> ObtenerTodos();
     }
 
 }

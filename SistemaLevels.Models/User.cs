@@ -63,7 +63,7 @@ public partial class User
 
     public virtual UsuariosEstado IdEstadoNavigation { get; set; } = null!;
 
-    public virtual UsuariosRole IdRolNavigation { get; set; } = null!;
+    public virtual UsuariosRol IdRolNavigation { get; set; } = null!;
 
     public virtual ICollection<PersonalCuentaCorriente> PersonalCuentaCorrienteIdUsuarioModificaNavigations { get; set; } = new List<PersonalCuentaCorriente>();
 

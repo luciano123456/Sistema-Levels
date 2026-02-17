@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
     <!-- Estilos base -->
-    <link href="~/css/usuarios.css?v=1.0" rel="stylesheet" />
+    <link href="~/css/Personal.css" rel="stylesheet" />
     <link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
 }
 
@@ -80,6 +80,7 @@
     </div>
 </div>
 
+
 <!-- MODAL -->
 <div class="modal fade" id="modalEdicion" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -94,65 +95,114 @@
             </div>
 
             <div class="modal-body">
-                <form class="row g-3">
 
-                    <input type="text" id="txtId" hidden>
+                <!-- NAV TABS -->
+                <ul class="nav rp-tabs-modern mb-3" id="personalTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tabDatos">
+                            <i class="fa fa-user"></i> Datos del Personal
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tabRoles">
+                            <i class="fa fa-id-badge"></i>
+                            Roles asignados
+                            <span id="contadorRoles" class="rp-tab-count">(0)</span>
+                        </button>
+                    </li>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Nombre</label>
-                        <input id="txtNombre" class="form-control" required>
-                        <div class="invalid-feedback">Campo obligatorio</div>
+                    <li class="nav-item d-none" id="tabArtistasBtn">
+                        <button class="nav-link"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tabArtistas">
+                            <i class="fa fa-music"></i>
+                            Artistas asignados
+                            <span id="contadorArtistas" class="rp-tab-count">(0)</span>
+                        </button>
+                    </li>
+
+                </ul>
+
+                <div class="tab-content">
+
+                    <!-- TAB DATOS -->
+                    <div class="tab-pane fade show active" id="tabDatos">
+                        <form class="row g-3">
+
+                            <input type="text" id="txtId" hidden>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre</label>
+                                <input id="txtNombre" class="form-control" required>
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">País</label>
+                                <select id="cmbPais" class="form-control"></select>
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Tipo Documento</label>
+                                <select id="cmbTipoDocumento" class="form-control"></select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Número Documento</label>
+                                <input id="txtNumeroDocumento" class="form-control">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Condición IVA</label>
+                                <select id="cmbCondicionIva" class="form-control"></select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha Nacimiento</label>
+                                <input id="txtFechaNacimiento" type="date" class="form-control">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono</label>
+                                <input id="txtTelefono" class="form-control">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label">Email</label>
+                                <input id="txtEmail" class="form-control">
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label">Dirección</label>
+                                <input id="txtDireccion" class="form-control">
+                            </div>
+
+                        </form>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">País</label>
-                        <select id="cmbPais" class="form-control"></select>
-                        <div class="invalid-feedback">Campo obligatorio</div>
+                    <!-- TAB ROLES -->
+                    <div class="tab-pane fade" id="tabRoles">
+                        <div id="listaRoles" class="rp-checklist"></div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Tipo Documento</label>
-                        <select id="cmbTipoDocumento" class="form-control"></select>
+                    <!-- TAB ARTISTAS -->
+                    <div class="tab-pane fade" id="tabArtistas">
+                        <div id="listaArtistas" class="rp-checklist"></div>
                     </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Número Documento</label>
-                        <input id="txtNumeroDocumento" class="form-control">
-                    </div>
+                </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Condición IVA</label>
-                        <select id="cmbCondicionIva" class="form-control"></select>
-                    </div>
+                <!-- AUDITORÍA -->
+                <div class="rp-auditoria d-none mt-3" id="infoAuditoria">
+                    <div id="infoRegistro"></div>
+                    <div id="infoModificacion"></div>
+                </div>
 
-                    <div class="col-md-6">
-                        <label class="form-label">Fecha Nacimiento</label>
-                        <input id="txtFechaNacimiento" type="date" class="form-control">
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Teléfono</label>
-                        <input id="txtTelefono" class="form-control">
-                    </div>
-
-                    <div class="col-md-6">
-                        <label class="form-label">Email</label>
-                        <input id="txtEmail" class="form-control">
-                    </div>
-
-                    <div class="col-md-12">
-                        <label class="form-label">Dirección</label>
-                        <input id="txtDireccion" class="form-control">
-                    </div>
-
-                    <div class="col-12">
-                        <div class="rp-auditoria d-none" id="infoAuditoria">
-                            <div id="infoRegistro"></div>
-                            <div id="infoModificacion"></div>
-                        </div>
-                    </div>
-
-                </form>
             </div>
 
             <div class="modal-footer">
