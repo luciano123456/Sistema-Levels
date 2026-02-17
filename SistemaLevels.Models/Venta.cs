@@ -65,7 +65,7 @@ public partial class Venta
 
     public virtual TiposContrato IdTipoContratoNavigation { get; set; } = null!;
 
-    public virtual Ubicacione IdUbicacionNavigation { get; set; } = null!;
+    public virtual Ubicacion IdUbicacionNavigation { get; set; } = null!;
 
     public virtual User? IdUsuarioModificaNavigation { get; set; }
 

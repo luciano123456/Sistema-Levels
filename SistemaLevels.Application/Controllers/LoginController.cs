@@ -97,7 +97,7 @@ namespace SistemaBronx.Application.Controllers
                 {
             new Claim(JwtRegisteredClaimNames.Sub, user.Usuario),
             new Claim("Id", user.Id.ToString()),
-            new Claim("UsuariosRole", user.IdRol.ToString()),
+            new Claim("UsuariosRol", user.IdRol.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 

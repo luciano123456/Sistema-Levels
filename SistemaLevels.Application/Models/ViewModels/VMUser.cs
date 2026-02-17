@@ -23,7 +23,7 @@ namespace SistemaLevels.Application.Models.ViewModels
         public string Contrasena { get; set; } = null!;
         public string ContrasenaNueva { get; set; } = null!;
         public string Estado { get; set; } = null!;
-        public string UsuariosRole { get; set; } = null!;
+        public string UsuariosRol { get; set; } = null!;
         public int CambioAdmin { get; set; } = 0;
 
         public int IdEstado { get; set; }

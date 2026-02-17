@@ -45,7 +45,7 @@ public partial class PresupuestosDetalle
 
     public virtual Presupuesto IdPresupuestoNavigation { get; set; } = null!;
 
-    public virtual Ubicacione IdUbicacionNavigation { get; set; } = null!;
+    public virtual Ubicacion IdUbicacionNavigation { get; set; } = null!;
 
     public virtual User? IdUsuarioModificaNavigation { get; set; }
 

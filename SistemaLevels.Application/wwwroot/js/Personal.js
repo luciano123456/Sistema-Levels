@@ -1,4 +1,6 @@
 ﻿let gridPersonal;
+let rolesCatalogo = [];
+
 
 /**
  * Columnas:
@@ -70,7 +72,6 @@ function ensureSelect2($el, options) {
 }
 
 function inicializarSelect2Modal() {
-    // los combos del modal deben abrir dentro del modal
     const opts = {
         width: '100%',
         dropdownParent: $('#modalEdicion')
@@ -99,9 +100,12 @@ function guardarPersonal() {
 
     const id = $("#txtId").val();
 
-    // FechaNacimiento: si viene vacío -> null (evita SqlDateTime overflow / 0001-01-01)
     const fnRaw = $("#txtFechaNacimiento").val();
     const fechaNacimiento = fnRaw && fnRaw.trim() !== "" ? fnRaw : null;
+
+    const rolesIds = getRolesSeleccionadosIds();
+    const artistasIds = getArtistasSeleccionadosIds();
+
 
     const modelo = {
         Id: id !== "" ? id : 0,
@@ -119,7 +123,11 @@ function guardarPersonal() {
 
         FechaNacimiento: fechaNacimiento,
 
-        IdCondicionIva: $("#cmbCondicionIva").val() || null
+        IdCondicionIva: $("#cmbCondicionIva").val() || null,
+
+        // NUEVO
+        RolesIds: rolesIds,
+        ArtistasIds: artistasIds
     };
 
     const url = id === "" ? "/Personal/Insertar" : "/Personal/Actualizar";
@@ -152,14 +160,16 @@ function guardarPersonal() {
 function nuevoPersonal() {
     limpiarModal();
 
-    // cargar combos
-    listaPaises()
+    Promise.all([
+        listaPaises(),
+        listaRoles(),
+        listaArtistas()
+    ])
         .then(() => {
-            // deja tipo doc e iva vacíos hasta elegir país
+            evaluarPestaniaArtistas();
             resetSelect("cmbTipoDocumento", "Seleccionar");
             resetSelect("cmbCondicionIva", "Seleccionar");
 
-            // reinit select2 por si se destruyó
             inicializarSelect2Modal();
         });
 
@@ -179,6 +189,13 @@ function nuevoPersonal() {
 async function mostrarModal(modelo) {
     limpiarModal();
 
+    // 🔹 SIEMPRE abrir en la pestaña de datos
+    const tabDatos = document.querySelector('#personalTabs button[data-bs-target="#tabDatos"]');
+    if (tabDatos) {
+        const tab = new bootstrap.Tab(tabDatos);
+        tab.show();
+    }
+
     $("#txtId").val(modelo.Id || "");
     $("#txtNombre").val(modelo.Nombre || "");
     $("#txtDni").val(modelo.Dni || "");
@@ -188,7 +205,6 @@ async function mostrarModal(modelo) {
     $("#txtTelefono").val(modelo.Telefono || "");
     $("#txtEmail").val(modelo.Email || "");
 
-    // FechaNacimiento (input type="date"): convertir si viene con hora
     if (modelo.FechaNacimiento) {
         try {
             const d = new Date(modelo.FechaNacimiento);
@@ -203,9 +219,12 @@ async function mostrarModal(modelo) {
         $("#txtFechaNacimiento").val("");
     }
 
-    await listaPaises();
+    await Promise.all([
+        listaPaises(),
+        listaRoles(),
+        listaArtistas()
+    ]);
 
-    // Set País y cargar dependientes
     if (modelo.IdPais != null) {
         $("#cmbPais").val(modelo.IdPais).trigger("change.select2");
         await listaTiposDocumento(modelo.IdPais);
@@ -220,7 +239,27 @@ async function mostrarModal(modelo) {
         $("#cmbCondicionIva").val(modelo.IdCondicionIva).trigger("change.select2");
     }
 
-    inicializarSelect2Modal();
+    // roles
+    if (modelo.RolesIds) {
+        $("#listaRoles input[type=checkbox]").each(function () {
+            const id = parseInt($(this).val());
+            if (modelo.RolesIds.includes(id)) {
+                $(this).prop("checked", true);
+            }
+        });
+    }
+
+    evaluarBloqueArtistas();
+
+    // artistas
+    if (modelo.ArtistasIds) {
+        $("#listaArtistas input[type=checkbox]").each(function () {
+            const id = parseInt($(this).val());
+            if (modelo.ArtistasIds.includes(id)) {
+                $(this).prop("checked", true);
+            }
+        });
+    }
 
     // Auditoría
     let textoAuditoria = "";
@@ -255,6 +294,9 @@ async function mostrarModal(modelo) {
         .html(`<i class="fa fa-check"></i> Guardar`);
 
     $("#modalEdicionLabel").text("Editar Personal");
+
+    actualizarContadoresTabs();
+
 }
 
 const editarPersonal = id => {
@@ -766,4 +808,163 @@ function formatearFecha(fecha) {
     } catch {
         return fecha;
     }
+}
+
+
+/* =========================
+ROLES Y ARTISTAS
+========================= */
+
+
+async function listaArtistas() {
+    const response = await fetch(`/Artistas/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const data = await response.json();
+
+    const container = $("#listaArtistas");
+    container.empty();
+
+    // buscador
+    container.append(`
+        <div class="rp-search-box mb-2">
+            <input type="text" 
+                   id="buscarArtista"
+                   class="form-control"
+                   placeholder="Buscar artista...">
+        </div>
+    `);
+
+    const lista = $('<div class="rp-checklist-items"></div>');
+    container.append(lista);
+
+    (data || []).forEach(x => {
+        lista.append(`
+            <label class="rp-check-item" data-nombre="${x.NombreArtistico.toLowerCase()}">
+                <input type="checkbox" value="${x.Id}">
+                <span>${x.NombreArtistico}</span>
+            </label>
+        `);
+    });
+
+    // filtro
+    $("#buscarArtista").on("keyup", function () {
+        const texto = $(this).val().toLowerCase();
+
+        $("#listaArtistas .rp-check-item").each(function () {
+            const nombre = $(this).data("nombre");
+            $(this).toggle(nombre.includes(texto));
+        });
+    });
+
+    // contador
+    $("#listaArtistas input").on("change", actualizarContadoresTabs);
+
+    actualizarContadoresTabs();
+}
+
+async function listaRoles() {
+    const response = await fetch(`/PersonalRol/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const data = await response.json();
+    rolesCatalogo = data || [];
+
+    const container = $("#listaRoles");
+    container.empty();
+
+    rolesCatalogo.forEach(x => {
+        container.append(`
+            <label class="rp-check-item">
+                <input type="checkbox" value="${x.Id}">
+                <span>${x.Nombre}</span>
+            </label>
+        `);
+    });
+
+    // eventos
+    $("#listaRoles input").on("change", function () {
+        evaluarBloqueArtistas();
+        actualizarContadoresTabs();
+    });
+
+    actualizarContadoresTabs();
+}
+
+
+function evaluarPestaniaArtistas() {
+
+    const rolesIds = getRolesSeleccionadosIds();
+
+    const rolRepresentante = rolesCatalogo.find(r =>
+        r.Nombre.toLowerCase() === "representante"
+    );
+
+    if (!rolRepresentante) return;
+
+    const tieneRol = rolesIds.includes(rolRepresentante.Id);
+
+    if (tieneRol) {
+        $("#tabArtistasBtn").removeClass("d-none");
+    } else {
+        $("#tabArtistasBtn").addClass("d-none");
+
+        // desmarcar artistas
+        document
+            .querySelectorAll("#listaArtistas input[type=checkbox]")
+            .forEach(chk => chk.checked = false);
+    }
+}
+
+function getRolesSeleccionadosIds() {
+    const ids = [];
+    document
+        .querySelectorAll("#listaRoles input[type=checkbox]:checked")
+        .forEach(chk => ids.push(parseInt(chk.value)));
+
+    return ids;
+}
+
+
+function getArtistasSeleccionadosIds() {
+    const ids = [];
+    document
+        .querySelectorAll("#listaArtistas input[type=checkbox]:checked")
+        .forEach(chk => ids.push(parseInt(chk.value)));
+
+    return ids;
+}
+
+
+function evaluarBloqueArtistas() {
+
+    const rolesSeleccionados = [];
+
+    $("#listaRoles input:checked").each(function () {
+        rolesSeleccionados.push(parseInt($(this).val()));
+    });
+
+    const rolRepresentante = rolesCatalogo.find(r => r.Nombre.toLowerCase() === "representante");
+    if (!rolRepresentante) return;
+
+    const tieneRolRepresentante = rolesSeleccionados.includes(rolRepresentante.Id);
+
+    if (tieneRolRepresentante) {
+        $("#tabArtistasBtn").removeClass("d-none");
+    } else {
+        $("#tabArtistasBtn").addClass("d-none");
+        $("#listaArtistas input").prop("checked", false);
+    }
+}
+
+
+function actualizarContadoresTabs() {
+
+    const cantRoles = $("#listaRoles input:checked").length;
+    const cantArtistas = $("#listaArtistas input:checked").length;
+
+    $("#contadorRoles").text(`(${cantRoles})`);
+    $("#contadorArtistas").text(`(${cantArtistas})`);
 }

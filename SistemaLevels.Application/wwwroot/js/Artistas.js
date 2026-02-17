@@ -650,7 +650,7 @@ async function listaMonedas(idPaisSeleccionado = null) {
     const select = document.getElementById("cmbMoneda");
 
     (data || [])
-        .filter(x => String(x.IdCombo) === String(idPaisSeleccionado))
+        .filter(x => String(x.IdPais) === String(idPaisSeleccionado))
         .forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
     inicializarSelect2Modal();

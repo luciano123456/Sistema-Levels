@@ -246,7 +246,7 @@ async function configurarDataTable(data) {
                 { data: 'Dni' },
                 { data: 'Telefono' },
                 { data: 'Direccion' },
-                { data: 'UsuariosRole' },
+                { data: 'UsuariosRol' },
                 {
                     data: 'Estado',
                     render: function (data) {
