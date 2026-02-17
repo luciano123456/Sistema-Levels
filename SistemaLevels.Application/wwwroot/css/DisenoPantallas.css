@@ -1693,3 +1693,206 @@ table.dataTable.display tbody tr.selected td {
     margin-right: 6px;
     opacity: 0.8;
 }
+
+
+/* DASHBOARD GASTOS */
+#accordionDashboards .accordion-item {
+    background: transparent;
+    border: none;
+}
+
+#accordionDashboards .accordion-button {
+    background: rgba(255,255,255,0.05);
+    color: white;
+    border-radius: 12px;
+}
+
+#accordionDashboards .accordion-body {
+    background: rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 25px;
+}
+
+#accordionDashboards canvas {
+    background: rgba(255,255,255,0.05);
+    border-radius: 14px;
+    padding: 10px;
+}
+
+
+/* Panel filtros (generalizable) */
+.rp-filtros-wrap {
+    border-radius: 14px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    padding: 14px;
+    margin-bottom: 14px;
+}
+
+.rp-filtros-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: rgba(0,0,0,.15);
+    border: 1px solid rgba(255,255,255,.06);
+}
+
+    .rp-filtros-head .title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 700;
+    }
+
+        .rp-filtros-head .title i {
+            opacity: .9;
+        }
+
+    .rp-filtros-head .chev {
+        transition: transform .18s ease;
+        opacity: .9;
+    }
+
+    .rp-filtros-head[aria-expanded="true"] .chev {
+        transform: rotate(180deg);
+    }
+
+.rp-filtros-body {
+    padding: 12px 6px 2px 6px;
+}
+
+.rp-filtros-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.rp-filter-label {
+    font-size: .85rem;
+    opacity: .85;
+    margin-bottom: 6px;
+}
+
+.rp-filter-input, .rp-filter-select {
+    width: 100%;
+    border-radius: 12px !important;
+    background: var(--dt-row-zebra) !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    color: #fff !important;
+    padding: 10px 12px !important;
+}
+
+/* Select2 look oscuro */
+.select2-container--default .select2-selection--single {
+    height: 42px;
+    border-radius: 12px;
+    background: rgba(0,0,0,.20);
+    border: 1px solid rgba(255,255,255,.10);
+    color: #fff;
+}
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 40px;
+        color: #fff;
+        padding-left: 12px;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+    }
+
+.select2-dropdown {
+    background: #141a2a;
+    border: 1px solid rgba(255,255,255,.10);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.select2-results__option {
+    color: #fff;
+}
+
+.select2-search__field {
+    background: rgba(0,0,0,.25) !important;
+    border: 1px solid rgba(255,255,255,.10) !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+}
+
+/* Dashboard cards */
+.rp-dash-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 1fr;
+    gap: 14px;
+}
+
+@media (max-width: 1200px) {
+    .rp-dash-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.rp-dash-card {
+    border-radius: 16px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    padding: 14px;
+}
+
+.rp-dash-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+    .rp-dash-title .t {
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: white;
+    }
+
+    .rp-dash-title small {
+        opacity: .75;
+    }
+
+.rp-empty {
+    padding: 14px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.04);
+    border: 1px dashed rgba(255,255,255,.20);
+    text-align: center;
+    opacity: .9;
+}
+
+/* Accordion oscuro con tu estética */
+.rp-acc {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.03);
+}
+
+    .rp-acc .accordion-button {
+        background: rgba(0,0,0,.20);
+        color: #fff;
+        font-weight: 800;
+        border: 0;
+    }
+
+        .rp-acc .accordion-button:focus {
+            box-shadow: none;
+        }
+
+    .rp-acc .accordion-body {
+        background: transparent;
+    }
