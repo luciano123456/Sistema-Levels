@@ -73,6 +73,15 @@ builder.Services.AddScoped<ITareasService, TareasService>();
 builder.Services.AddScoped<IClientesRepository<Cliente>, ClientesRepository>();
 builder.Services.AddScoped<IClientesService, ClientesService>();
 
+builder.Services.AddScoped<IGastosCategoriasRepository<GastosCategoria>, GastosCategoriasRepository>();
+builder.Services.AddScoped<IGastosCategoriasService, GastosCategoriasService>();
+
+builder.Services.AddScoped<IGastosRepository<Gasto>, GastosRepository>();
+builder.Services.AddScoped<IGastosService, GastosService>();
+
+builder.Services.AddScoped<IMonedasCuentaRepository<MonedasCuenta>, MonedasCuentaRepository>();
+builder.Services.AddScoped<IMonedasCuentaService, MonedasCuentaService>();
+
 
 
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();

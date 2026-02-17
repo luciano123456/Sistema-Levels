@@ -47,9 +47,15 @@
                     </a>
                 </li>
 
-                <li class="nav-item" id="seccionClientes">
+                <li class="nav-item" id="seccionMonedas">
                     <a class="nav-link" href="@Url.Action("Index", "PaisesMoneda")">
                         Monedas
+                    </a>
+                </li>
+
+                <li class="nav-item" id="seccionGastos">
+                    <a class="nav-link" href="@Url.Action("Index", "Gastos")">
+                        Gastos
                     </a>
                 </li>
 
@@ -210,6 +216,33 @@
                             </div>
                         </div>
                     </button>
+
+                    <button class="rp-config-card"
+                            onclick="abrirConfiguracion('Gastos Categorias', 'GastosCategorias')">
+                        <div class="rp-config-icon blue">
+                            <i class="fa fa-cog"></i>
+                        </div>
+                        <div>
+                            <div class="rp-config-title">Gastos Categorias</div>
+                            <div class="rp-config-sub">
+                                Configuracion de gastos categorias
+                            </div>
+                        </div>
+                    </button>
+
+                    <button class="rp-config-card"
+                            onclick="abrirConfiguracion('Cuentas', 'MonedasCuenta', 'PaisesMoneda', 'PaisesMoneda', 'Moneda')">
+                        <div class="rp-config-icon blue">
+                            <i class="fa fa-cog"></i>
+                        </div>
+                        <div>
+                            <div class="rp-config-title">Cuentas</div>
+                            <div class="rp-config-sub">
+                                Por Monedas
+                            </div>
+                        </div>
+                    </button>
+
 
                 </div>
             </div>

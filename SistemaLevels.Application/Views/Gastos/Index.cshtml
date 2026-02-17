@@ -1,0 +1,353 @@
+﻿@{
+    ViewData["Title"] = "Gastos";
+}
+
+@section Estilos {
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/fixedheader/3.2.2/css/fixedHeader.dataTables.min.css" rel="stylesheet" />
+
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- Estilos base -->
+    <link href="~/css/usuarios.css?v=1.0" rel="stylesheet" />
+    <link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
+    <link href="~/css/gastos.css?v=1.0" rel="stylesheet" />
+
+   
+}
+
+<div class="container-fluid mt-5">
+    <div class="container page-99" style="margin-top:40px">
+
+        <!-- HEADER -->
+        <div class="cc-header shadow-lg rounded-4 p-4 mb-4">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="cc-badge"><i class="fa fa-money"></i></span>
+                    <div>
+                        <h2 class="m-0 fw-800">Gastos</h2>
+                        <small class="text-muted-cc">Gestión y análisis de gastos</small>
+                    </div>
+                </div>
+
+                <div class="ms-auto d-flex gap-4 flex-wrap align-items-center">
+                    <div class="cc-stat">
+                        <div class="label">Gastos</div>
+                        <div class="value"><strong id="kpiCantGastos">0</strong></div>
+                    </div>
+
+                    <!-- Config columnas -->
+                    <div class="dropdown cc-dd">
+                        <button class="btn btn-secondary dropdown-toggle d-flex align-items-center"
+                                type="button" id="dropdownColumnas"
+                                data-bs-toggle="dropdown" aria-expanded="false"
+                                data-bs-display="static" data-bs-auto-close="outside">
+                            <i class="fa fa-cog me-2"></i> Config. Columnas
+                        </button>
+                        <ul class="dropdown-menu cc-dropdown-menu" aria-labelledby="dropdownColumnas" id="configColumnasMenu"></ul>
+                    </div>
+
+                    <a class="btn btn-success d-flex align-items-center px-3 py-2 btnnuevo" onclick="nuevoGasto()">
+                        <i class="fa fa-plus-square me-2"></i> Nuevo
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLA + FILTROS -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card-glass p-3">
+
+                    <!-- FILTROS (colapsable, generalizable) -->
+                    <div class="rp-filtros-wrap">
+                        <div class="rp-filtros-head"
+                             data-bs-toggle="collapse"
+                             data-bs-target="#panelFiltros"
+                             aria-expanded="false"
+                             aria-controls="panelFiltros">
+                            <div class="title">
+                                <i class="fa fa-filter"></i>
+                                <span>Filtros</span>
+                                <small class="text-muted-cc" id="txtFiltrosEstado" style="margin-left:8px;"></small>
+                            </div>
+                            <i class="fa fa-chevron-down chev"></i>
+                        </div>
+
+                        <div id="panelFiltros" class="collapse">
+                            <div class="rp-filtros-body">
+                                <div class="row g-3">
+
+                                    <div class="col-md-3">
+                                        <div class="rp-filter-label">Fecha desde</div>
+                                        <input type="date" id="fFechaDesde" class="rp-filter-input" />
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="rp-filter-label">Fecha hasta</div>
+                                        <input type="date" id="fFechaHasta" class="rp-filter-input" />
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="rp-filter-label">Categoría</div>
+                                        <select id="fCategoria" class="rp-filter-select select2"></select>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="rp-filter-label">Personal</div>
+                                        <select id="fPersonal" class="rp-filter-select select2"></select>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="rp-filter-label">Moneda</div>
+                                        <select id="fMoneda" class="rp-filter-select select2"></select>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="rp-filter-label">Cuenta</div>
+                                        <select id="fCuenta" class="rp-filter-select select2"></select>
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="rp-filter-label">Concepto contiene</div>
+                                        <input type="text" id="fConcepto" class="rp-filter-input" placeholder="Ej: alquiler..." />
+                                    </div>
+
+                                    <div class="col-md-3">
+                                        <div class="rp-filter-label">Importe mínimo</div>
+                                        <input type="number" id="fImporteMin" class="rp-filter-input" step="0.01" />
+                                    </div>
+
+                                </div>
+
+                                <div class="rp-filtros-actions">
+                                    <button class="btn btn-outline-light" type="button" onclick="limpiarFiltros()">
+                                        <i class="fa fa-eraser"></i> Limpiar
+                                    </button>
+                                    <button class="btn btn-primary" type="button" onclick="aplicarFiltros()">
+                                        <i class="fa fa-check"></i> Aplicar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABLA -->
+                    <div class="tabla-wrap position-relative">
+                        <div class="dt-dark-wrap">
+                            <table class="dt-dark display nowrap compact" id="grd_Gastos" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Fecha</th>
+                                        <th>Categoría</th>
+                                        <th>Moneda</th>
+                                        <th>Cuenta</th>
+                                        <th>Personal</th>
+                                        <th>Concepto</th>
+                                        <th>Importe</th>
+                                        <th>Nota</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div><!-- /tabla-wrap -->
+
+                </div><!-- /card-glass -->
+            </div>
+        </div>
+
+        <!-- DASHBOARD (1 SOLO ACORDEÓN) -->
+        <div class="row g-4 mt-1" id="dashWrap" style="display:none;">
+            <div class="col-12">
+                <div class="accordion rp-acc" id="accordionDashboards">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="dashHead">
+                            <button class="accordion-button collapsed" type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#dashBody"
+                                    aria-expanded="false"
+                                    aria-controls="dashBody">
+                                <i class="fa fa-bar-chart me-2"></i> Análisis de gastos
+                                <span class="ms-2 text-muted-cc" style="font-weight:500;">(categoría / personal / evolución mensual)</span>
+                            </button>
+                        </h2>
+
+                        <div id="dashBody" class="accordion-collapse collapse" aria-labelledby="dashHead" data-bs-parent="#accordionDashboards">
+                            <div class="accordion-body">
+
+                                <div class="rp-dash-grid">
+                                    <div class="rp-dash-card">
+                                        <div class="rp-dash-title">
+                                            <div class="t"><i class="fa fa-pie-chart"></i> Gastos por categoría</div>
+                                        </div>
+                                        <small class="text-muted-cc">Distribución del total gastado agrupado por categoría.</small>
+                                        <div class="mt-2">
+                                            <canvas id="chartCategoria" height="140"></canvas>
+                                        </div>
+                                    </div>
+
+                                    <div class="rp-dash-card">
+                                        <div class="rp-dash-title">
+                                            <div class="t"><i class="fa fa-users"></i> Gastos por personal</div>
+                                        </div>
+                                        <small class="text-muted-cc">Top de gasto asignado a personal (incluye “Sin personal”).</small>
+                                        <div class="mt-2">
+                                            <canvas id="chartPersonal" height="140"></canvas>
+                                        </div>
+                                    </div>
+
+                                    <div class="rp-dash-card">
+                                        <div class="rp-dash-title">
+                                            <div class="t"><i class="fa fa-line-chart"></i> Evolución mensual</div>
+                                        </div>
+                                        <small class="text-muted-cc">Suma de gastos por mes (para ver tendencia).</small>
+                                        <div class="mt-2">
+                                            <canvas id="chartMes" height="140"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="dashEmpty" class="rp-empty mt-3" style="display:none;">
+                                    <i class="fa fa-info-circle"></i> No hay datos suficientes para analizar.
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- /accordion -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal fade" id="modalEdicion" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-edicion" role="document">
+        <div class="modal-content">
+
+            <div class="modal-header colorEncabezado">
+                <h5 class="modal-title fw-bold" id="modalEdicionLabel">Nuevo Gasto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <form class="row g-3">
+                    <input type="text" id="txtId" readonly hidden>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="txtFecha">Fecha</label>
+                        <input type="date" class="form-control" id="txtFecha" required>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="cmbCategoria">Categoría</label>
+                        <select id="cmbCategoria" class="form-control select2" required></select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <!-- ORDEN: Moneda -> Cuenta -->
+                    <div class="col-md-6">
+                        <label class="form-label" for="cmbMoneda">Moneda</label>
+                        <select id="cmbMoneda" class="form-control select2" required></select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="cmbCuenta">Cuenta</label>
+                        <select id="cmbCuenta" class="form-control select2" required></select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="cmbPersonal">Personal</label>
+                        <select id="cmbPersonal" class="form-control select2"></select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label" for="txtImporte">Importe</label>
+                        <input type="number" step="0.01" class="form-control" id="txtImporte" required>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label" for="txtConcepto">Concepto</label>
+                        <input type="text" class="form-control" id="txtConcepto" required>
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label" for="txtNotaInterna">Nota interna</label>
+                        <textarea class="form-control" id="txtNotaInterna" rows="3"></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="rp-auditoria d-none" id="infoAuditoria">
+                            <div class="rp-auditoria-item" id="infoRegistro"></div>
+                            <div class="rp-auditoria-item" id="infoModificacion"></div>
+                        </div>
+                    </div>
+
+                    <div id="errorCampos" class="alert alert-danger d-none">
+                        Debes completar los campos obligatorios.
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fa fa-arrow-left"></i> Volver
+                </button>
+                <button type="button" id="btnGuardar" class="btn btn-primary" onclick="guardarCambios()">
+                    <i class="fa fa-check"></i> Registrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<partial name="~/Views/Utils/Modals.cshtml" />
+
+@section Scripts {
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+    <!-- botones -->
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+    <script src="~/js/site.js"></script>
+
+    <!-- excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+
+    <!-- pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+
+    <!-- imprimir -->
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
+
+    <!-- fixedHeader -->
+    <script src="https://cdn.datatables.net/fixedheader/3.2.2/js/dataTables.fixedHeader.min.js"></script>
+
+    <!-- select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- moment -->
+    <script src="~/js/utils/moment.js"></script>
+
+    <!-- charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Tu JS -->
+    <script src="~/js/Gastos.js?v=1.0"></script>
+}

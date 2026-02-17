@@ -690,38 +690,3 @@ function actualizarKpis(data) {
 function escapeRegex(text) {
     return (text || "").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-
-function formatearFecha(fecha) {
-    try {
-        const d = new Date(fecha);
-        return d.toLocaleString("es-AR");
-    } catch {
-        return fecha;
-    }
-}
-
-function normalizarDateInput(fecha) {
-    if (!fecha) return "";
-    try {
-        const d = new Date(fecha);
-        if (isNaN(d.getTime())) return "";
-        const yyyy = d.getFullYear();
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const dd = String(d.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-    } catch {
-        return "";
-    }
-}
-
-function normalizarFechaTabla(fecha) {
-    // Mostramos dd/MM/yyyy (si viene ISO)
-    if (!fecha) return "";
-    try {
-        const d = new Date(fecha);
-        if (isNaN(d.getTime())) return fecha;
-        return d.toLocaleDateString("es-AR");
-    } catch {
-        return fecha;
-    }
-}
