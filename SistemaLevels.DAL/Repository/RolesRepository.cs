@@ -22,34 +22,34 @@ namespace SistemaLevels.DAL.Repository
         }
         public async Task<bool> Actualizar(UsuariosRol model)
         {
-            _dbcontext.UsuariosRols.Update(model);
+            _dbcontext.UsuariosRoles.Update(model);
             await _dbcontext.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> Eliminar(int id)
         {
-            UsuariosRol model = _dbcontext.UsuariosRols.First(c => c.Id == id);
-            _dbcontext.UsuariosRols.Remove(model);
+            UsuariosRol model = _dbcontext.UsuariosRoles.First(c => c.Id == id);
+            _dbcontext.UsuariosRoles.Remove(model);
             await _dbcontext.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> Insertar(UsuariosRol model)
         {
-            _dbcontext.UsuariosRols.Add(model);
+            _dbcontext.UsuariosRoles.Add(model);
             await _dbcontext.SaveChangesAsync();
             return true;
         }
 
         public async Task<UsuariosRol> Obtener(int id)
         {
-            UsuariosRol model = await _dbcontext.UsuariosRols.FindAsync(id);
+            UsuariosRol model = await _dbcontext.UsuariosRoles.FindAsync(id);
             return model;
         }
         public async Task<IQueryable<UsuariosRol>> ObtenerTodos()
         {
-            IQueryable<UsuariosRol> query = _dbcontext.UsuariosRols;
+            IQueryable<UsuariosRol> query = _dbcontext.UsuariosRoles;
             return await Task.FromResult(query);
         }
 

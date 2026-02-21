@@ -3,7 +3,7 @@
 <Project>
   <PropertyGroup>
     <_PublishTargetUrl>D:\Publicaciones Webs\Sistema Levels</_PublishTargetUrl>
-    <History>True|2026-02-16T22:22:50.5531319Z||;True|2025-07-29T02:51:07.0177832-03:00||;True|2025-07-29T02:50:56.9678421-03:00||;True|2025-07-29T02:46:39.4414630-03:00||;True|2025-07-29T02:44:00.2722681-03:00||;True|2025-06-29T23:26:58.0824451-03:00||;True|2025-05-29T23:49:19.3864678-03:00||;True|2025-05-28T00:43:44.4281880-03:00||;True|2025-05-28T00:31:35.3388304-03:00||;True|2025-05-28T00:31:13.8717052-03:00||;True|2025-05-28T00:27:53.6765124-03:00||;True|2025-04-26T02:54:13.6621334-03:00||;True|2025-04-26T02:45:05.0430095-03:00||;True|2025-04-25T02:02:07.7055893-03:00||;True|2025-04-25T02:01:56.8158633-03:00||;True|2025-04-25T01:59:36.2860368-03:00||;True|2025-04-25T01:48:36.6325680-03:00||;True|2025-04-25T01:39:58.4038976-03:00||;True|2025-04-25T01:36:54.5227465-03:00||;False|2025-04-25T01:36:43.1194289-03:00||;True|2025-04-24T22:11:51.9710747-03:00||;True|2025-04-24T15:34:07.7326625-03:00||;True|2025-04-24T12:47:10.4491689-03:00||;True|2025-04-24T12:44:33.6964155-03:00||;True|2025-04-24T02:14:46.9418069-03:00||;True|2025-04-24T02:13:02.4597199-03:00||;True|2025-04-24T02:09:35.6076147-03:00||;True|2025-04-24T02:09:27.5489914-03:00||;True|2025-04-22T13:50:48.8079215-03:00||;</History>
+    <History>True|2026-02-18T23:24:30.7518990Z||;True|2026-02-18T20:21:18.3235652-03:00||;True|2026-02-16T19:22:50.5531319-03:00||;True|2025-07-29T02:51:07.0177832-03:00||;True|2025-07-29T02:50:56.9678421-03:00||;True|2025-07-29T02:46:39.4414630-03:00||;True|2025-07-29T02:44:00.2722681-03:00||;True|2025-06-29T23:26:58.0824451-03:00||;True|2025-05-29T23:49:19.3864678-03:00||;True|2025-05-28T00:43:44.4281880-03:00||;True|2025-05-28T00:31:35.3388304-03:00||;True|2025-05-28T00:31:13.8717052-03:00||;True|2025-05-28T00:27:53.6765124-03:00||;True|2025-04-26T02:54:13.6621334-03:00||;True|2025-04-26T02:45:05.0430095-03:00||;True|2025-04-25T02:02:07.7055893-03:00||;True|2025-04-25T02:01:56.8158633-03:00||;True|2025-04-25T01:59:36.2860368-03:00||;True|2025-04-25T01:48:36.6325680-03:00||;True|2025-04-25T01:39:58.4038976-03:00||;True|2025-04-25T01:36:54.5227465-03:00||;False|2025-04-25T01:36:43.1194289-03:00||;True|2025-04-24T22:11:51.9710747-03:00||;True|2025-04-24T15:34:07.7326625-03:00||;True|2025-04-24T12:47:10.4491689-03:00||;True|2025-04-24T12:44:33.6964155-03:00||;True|2025-04-24T02:14:46.9418069-03:00||;True|2025-04-24T02:13:02.4597199-03:00||;True|2025-04-24T02:09:35.6076147-03:00||;True|2025-04-24T02:09:27.5489914-03:00||;True|2025-04-22T13:50:48.8079215-03:00||;</History>
     <LastFailureDetails />
   </PropertyGroup>
   <ItemGroup>
@@ -11,19 +11,19 @@
       <publishTime>08/11/2025 23:47:33</publishTime>
     </File>
     <File Include="Views/Artistas/Index.cshtml">
-      <publishTime>02/16/2026 04:07:11</publishTime>
+      <publishTime>02/18/2026 20:19:21</publishTime>
     </File>
     <File Include="Views/Cajas/Index.cshtml">
       <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Views/Clientes/Index.cshtml">
-      <publishTime>02/16/2026 05:19:00</publishTime>
+      <publishTime>02/18/2026 20:19:38</publishTime>
     </File>
     <File Include="Views/Cuentas/Index.cshtml">
       <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Views/Gastos/Index.cshtml">
-      <publishTime>02/16/2026 19:06:40</publishTime>
+      <publishTime>02/18/2026 18:52:48</publishTime>
     </File>
     <File Include="Views/Login/Index.cshtml">
       <publishTime>08/12/2025 14:15:54</publishTime>
@@ -32,13 +32,13 @@
       <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Views/PaisesMoneda/Index.cshtml">
-      <publishTime>02/16/2026 05:55:33</publishTime>
+      <publishTime>02/18/2026 18:52:48</publishTime>
     </File>
     <File Include="Views/Personal/Index.cshtml">
-      <publishTime>02/16/2026 03:23:43</publishTime>
+      <publishTime>02/18/2026 20:19:50</publishTime>
     </File>
     <File Include="Views/Productoras/Index.cshtml">
-      <publishTime>02/16/2026 02:50:48</publishTime>
+      <publishTime>02/18/2026 20:20:10</publishTime>
     </File>
     <File Include="Views/PuntosDeVenta/Index.cshtml">
       <publishTime>01/01/0001 00:00:00</publishTime>
@@ -47,7 +47,7 @@
       <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="Views/Representantes/Index.cshtml">
-      <publishTime>02/16/2026 00:07:02</publishTime>
+      <publishTime>02/18/2026 20:20:03</publishTime>
     </File>
     <File Include="Views/Shared/Error.cshtml">
       <publishTime>08/11/2025 23:47:33</publishTime>
@@ -56,7 +56,7 @@
       <publishTime>02/14/2026 18:48:00</publishTime>
     </File>
     <File Include="Views/Shared/Partials/NavBarLogin.cshtml">
-      <publishTime>02/16/2026 18:22:44</publishTime>
+      <publishTime>02/18/2026 18:52:48</publishTime>
     </File>
     <File Include="Views/Shared/_Layout.cshtml">
       <publishTime>02/14/2026 17:35:23</publishTime>
@@ -68,7 +68,7 @@
       <publishTime>08/11/2025 23:47:33</publishTime>
     </File>
     <File Include="Views/Tareas/Index.cshtml">
-      <publishTime>02/16/2026 04:37:38</publishTime>
+      <publishTime>02/18/2026 18:52:48</publishTime>
     </File>
     <File Include="Views/Usuarios/Configuracion.cshtml">
       <publishTime>02/14/2026 18:48:00</publishTime>
@@ -125,6 +125,12 @@
       <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="wwwroot/css/PedidosNuevoModif.css">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="wwwroot/css/Personal.css">
+      <publishTime>01/01/0001 00:00:00</publishTime>
+    </File>
+    <File Include="wwwroot/css/Productora.css">
       <publishTime>01/01/0001 00:00:00</publishTime>
     </File>
     <File Include="wwwroot/css/Productos.css">

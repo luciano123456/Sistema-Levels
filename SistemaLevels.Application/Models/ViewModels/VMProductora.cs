@@ -1,11 +1,12 @@
-﻿namespace SistemaLevels.Application.Models.ViewModels
+﻿using SistemaLevels.Models;
+
+namespace SistemaLevels.Application.Models.ViewModels
 {
     public class VMProductora
     {
         public int Id { get; set; }
 
         public string Nombre { get; set; } = null!;
-        public string? NombreRepresentante { get; set; }
 
         public string? Telefono { get; set; }
         public string? TelefonoAlternativo { get; set; }
@@ -41,5 +42,18 @@
         public string? TipoDocumento { get; set; }
         public string? CondicionIva { get; set; }
         public string? Provincia { get; set; }
+
+        // ✅ NUEVO: clientes asignados
+        public List<int> ClientesIds { get; set; } = new();
+    }
+
+    public class ProductorasClientesAsignados
+    {
+        public int Id { get; set; }
+        public int IdProductora { get; set; }
+        public int IdCliente { get; set; }
+
+        public virtual Productora IdProductoraNavigation { get; set; } = null!;
+        public virtual Cliente IdClienteNavigation { get; set; } = null!;
     }
 }

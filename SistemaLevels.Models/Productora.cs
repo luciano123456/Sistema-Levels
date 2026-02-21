@@ -17,8 +17,6 @@ public partial class Productora
 
     public string Nombre { get; set; } = null!;
 
-    public string? NombreRepresentante { get; set; }
-
     public string? Telefono { get; set; }
 
     public string? TelefonoAlternativo { get; set; }
@@ -62,6 +60,8 @@ public partial class Productora
     public virtual Pais? IdpaisNavigation { get; set; }
 
     public virtual ICollection<Presupuesto> Presupuestos { get; set; } = new List<Presupuesto>();
+
+    public virtual ICollection<ProductorasClientesAsignado> ProductorasClientesAsignados { get; set; } = new List<ProductorasClientesAsignado>();
 
     public virtual ICollection<Venta> Venta { get; set; } = new List<Venta>();
 }

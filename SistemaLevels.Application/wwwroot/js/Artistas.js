@@ -35,19 +35,12 @@ const columnConfig = [
 
 $(document).ready(() => {
 
-    // Ejecutar SOLO una vez
-    $(document).off("click.select2fix").on(
-        "click.select2fix",
-        ".select2-container--default .select2-selection--single",
-        function () {
-            const $select = $(this).closest(".select2-container").prev("select");
-            if ($select.length) {
-                if ($select.data("select2") && $select.data("select2").isOpen()) return;
-                $select.select2("open");
-            }
+    // FIX select2 dentro de modales Bootstrap 5
+    document.addEventListener('focusin', function (e) {
+        if (e.target.closest(".select2-container")) {
+            e.stopPropagation();
         }
-    );
-
+    });
 
     listaArtistas();
 
@@ -73,16 +66,31 @@ $(document).ready(() => {
         await listaProvincias(idPais);
         await listaMonedas(idPais);
 
-        if (tipoDocActual) $("#cmbTipoDocumento").val(tipoDocActual).trigger("change");
-        if (ivaActual) $("#cmbCondicionIva").val(ivaActual).trigger("change");
-        if (provinciaActual) $("#cmbProvincia").val(provinciaActual).trigger("change");
-        if (monedaActual) $("#cmbMoneda").val(monedaActual).trigger("change");
+        if (tipoDocActual) {
+            $("#cmbTipoDocumento").val(tipoDocActual);
+            refreshSelect2("#cmbTipoDocumento");
+        }
+
+        if (ivaActual) {
+            $("#cmbCondicionIva").val(ivaActual);
+            refreshSelect2("#cmbCondicionIva");
+        }
+
+        if (provinciaActual) {
+            $("#cmbProvincia").val(provinciaActual);
+            refreshSelect2("#cmbProvincia");
+        }
+
+        if (monedaActual) {
+            $("#cmbMoneda").val(monedaActual);
+            refreshSelect2("#cmbMoneda");
+        }
     });
 
 
 
     // Inicializa select2 modal (dropdownParent modal)
-    inicializarSelect2Modal();
+    
 
     // Select2: forzar validación cuando selecciona o limpia
     $("#modalEdicion").on("select2:select select2:clear change", "select", function () {
@@ -98,33 +106,41 @@ $(document).ready(() => {
 function ensureSelect2($el, options) {
     if (!$el || !$el.length) return;
 
-    if ($el.data('select2')) {
-        $el.select2('destroy');
-    }
+    // si ya existe select2, no lo toques
+    if ($el.data('select2')) return;
 
     $el.select2(Object.assign({
         width: '100%',
         allowClear: true,
-        placeholder: "Todos"
+        placeholder: "Seleccionar"
     }, options || {}));
 }
 
 function inicializarSelect2Modal() {
-    const opts = {
-        width: '100%',
-        dropdownParent: $('#modalEdicion')
-    };
 
-    ensureSelect2($("#cmbProductora"), opts);
-    ensureSelect2($("#cmbRepresentante"), opts);
+    const $modal = $('#modalEdicion');
 
-    ensureSelect2($("#cmbPais"), opts);
-    ensureSelect2($("#cmbProvincia"), opts);
-    ensureSelect2($("#cmbTipoDocumento"), opts);
-    ensureSelect2($("#cmbCondicionIva"), opts);
+    $modal.find("select").each(function () {
 
-    ensureSelect2($("#cmbMoneda"), opts);
+        const $el = $(this);
+
+        if ($el.data('select2')) return;
+
+        $el.select2({
+            width: '100%',
+            dropdownParent: $modal,
+            allowClear: true,
+            placeholder: "Seleccionar"
+        });
+    });
 }
+
+
+
+$('#modalEdicion').on('shown.bs.modal', function () {
+    inicializarSelect2Modal();
+});
+
 
 function inicializarSelect2Filtro($select) {
     ensureSelect2($select, {
@@ -210,23 +226,19 @@ function guardarArtista() {
 function nuevaArtista() {
     limpiarModal();
 
-    // cargar combos base
     Promise.all([
         listaProductoras(),
         listaRepresentantes(),
         listaPaises()
     ])
         .then(() => {
-            // combos dependientes vacíos
             resetSelect("cmbProvincia", "Seleccionar");
             resetSelect("cmbTipoDocumento", "Seleccionar");
             resetSelect("cmbCondicionIva", "Seleccionar");
             resetSelect("cmbMoneda", "Seleccionar");
-
-            inicializarSelect2Modal();
         });
 
-    $('#modalEdicion').modal('show');
+    abrirModalEdicion();
 
     $("#btnGuardar").html(`<i class="fa fa-check"></i> Registrar`);
     $("#modalEdicionLabel").text("Nuevo Artista");
@@ -301,7 +313,7 @@ async function mostrarModal(modelo) {
     if (modelo.IdProvincia != null) $("#cmbProvincia").val(modelo.IdProvincia).trigger("change.select2");
     if (modelo.IdMoneda != null) $("#cmbMoneda").val(modelo.IdMoneda).trigger("change.select2");
 
-    inicializarSelect2Modal();
+    
 
     // Auditoría
     let textoAuditoria = "";
@@ -329,7 +341,8 @@ async function mostrarModal(modelo) {
     if (textoAuditoria !== "") $("#infoAuditoria").removeClass("d-none");
     else $("#infoAuditoria").addClass("d-none");
 
-    $('#modalEdicion').modal('show');
+    abrirModalEdicion();
+
 
     $("#btnGuardar").html(`<i class="fa fa-check"></i> Guardar`);
     $("#modalEdicionLabel").text("Editar Artista");
@@ -599,7 +612,7 @@ function resetSelect(id, placeholder) {
     if (!el) return;
 
     el.innerHTML = "";
-    el.append(new Option(placeholder || "Seleccionar", "", true, true));
+    el.append(new Option(placeholder || "Seleccionar", ""));
 }
 
 
@@ -615,7 +628,7 @@ async function listaProductoras() {
     const select = document.getElementById("cmbProductora");
     (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
-    inicializarSelect2Modal();
+    
 }
 
 async function listaRepresentantes() {
@@ -629,7 +642,7 @@ async function listaRepresentantes() {
     const select = document.getElementById("cmbRepresentante");
     (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
-    inicializarSelect2Modal();
+    
 }
 
 async function listaMonedas(idPaisSeleccionado = null) {
@@ -638,7 +651,7 @@ async function listaMonedas(idPaisSeleccionado = null) {
 
     // si no hay país, no cargar monedas
     if (!idPaisSeleccionado) {
-        inicializarSelect2Modal();
+        
         return;
     }
 
@@ -653,7 +666,7 @@ async function listaMonedas(idPaisSeleccionado = null) {
         .filter(x => String(x.IdPais) === String(idPaisSeleccionado))
         .forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
-    inicializarSelect2Modal();
+    
 }
 
 
@@ -668,7 +681,7 @@ async function listaPaises() {
     const select = document.getElementById("cmbPais");
     (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
-    inicializarSelect2Modal();
+    
 }
 
 async function listaTiposDocumento(idPaisSeleccionado = null) {
@@ -685,7 +698,7 @@ async function listaTiposDocumento(idPaisSeleccionado = null) {
         .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
         .forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
-    inicializarSelect2Modal();
+    
 }
 
 async function listaCondicionesIva(idPaisSeleccionado = null) {
@@ -702,7 +715,7 @@ async function listaCondicionesIva(idPaisSeleccionado = null) {
         .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
         .forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
-    inicializarSelect2Modal();
+    
 }
 
 async function listaProvincias(idPaisSeleccionado = null) {
@@ -711,7 +724,7 @@ async function listaProvincias(idPaisSeleccionado = null) {
 
     // Si no hay país → no cargar provincias
     if (!idPaisSeleccionado) {
-        inicializarSelect2Modal();
+        
         return;
     }
 
@@ -726,7 +739,7 @@ async function listaProvincias(idPaisSeleccionado = null) {
         select.append(new Option(x.Nombre, x.Id));
     });
 
-    inicializarSelect2Modal();
+    
 }
 
 /* =========================
@@ -862,23 +875,31 @@ function getSelect2Selection(el) {
 function setEstadoCampo(el, esValido) {
     const $el = $(el);
     const esSelect = el.tagName === "SELECT";
+    const valor = ($el.val() ?? "").toString().trim();
 
+    // 1) clases en el elemento real
     el.classList.toggle("is-invalid", !esValido);
     el.classList.toggle("is-valid", esValido);
 
+    // 2) clases en select2 (lo visible)
     if (esSelect && $el.data("select2")) {
         const { $selection, $container } = getSelect2Selection(el);
         $selection.toggleClass("is-invalid", !esValido);
         $selection.toggleClass("is-valid", esValido);
 
+        // por si tu CSS apunta al container
         $container.toggleClass("is-invalid", !esValido);
         $container.toggleClass("is-valid", esValido);
     }
 
-    const $wrap = $el.closest(".mb-3, .form-group, .col, .col-md-6, .col-md-4, .col-md-12, .rp-field, .rp-form-group");
+    // 3) mensaje "Campo obligatorio" (tu caso)
+    // Busca feedback cerca del control (adaptable a tu HTML)
+    const $wrap = $el.closest(".mb-3, .form-group, .col, .col-md-6, .rp-field, .rp-form-group");
     const $msg = $wrap.find(".invalid-feedback, .rp-invalid-msg, .campo-obligatorio, small.text-danger").first();
 
     if ($msg.length) {
+        // Si es bootstrap invalid-feedback: lo controlamos con display
+        // Si es tu <small class="text-danger">Campo obligatorio</small>, también.
         $msg.toggleClass("d-none", esValido);
     }
 }
@@ -1000,5 +1021,13 @@ function normalizarDateInput(fecha) {
         return `${yyyy}-${mm}-${dd}`;
     } catch {
         return "";
+    }
+}
+
+
+function refreshSelect2(id) {
+    const $el = $(id);
+    if ($el.data('select2')) {
+        $el.trigger('change.select2');
     }
 }
