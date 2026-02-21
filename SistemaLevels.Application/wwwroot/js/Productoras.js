@@ -1,4 +1,6 @@
 ﻿let gridProductoras;
+let clientesCatalogo = [];
+
 
 /**
  * Columnas:
@@ -15,14 +17,13 @@
  */
 const columnConfig = [
     { index: 1, filterType: 'text' },
-    { index: 2, filterType: 'select_local' }, // Representante (sale del dataset)
-    { index: 3, filterType: 'select', fetchDataFunc: listaPaisesFilter },
-    { index: 4, filterType: 'select', fetchDataFunc: listaTiposDocumentoFilter },
-    { index: 5, filterType: 'text' }, // ✅ Nro Doc arreglado
-    { index: 6, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter },
-    { index: 7, filterType: 'select', fetchDataFunc: listaProvinciasFilter },
+    { index: 2, filterType: 'select', fetchDataFunc: listaPaisesFilter },
+    { index: 3, filterType: 'select', fetchDataFunc: listaTiposDocumentoFilter },
+    { index: 4, filterType: 'text' },
+    { index: 5, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter },
+    { index: 6, filterType: 'select', fetchDataFunc: listaProvinciasFilter },
+    { index: 7, filterType: 'text' },
     { index: 8, filterType: 'text' },
-    { index: 9, filterType: 'text' },
 ];
 
 $(document).ready(() => {
@@ -45,10 +46,6 @@ $(document).ready(() => {
         await listaProvincias(idPais);
     });
 
-
-    // Inicializa select2 modal (dropdownParent modal)
-    inicializarSelect2Modal();
-
     // Select2: forzar validación cuando selecciona o limpia
     $("#modalEdicion").on("select2:select select2:clear change", "select", function () {
         validarCampoIndividual(this);
@@ -56,17 +53,20 @@ $(document).ready(() => {
 
 });
 
+
+$('#modalEdicion').on('shown.bs.modal', function () {
+    inicializarSelect2Modal();
+});
+
+
 /* =========================
    SELECT2 HELPERS
 ========================= */
 
 function ensureSelect2($el, options) {
-
     if (!$el || !$el.length) return;
 
-    if ($el.data('select2')) {
-        $el.select2('destroy');
-    }
+    if ($el.data('select2')) return; // NO destruir
 
     $el.select2(Object.assign({
         width: '100%',
@@ -75,17 +75,25 @@ function ensureSelect2($el, options) {
     }, options || {}));
 }
 
-function inicializarSelect2Modal() {
-    // los combos del modal deben abrir dentro del modal
-    const opts = {
-        width: '100%',
-        dropdownParent: $('#modalEdicion')
-    };
 
-    ensureSelect2($("#cmbPais"), opts);
-    ensureSelect2($("#cmbTipoDocumento"), opts);
-    ensureSelect2($("#cmbCondicionIva"), opts);
-    ensureSelect2($("#cmbProvincia"), opts);
+function inicializarSelect2Modal() {
+
+    const $modal = $('#modalEdicion');
+
+    $modal.find("select").each(function () {
+
+        const $el = $(this);
+
+        // si ya tiene select2, no lo vuelvas a crear
+        if ($el.data('select2')) return;
+
+        $el.select2({
+            width: '100%',
+            dropdownParent: $modal,
+            allowClear: true,
+            placeholder: "Seleccionar"
+        });
+    });
 }
 
 function inicializarSelect2Filtro($select) {
@@ -106,11 +114,14 @@ function guardarProductora() {
 
     const id = $("#txtId").val();
 
+    const clientesIds = [];
+    document.querySelectorAll("#listaClientes input[type=checkbox]:checked")
+        .forEach(cb => clientesIds.push(parseInt(cb.value)));
+
     const modelo = {
         Id: id !== "" ? id : 0,
 
         Nombre: $("#txtNombre").val(),
-        NombreRepresentante: $("#txtNombreRepresentante").val(),
 
         Idpais: $("#cmbPais").val() || null,
         IdTipoDocumento: $("#cmbTipoDocumento").val() || null,
@@ -125,10 +136,12 @@ function guardarProductora() {
 
         Direccion: $("#txtDireccion").val(),
         Localidad: $("#txtLocalidad").val(),
-        EntreCalles: $("#txtEntreCalles").val ? $("#txtEntreCalles").val() : null, // si existe en tu modal
+        EntreCalles: $("#txtEntreCalles").val ? $("#txtEntreCalles").val() : null,
         CodigoPostal: $("#txtCodigoPostal").val(),
 
-        Email: $("#txtEmail").val()
+        Email: $("#txtEmail").val(),
+
+        ClientesIds: clientesIds
     };
 
     const url = id === "" ? "/Productoras/Insertar" : "/Productoras/Actualizar";
@@ -161,20 +174,19 @@ function guardarProductora() {
 function nuevaProductora() {
     limpiarModal();
 
-    // cargar combos
-    listaPaises()
-        .then(() => listaProvincias(null)) // sin país → vacío
-
+    Promise.all([
+        listaPaises(),
+        listaProvincias(null),
+        listaClientes()
+    ])
         .then(() => {
-            // deja tipo doc e iva vacíos hasta elegir país
             resetSelect("cmbTipoDocumento", "Seleccionar");
             resetSelect("cmbCondicionIva", "Seleccionar");
-
-            // reinit select2 por si se destruyó
-            inicializarSelect2Modal();
+            activarBuscadorClientes();
         });
 
-    $('#modalEdicion').modal('show');
+    abrirModalEdicion();
+
 
     $("#btnGuardar").html(`<i class="fa fa-check"></i> Registrar`);
     $("#modalEdicionLabel").text("Nueva Productora");
@@ -189,7 +201,6 @@ async function mostrarModal(modelo) {
 
     $("#txtId").val(modelo.Id || "");
     $("#txtNombre").val(modelo.Nombre || "");
-    $("#txtNombreRepresentante").val(modelo.NombreRepresentante || "");
     $("#txtNumeroDocumento").val(modelo.NumeroDocumento || "");
 
     $("#txtTelefono").val(modelo.Telefono || "");
@@ -202,16 +213,13 @@ async function mostrarModal(modelo) {
 
     $("#txtEmail").val(modelo.Email || "");
 
-    await listaPaises();
+    await Promise.all([
+        listaPaises(),
+        listaClientes()
+    ]);
 
     if (modelo.Idpais != null) {
         await listaProvincias(modelo.Idpais);
-    } else {
-        await listaProvincias();
-    }
-
-    // Set País y cargar dependientes
-    if (modelo.Idpais != null) {
         $("#cmbPais").val(modelo.Idpais).trigger("change.select2");
         await listaTiposDocumento(modelo.Idpais);
         await listaCondicionesIva(modelo.Idpais);
@@ -229,9 +237,10 @@ async function mostrarModal(modelo) {
         $("#cmbProvincia").val(modelo.IdProvincia).trigger("change.select2");
     }
 
-    inicializarSelect2Modal();
+    renderListaClientes(modelo.ClientesIds || []);
+    activarBuscadorClientes();
 
-    // Auditoría
+    // auditoría
     let textoAuditoria = "";
 
     if (modelo.UsuarioModifica && modelo.FechaModifica) {
@@ -257,10 +266,14 @@ async function mostrarModal(modelo) {
     if (textoAuditoria !== "") $("#infoAuditoria").removeClass("d-none");
     else $("#infoAuditoria").addClass("d-none");
 
-    $('#modalEdicion').modal('show');
+    abrirModalEdicion();
+
 
     $("#btnGuardar").html(`<i class="fa fa-check"></i> Guardar`);
     $("#modalEdicionLabel").text("Editar Productora");
+
+    // siempre volver a la pestaña datos
+    document.querySelector('#productoraTabs .nav-link[data-bs-target="#tabDatos"]').click();
 }
 
 const editarProductora = id => {
@@ -362,33 +375,33 @@ async function configurarDataTable(data) {
                     width: "1%",
                     render: function (data) {
                         return `
-                            <div class="acciones-menu" data-id="${data}">
-                                <button class='btn btn-sm btnacciones' type='button' onclick='toggleAcciones(${data})'>
-                                    <i class='fa fa-ellipsis-v fa-lg text-white'></i>
-                                </button>
-                                <div class="acciones-dropdown" style="display: none;">
-                                    <button class='btn btn-sm btneditar' onclick='editarProductora(${data})'>
-                                        <i class='fa fa-pencil-square-o text-success'></i> Editar
-                                    </button>
-                                    <button class='btn btn-sm btneliminar' onclick='eliminarProductora(${data})'>
-                                        <i class='fa fa-trash-o text-danger'></i> Eliminar
-                                    </button>
-                                </div>
-                            </div>`;
+                <div class="acciones-menu" data-id="${data}">
+                    <button class='btn btn-sm btnacciones' type='button' onclick='toggleAcciones(${data})'>
+                        <i class='fa fa-ellipsis-v fa-lg text-white'></i>
+                    </button>
+                    <div class="acciones-dropdown" style="display: none;">
+                        <button class='btn btn-sm btneditar' onclick='editarProductora(${data})'>
+                            <i class='fa fa-pencil-square-o text-success'></i> Editar
+                        </button>
+                        <button class='btn btn-sm btneliminar' onclick='eliminarProductora(${data})'>
+                            <i class='fa fa-trash-o text-danger'></i> Eliminar
+                        </button>
+                    </div>
+                </div>`;
                     },
                     orderable: false,
                     searchable: false,
                 },
                 { data: 'Nombre' },
-                { data: 'NombreRepresentante' },
                 { data: 'Pais' },
                 { data: 'TipoDocumento' },
-                { data: 'NumeroDocumento' },   // ✅ Nro doc OK
+                { data: 'NumeroDocumento' },
                 { data: 'CondicionIva' },
                 { data: 'Provincia' },
                 { data: 'Telefono' },
                 { data: 'Email' },
             ],
+
 
             dom: 'Bfrtip',
             buttons: [
@@ -494,17 +507,6 @@ async function configurarDataTable(data) {
 
                 configurarOpcionesColumnas();
                 actualizarKpis(data);
-
-                // Fuerza que click en la selección abra el dropdown (si algo del layout molesta)
-                $(document).on("click", ".select2-container--default .select2-selection--single", function (e) {
-                    const $select = $(this).closest(".select2-container").prev("select");
-                    if ($select.length) {
-                        // si está abierto, no hagas nada
-                        if ($select.data("select2") && $select.data("select2").isOpen()) return;
-                        $select.select2("open");
-                    }
-                });
-
             }
         });
 
@@ -535,9 +537,6 @@ async function listaPaises() {
     resetSelect("cmbPais", "Seleccionar");
     const select = document.getElementById("cmbPais");
     (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    // select2
-    inicializarSelect2Modal();
 }
 
 async function listaTiposDocumento(idPaisSeleccionado = null) {
@@ -553,8 +552,6 @@ async function listaTiposDocumento(idPaisSeleccionado = null) {
     (data || [])
         .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
         .forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    inicializarSelect2Modal();
 }
 
 async function listaCondicionesIva(idPaisSeleccionado = null) {
@@ -571,7 +568,6 @@ async function listaCondicionesIva(idPaisSeleccionado = null) {
         .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
         .forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
-    inicializarSelect2Modal();
 }
 
 async function listaProvincias(idPaisSeleccionado = null) {
@@ -580,7 +576,6 @@ async function listaProvincias(idPaisSeleccionado = null) {
 
     // Si no hay país → no cargar provincias
     if (!idPaisSeleccionado) {
-        inicializarSelect2Modal();
         return;
     }
 
@@ -596,7 +591,6 @@ async function listaProvincias(idPaisSeleccionado = null) {
         select.append(new Option(x.Nombre, x.Id));
     });
 
-    inicializarSelect2Modal();
 }
 
 
@@ -831,4 +825,61 @@ function formatearFecha(fecha) {
     } catch {
         return fecha;
     }
+}
+
+
+async function listaClientes() {
+    const response = await fetch(`/Clientes/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const data = await response.json();
+    clientesCatalogo = data || [];
+
+    renderListaClientes([]);
+}
+
+function renderListaClientes(idsSeleccionados) {
+
+    const cont = document.getElementById("listaClientes");
+    cont.innerHTML = "";
+
+    clientesCatalogo.forEach(c => {
+
+        const checked = idsSeleccionados.includes(c.Id) ? "checked" : "";
+
+        cont.innerHTML += `
+            <label class="rp-check-item">
+                <input type="checkbox"
+                       value="${c.Id}"
+                       ${checked}
+                       onchange="actualizarContadorClientes()">
+                <span>${c.Nombre}</span>
+            </label>
+        `;
+    });
+
+    actualizarContadorClientes();
+}
+
+function actualizarContadorClientes() {
+
+    const cantClientes = $("#listaClientes input:checked").length;
+    $("#cntClientes").text(`(${cantClientes})`);
+}
+
+
+function activarBuscadorClientes() {
+    const input = document.getElementById("txtBuscarCliente");
+    if (!input) return;
+
+    input.addEventListener("input", function () {
+        const texto = this.value.toLowerCase();
+
+        document.querySelectorAll("#listaClientes .rp-check-item")
+            .forEach(el => {
+                const nombre = el.innerText.toLowerCase();
+                el.style.display = nombre.includes(texto) ? "" : "none";
+            });
+    });
 }

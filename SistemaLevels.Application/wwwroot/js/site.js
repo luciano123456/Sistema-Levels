@@ -273,3 +273,15 @@ function normalizarFechaTabla(fecha) {
         return fecha;
     }
 }
+
+
+function abrirModalEdicion() {
+    const modalEl = document.getElementById('modalEdicion');
+
+    const modal = new bootstrap.Modal(modalEl, {
+        backdrop: 'static',
+        keyboard: false
+    });
+
+    modal.show();
+}

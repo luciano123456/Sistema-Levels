@@ -13,22 +13,41 @@ namespace SistemaLevels.DAL.Repository
             _dbcontext = context;
         }
 
-        public async Task<bool> Insertar(Productora model)
+        public async Task<bool> Insertar(Productora model, List<int> clientesIds)
         {
+            using var trx = await _dbcontext.Database.BeginTransactionAsync();
+
             try
             {
                 _dbcontext.Productoras.Add(model);
                 await _dbcontext.SaveChangesAsync();
+
+                clientesIds ??= new List<int>();
+
+                foreach (var idCliente in clientesIds.Distinct())
+                {
+                    _dbcontext.ProductorasClientesAsignados.Add(new ProductorasClientesAsignado
+                    {
+                        IdProductora = model.Id,
+                        IdCliente = idCliente
+                    });
+                }
+
+                await _dbcontext.SaveChangesAsync();
+                await trx.CommitAsync();
                 return true;
             }
             catch
             {
+                await trx.RollbackAsync();
                 return false;
             }
         }
 
-        public async Task<bool> Actualizar(Productora model)
+        public async Task<bool> Actualizar(Productora model, List<int> clientesIds)
         {
+            using var trx = await _dbcontext.Database.BeginTransactionAsync();
+
             try
             {
                 var entity = await _dbcontext.Productoras
@@ -36,8 +55,8 @@ namespace SistemaLevels.DAL.Repository
 
                 if (entity == null) return false;
 
+                // ===== CAMPOS PRINCIPALES =====
                 entity.Nombre = model.Nombre;
-                entity.NombreRepresentante = model.NombreRepresentante;
                 entity.Telefono = model.Telefono;
                 entity.TelefonoAlternativo = model.TelefonoAlternativo;
                 entity.Dni = model.Dni;
@@ -52,17 +71,47 @@ namespace SistemaLevels.DAL.Repository
                 entity.Direccion = model.Direccion;
                 entity.CodigoPostal = model.CodigoPostal;
 
+                // ===== FECHA SEGURA =====
                 entity.IdUsuarioModifica = model.IdUsuarioModifica;
-                entity.FechaModifica = model.FechaModifica;
+
+                if (model.FechaModifica.HasValue && model.FechaModifica.Value >= new DateTime(1753, 1, 1))
+                    entity.FechaModifica = model.FechaModifica;
+                else
+                    entity.FechaModifica = DateTime.Now;
 
                 await _dbcontext.SaveChangesAsync();
+
+                // ===== CLIENTES: REEMPLAZO TOTAL =====
+                clientesIds ??= new List<int>();
+                clientesIds = clientesIds.Distinct().ToList();
+
+                var actuales = await _dbcontext.ProductorasClientesAsignados
+                    .Where(x => x.IdProductora == model.Id)
+                    .ToListAsync();
+
+                _dbcontext.ProductorasClientesAsignados.RemoveRange(actuales);
+                await _dbcontext.SaveChangesAsync();
+
+                foreach (var idCliente in clientesIds)
+                {
+                    _dbcontext.ProductorasClientesAsignados.Add(new ProductorasClientesAsignado
+                    {
+                        IdProductora = model.Id,
+                        IdCliente = idCliente
+                    });
+                }
+
+                await _dbcontext.SaveChangesAsync();
+                await trx.CommitAsync();
                 return true;
             }
             catch
             {
+                await trx.RollbackAsync();
                 return false;
             }
         }
+
 
         public async Task<bool> Eliminar(int id)
         {
@@ -92,6 +141,7 @@ namespace SistemaLevels.DAL.Repository
                 .Include(x => x.IdProvinciaNavigation)
                 .Include(x => x.IdUsuarioRegistraNavigation)
                 .Include(x => x.IdUsuarioModificaNavigation)
+                .Include(x => x.ProductorasClientesAsignados)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 

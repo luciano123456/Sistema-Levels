@@ -29,7 +29,7 @@ public class ProductorasController : Controller
         {
             Id = c.Id,
             Nombre = c.Nombre,
-            NombreRepresentante = c.NombreRepresentante,
+
             Telefono = c.Telefono,
             Email = c.Email,
             Direccion = c.Direccion,
@@ -59,7 +59,6 @@ public class ProductorasController : Controller
         var prod = new Productora
         {
             Nombre = model.Nombre,
-            NombreRepresentante = model.NombreRepresentante,
             Telefono = model.Telefono,
             TelefonoAlternativo = model.TelefonoAlternativo,
             Dni = model.Dni,
@@ -78,7 +77,7 @@ public class ProductorasController : Controller
             FechaRegistra = DateTime.Now
         };
 
-        bool respuesta = await _service.Insertar(prod);
+        bool respuesta = await _service.Insertar(prod, model.ClientesIds);
         return Ok(new { valor = respuesta });
     }
 
@@ -91,7 +90,6 @@ public class ProductorasController : Controller
         {
             Id = model.Id,
             Nombre = model.Nombre,
-            NombreRepresentante = model.NombreRepresentante,
             Telefono = model.Telefono,
             TelefonoAlternativo = model.TelefonoAlternativo,
             Dni = model.Dni,
@@ -110,9 +108,10 @@ public class ProductorasController : Controller
             FechaModifica = DateTime.Now
         };
 
-        bool respuesta = await _service.Actualizar(prod);
+        bool respuesta = await _service.Actualizar(prod, model.ClientesIds);
         return Ok(new { valor = respuesta });
     }
+
 
     [HttpDelete]
     public async Task<IActionResult> Eliminar(int id)
@@ -133,20 +132,27 @@ public class ProductorasController : Controller
         {
             Id = p.Id,
             Nombre = p.Nombre,
-            NombreRepresentante = p.NombreRepresentante,
+
             Telefono = p.Telefono,
             TelefonoAlternativo = p.TelefonoAlternativo,
             Dni = p.Dni,
+
             Idpais = p.Idpais,
             IdTipoDocumento = p.IdTipoDocumento,
             NumeroDocumento = p.NumeroDocumento,
             IdCondicionIva = p.IdCondicionIva,
+
             Email = p.Email,
             IdProvincia = p.IdProvincia,
             Localidad = p.Localidad,
             EntreCalles = p.EntreCalles,
             Direccion = p.Direccion,
             CodigoPostal = p.CodigoPostal,
+
+            // ✅ clientes asignados
+            ClientesIds = (p.ProductorasClientesAsignados ?? new List<ProductorasClientesAsignado>())
+                .Select(x => x.IdCliente)
+                .ToList(),
 
             FechaRegistra = p.FechaRegistra,
             UsuarioRegistra = p.IdUsuarioRegistraNavigation?.Usuario,

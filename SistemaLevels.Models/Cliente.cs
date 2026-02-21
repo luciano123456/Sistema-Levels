@@ -63,5 +63,7 @@ public partial class Cliente
 
     public virtual ICollection<Presupuesto> Presupuestos { get; set; } = new List<Presupuesto>();
 
+    public virtual ICollection<ProductorasClientesAsignado> ProductorasClientesAsignados { get; set; } = new List<ProductorasClientesAsignado>();
+
     public virtual ICollection<Venta> Venta { get; set; } = new List<Venta>();
 }
