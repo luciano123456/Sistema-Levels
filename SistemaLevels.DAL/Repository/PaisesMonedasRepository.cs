@@ -82,5 +82,35 @@ namespace SistemaLevels.DAL.Repository
 
             return await Task.FromResult(query);
         }
+
+        public async Task<bool> ActualizarMasivo(Dictionary<int, decimal> monedas)
+        {
+            try
+            {
+                var ids = monedas.Keys.ToList();
+
+                var entidades = await _dbcontext.PaisesMonedas
+                    .Where(x => ids.Contains(x.Id))
+                    .ToListAsync();
+
+                if (entidades.Count == 0)
+                    return false;
+
+                foreach (var entity in entidades)
+                {
+                    if (monedas.TryGetValue(entity.Id, out decimal nuevaCotizacion))
+                    {
+                        entity.Cotizacion = nuevaCotizacion;
+                    }
+                }
+
+                await _dbcontext.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

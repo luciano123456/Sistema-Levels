@@ -1,0 +1,399 @@
+﻿/* =========================================
+   CURRENCY WIDGET PRO COMPACT PREMIUM
+========================================= */
+
+.currency-widget {
+    position: fixed;
+    top: 75px;
+    left: 20px;
+    z-index: 9999;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* ===== PILL ===== */
+
+.currency-pill {
+    background: linear-gradient(145deg, #111827, #0b1220);
+    border-radius: 18px;
+    padding: 10px 14px;
+    min-width: 150px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.05);
+    transition: all 0.25s ease;
+    cursor: grab;
+}
+
+    .currency-pill:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 28px rgba(0,0,0,0.6), 0 0 12px rgba(34,197,94,0.15);
+    }
+
+/* ===== BADGE ===== */
+
+.currency-badge {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #facc15;
+    color: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+/* ===== TEXT BLOCK ===== */
+
+.currency-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+}
+
+/* Nombre */
+
+.currency-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #e5e7eb;
+}
+
+/* Valor */
+
+.currency-value {
+    font-size: 14px;
+    font-weight: 800;
+    color: #22c55e;
+    transition: color 0.3s ease;
+}
+
+/* Última actualización */
+
+.currency-updated {
+    font-size: 9px;
+    color: #9ca3af;
+    opacity: 0.85;
+    letter-spacing: 0.3px;
+}
+
+/* ===== REFRESH ===== */
+
+.currency-refresh {
+    background: rgba(34,197,94,0.15);
+    border: none;
+    color: #22c55e;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s ease;
+    flex-shrink: 0;
+}
+
+    .currency-refresh:hover {
+        background: #22c55e;
+        color: white;
+        transform: rotate(90deg);
+    }
+
+/* =========================
+   EFECTOS SUBE / BAJA
+========================= */
+
+.currency-pill.up {
+    animation: glowGreen 1.6s ease;
+}
+
+.currency-pill.down {
+    animation: glowRed 1.6s ease;
+}
+
+@keyframes glowGreen {
+    0% {
+        box-shadow: 0 0 0px #00ff88;
+        transform: scale(1);
+    }
+
+    25% {
+        box-shadow: 0 0 22px #00ff88;
+        transform: scale(1.04);
+    }
+
+    50% {
+        box-shadow: 0 0 14px #00ff88;
+    }
+
+    100% {
+        box-shadow: 0 0 0px transparent;
+        transform: scale(1);
+    }
+}
+
+@keyframes glowRed {
+    0% {
+        box-shadow: 0 0 0px #ff3b3b;
+        transform: scale(1);
+    }
+
+    25% {
+        box-shadow: 0 0 22px #ff3b3b;
+        transform: scale(1.04);
+    }
+
+    50% {
+        box-shadow: 0 0 14px #ff3b3b;
+    }
+
+    100% {
+        box-shadow: 0 0 0px transparent;
+        transform: scale(1);
+    }
+}
+
+/* ===== VALOR COLOR ANIMADO ===== */
+
+.currency-value.value-up {
+    color: #00ff88 !important;
+    animation: pulseUp 1s ease;
+}
+
+.currency-value.value-down {
+    color: #ff4d4d !important;
+    animation: pulseDown 1s ease;
+}
+
+@keyframes pulseUp {
+    0% {
+        transform: translateY(0);
+    }
+
+    30% {
+        transform: translateY(-3px);
+    }
+
+    60% {
+        transform: translateY(2px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulseDown {
+    0% {
+        transform: translateY(0);
+    }
+
+    30% {
+        transform: translateY(3px);
+    }
+
+    60% {
+        transform: translateY(-2px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+.currency-value i {
+    margin-left: 4px;
+    font-size: 10px;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+/* =========================================
+   MOBILE RESPONSIVE — FLOATING WIDGET PRO
+========================================= */
+
+@media (max-width: 768px) {
+
+    .currency-widget {
+        position: relative;
+        top: 0;
+        left: 0;
+        width: 100%;
+        margin-top: 60px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        padding: 0 10px;
+    }
+
+    .currency-pill {
+        min-width: unset;
+        width: 100%;
+        padding: 8px 10px;
+        border-radius: 14px;
+    }
+
+    .currency-name {
+        font-size: 11px;
+    }
+
+    .currency-value {
+        font-size: 13px;
+    }
+
+    .currency-updated {
+        font-size: 8px;
+    }
+}
+
+/* =========================
+   MOBILE MEDIO (2 columnas)
+========================= */
+
+@media (max-width: 480px) {
+
+    .currency-widget {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* =========================
+   MOBILE MUY CHICO
+========================= */
+
+@media (max-width: 360px) {
+
+    .currency-widget {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width:768px) {
+
+    .currency-widget {
+        background: rgba(10,15,30,.55);
+        backdrop-filter: blur(12px);
+        border-radius: 18px;
+        box-shadow: 0 8px 30px rgba(0,0,0,.35);
+    }
+}
+
+/* =====================================
+   AUTO REFRESH LOADING (PRO LEVELS)
+===================================== */
+
+.refresh-loading {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    min-width: 140px;
+}
+
+    /* TEXTO */
+    .refresh-loading span {
+        font-size: 11px;
+        color: #22c55e;
+        opacity: .9;
+        letter-spacing: .3px;
+    }
+
+/* CONTENEDOR BARRA */
+.refresh-bar {
+    width: 100%;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(34,197,94,.12);
+    position: relative;
+    overflow: hidden;
+}
+
+    /* BARRA ANIMADA */
+    .refresh-bar::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -40%;
+        width: 40%;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient( 90deg, transparent, #22c55e, #4ade80, transparent );
+        animation: refreshSlide 1.1s linear infinite;
+    }
+
+/* ANIMACION */
+@keyframes refreshSlide {
+    0% {
+        left: -40%;
+    }
+
+    100% {
+        left: 120%;
+    }
+}
+
+.refresh-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 170px;
+}
+
+.refresh-sub {
+    display: flex;
+    align-items: center;
+    min-height: 38px;
+    width: 100%;
+}
+
+.refresh-dynamic {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.refresh-loading {
+    width: 100%;
+    animation: fadeRefresh .25s ease;
+}
+
+@keyframes fadeRefresh {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.refresh-icon {
+    transition: .3s;
+}
+
+.refresh-premium.updating .refresh-icon {
+    animation: pulseIcon 1.2s infinite;
+}
+
+@keyframes pulseIcon {
+    0%,100% {
+        transform: scale(1);
+        opacity: .8;
+    }
+
+    50% {
+        transform: scale(1.15);
+        opacity: 1;
+    }
+}

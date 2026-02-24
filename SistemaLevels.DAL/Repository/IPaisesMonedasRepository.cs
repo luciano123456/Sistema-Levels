@@ -10,5 +10,7 @@ namespace SistemaLevels.DAL.Repository
 
         Task<PaisesMoneda?> Obtener(int id);
         Task<IQueryable<PaisesMoneda>> ObtenerTodos();
+
+        Task<bool> ActualizarMasivo(Dictionary<int, decimal> monedas);
     }
 }
