@@ -26,5 +26,10 @@ namespace SistemaLevels.BLL.Service
 
         public async Task<IQueryable<PaisesMoneda>> ObtenerTodos()
             => await _repo.ObtenerTodos();
+
+        public async Task<bool> ActualizarMasivo(Dictionary<int, decimal> monedas)
+        {
+            return await _repo.ActualizarMasivo(monedas);
+        }
     }
 }

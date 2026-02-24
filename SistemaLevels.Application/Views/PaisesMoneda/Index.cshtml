@@ -7,90 +7,51 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
-    <link href="~/css/usuarios.css" rel="stylesheet" />
+    <link href="~/css/paisesmoneda.css" rel="stylesheet" />
     <link href="~/css/disenopantallas.css" rel="stylesheet" />
-
-    <style>
-        .monedas-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 24px;
-        }
-
-        .moneda-card {
-            background: linear-gradient(145deg, #0f172a, #020617);
-            border-radius: 22px;
-            padding: 28px;
-            position: relative;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.45);
-            transition: all 0.25s ease;
-            min-height: 190px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-            .moneda-card:hover {
-                transform: translateY(-6px) scale(1.02);
-                box-shadow: 0 22px 55px rgba(0,0,0,0.6);
-            }
-
-        .moneda-icon {
-            font-size: 38px;
-            color: #22c55e;
-            margin-bottom: 12px;
-        }
-
-        .moneda-nombre {
-            font-size: 24px;
-            font-weight: 900;
-            color: white;
-        }
-
-        .moneda-pais {
-            color: #9ca3af;
-            font-size: 15px;
-            margin-top: 6px;
-        }
-
-        .moneda-cotizacion {
-            font-size: 30px;
-            font-weight: 900;
-            color: #22c55e;
-            margin-top: 14px;
-        }
-
-        .moneda-acciones {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            display: flex;
-            gap: 8px;
-        }
-
-        .btn-card {
-            background: rgba(255,255,255,0.10);
-            border: none;
-            color: white;
-            padding: 8px 10px;
-            border-radius: 10px;
-        }
-
-            .btn-card:hover {
-                background: rgba(255,255,255,0.18);
-            }
-    </style>
 }
 
 <div class="container-fluid mt-5">
 
     <div class="container page-99" style="margin-top:40px">
         <div class="cc-header shadow-lg rounded-4 p-4 mb-4">
-            <div class="d-flex align-items-center gap-3">
+            <div class="cc-header-row">
                 <span class="cc-badge"><i class="fa fa-money"></i></span>
                 <div>
                     <h2 class="m-0 fw-800">Monedas</h2>
                     <small class="text-muted-cc">Monedas por país</small>
+                </div>
+
+                <div class="refresh-premium">
+
+                    <div class="refresh-icon">
+                        <i class="fa fa-clock-o"></i>
+                    </div>
+
+                    <div class="refresh-info">
+                        <div class="refresh-title">Auto Refresh</div>
+                        <div class="refresh-sub">
+                            <div id="refreshCountdown" class="refresh-dynamic">
+                                Configurable
+                            </div>
+                        </div>
+                    </div>
+
+                    <select id="currencyRefreshSelect" class="refresh-dropdown">
+                        <option value="1">1 min</option>
+                        <option value="2">2 min</option>
+                        <option value="3">3 min</option>
+                        <option value="5">5 min</option>
+                        <option value="6">6 min</option>
+                        <option value="10">10 min</option>
+                        <option value="15">15 min</option>
+                        <option value="20">20 min</option>
+                        <option value="30">30 min</option>
+                        <option value="45">45 min</option>
+                        <option value="60">1 hora</option>
+                        <option value="120">2 horas</option>
+                    </select>
+
                 </div>
 
                 <div class="ms-auto">
@@ -168,6 +129,6 @@
 <partial name="~/Views/Utils/Modals.cshtml" />
 
 @section Scripts {
-    <script src="~/js/PaisesMonedas.js"></script>
+    <script src="~/js/PaisesMonedas.js?v=1.0"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 }

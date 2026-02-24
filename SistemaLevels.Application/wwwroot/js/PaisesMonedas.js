@@ -3,6 +3,27 @@ let paisesCache = [];
 
 $(document).ready(() => {
 
+    window.addEventListener("cw:monedasActualizadas", (e) => {
+
+        const cambios = e.detail?.cambios || [];
+
+        actualizarCardsMonedas(cambios);
+    });
+
+    const configActual = obtenerRefreshConfig();
+    $("#cmbRefresh").val(configActual);
+
+    $("#cmbRefresh").on("change", async function () {
+
+        const minutos = parseInt($(this).val());
+
+        if (window.CurrencyWidget?.setRefreshMinutes) {
+            await window.CurrencyWidget.setRefreshMinutes(minutos);
+        }
+
+        exitoModal("Frecuencia actualizada");
+    });
+
     $(document).off("click.select2fix").on(
         "click.select2fix",
         ".select2-container--default .select2-selection--single",
@@ -77,9 +98,15 @@ async function listarMonedas() {
     (monedas || []).forEach(m => {
         const cot = Number(m.Cotizacion ?? 0);
 
+        const pinned = window.CurrencyWidget?.getPinnedIds?.() || [];
+
         cont.innerHTML += `
             <div class="moneda-card">
                 <div class="moneda-acciones">
+                <button class="btn-card btn-pin ${monedasPin.includes(m.Id) ? 'active' : ''}"
+        onclick="togglePin(${m.Id})">
+    <i class="fa fa-thumb-tack"></i>
+</button>
                     <button class="btn-card" onclick="editarMoneda(${m.Id})">
                         <i class="fa fa-pencil"></i>
                     </button>
@@ -205,11 +232,18 @@ async function guardarMoneda() {
     const json = await resp.json();
 
     if (json.valor) {
+
         $("#modalEdicion").modal("hide");
-        listarMonedas();
+
+        await listarMonedas();
+
+        // 🔥 ACTUALIZAR WIDGET
+        if (typeof cargarMonedasGlobal === "function") {
+            await cargarMonedasGlobal();
+            renderWidget();
+        }
+
         exitoModal("Operación correcta");
-    } else {
-        errorModal("No se pudo guardar");
     }
 }
 
@@ -225,7 +259,14 @@ async function eliminarMoneda(id) {
     const json = await resp.json();
 
     if (json.valor) {
-        listarMonedas();
+
+        await listarMonedas();
+
+        if (typeof cargarMonedasGlobal === "function") {
+            await cargarMonedasGlobal();
+            renderWidget();
+        }
+
         exitoModal("Moneda eliminada");
     }
 }
@@ -274,4 +315,52 @@ function toDecimal(val) {
     if (!val) return 0;
     const n = Number(val.replace(",", "."));
     return isNaN(n) ? 0 : n;
+}
+
+
+function actualizarCardsMonedas(cambios) {
+
+    if (!Array.isArray(cambios) || !cambios.length) return;
+
+    cambios.forEach(c => {
+
+        // actualizar memoria local
+        const moneda = monedas.find(m => m.Id === c.id);
+        if (!moneda) return;
+
+        moneda.Cotizacion = c.next;
+
+        // buscar card DOM
+        const card = document.querySelector(
+            `.moneda-card button[onclick="togglePin(${c.id})"]`
+        )?.closest(".moneda-card");
+
+        if (!card) return;
+
+        const cotEl = card.querySelector(".moneda-cotizacion");
+        if (!cotEl) return;
+
+        cotEl.textContent =
+            Number(c.next).toLocaleString("es-AR", {
+                minimumFractionDigits: 2
+            });
+
+        aplicarEfectoCard(card, c.prev, c.next);
+    });
+}
+
+function aplicarEfectoCard(card, anterior, nuevo) {
+
+    card.classList.remove("up", "down");
+
+    if (nuevo > anterior)
+        card.classList.add("up");
+    else if (nuevo < anterior)
+        card.classList.add("down");
+    else
+        return;
+
+    setTimeout(() => {
+        card.classList.remove("up", "down");
+    }, 2000);
 }

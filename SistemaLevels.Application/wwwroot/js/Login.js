@@ -8,79 +8,112 @@
         $("#checkIcon").show(); // Mostrar el ícono verde de check
     }
 
-    // Al enviar el formulario
+    // ===============================
+    // LOGIN SUBMIT
+    // ===============================
     $("#loginForm").on("submit", function (event) {
-        event.preventDefault(); // Evitar el envío tradicional del formulario
 
-        var username = $("#username").val(); // Obtener el nombre de usuario
-        var password = $("#password").val(); // Obtener la contraseña
-        var token = $('input[name="__RequestVerificationToken"]').val(); // Obtener token CSRF
-        var rememberMe = $("#rememberMe").prop('checked'); // Obtener el estado del checkbox
+        event.preventDefault();
 
-        // Crear el objeto de datos para enviar
-        var data = {
+        const username = $("#username").val();
+        const password = $("#password").val();
+        const token = $('input[name="__RequestVerificationToken"]').val();
+        const rememberMe = $("#rememberMe").prop("checked");
+
+        const data = {
             Usuario: username,
-            Contrasena: password,
-            __RequestVerificationToken: token // Enviar el token CSRF
+            Contrasena: password
         };
 
-        fetch(loginUrl, { // Aquí usamos la variable generada por Razor
-            method: 'POST',
+        fetch(loginUrl, {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': token // Enviar el token CSRF
+                "Content-Type": "application/json",
+                "RequestVerificationToken": token
             },
             body: JSON.stringify(data)
         })
-            .then(response => {
-                console.log(response); // Verificar la respuesta
+            // ===============================
+            // LEER RESPUESTA SIEMPRE (200 o 401)
+            // ===============================
+            .then(async response => {
+
+                let result;
+
+                try {
+                    result = await response.json();
+                } catch {
+                    throw { message: "Respuesta inválida del servidor." };
+                }
+
+                // Si HTTP != 200
                 if (!response.ok) {
-                    throw new Error("Error en la respuesta del servidor");
+                    return Promise.reject(result);
                 }
-                return response.json(); // Parsear la respuesta JSON
+
+                return result;
             })
+
+            // ===============================
+            // LOGIN OK
+            // ===============================
             .then(data => {
-                
-                
-                if (data.success) {
-                    localStorage.setItem("JwtToken", data.token)
-                    // Si "Recordar credenciales" está seleccionado, guarda las credenciales
-                    if (rememberMe) {
-                        localStorage.setItem('username', username);
-                        localStorage.setItem('password', password);
-                        localStorage.setItem('rememberMe', true);
-                        $("#checkIcon").show(); // Mostrar el ícono verde de check
-                    } else {
-                        // Si no está seleccionado, eliminar las credenciales guardadas
-                        localStorage.removeItem('username');
-                        localStorage.removeItem('password');
-                        localStorage.removeItem('rememberMe');
-                        $("#checkIcon").hide(); // Ocultar el ícono de check
-                    }
 
-                    // Redirigir a la página principal
-                    localStorage.setItem('userSession', JSON.stringify(data.user)); // Guardar el usuario
-                    window.location.href = 'Usuarios';
-                } else {
-                    // Mostrar el mensaje de error
-                    $(document).ready(function () {
-                        // Mostrar el mensaje de error
-                        $("#errorMessage").text(data.message).show(); // Establecer el mensaje
-                        $("#diverrorMessage").show(); // Mostrar el div
-
-                        // Ocultar el div después de 3 segundos
-                        setTimeout(function () {
-                            $("#diverrorMessage").fadeOut();
-                        }, 3000); // 3000 milisegundos = 3 segundos
-                    });
+                if (!data.success) {
+                    throw data;
                 }
-            })
-            .catch(error => {
-                console.error("Error: " + error);
-                $("#errorMessage").text("Hubo un problema al procesar la solicitud. Error: " + error).show();
-            });
-    });
 
+                // Guardar JWT
+                localStorage.setItem("JwtToken", data.token);
+
+                // Guardar usuario sesión
+                localStorage.setItem("userSession", JSON.stringify(data.user));
+
+                // ===============================
+                // RECORDAR CREDENCIALES
+                // ===============================
+                if (rememberMe) {
+
+                    localStorage.setItem("username", username);
+                    localStorage.setItem("password", password);
+                    localStorage.setItem("rememberMe", true);
+
+                    $("#checkIcon").show();
+                }
+                else {
+
+                    localStorage.removeItem("username");
+                    localStorage.removeItem("password");
+                    localStorage.removeItem("rememberMe");
+
+                    $("#checkIcon").hide();
+                }
+
+                // Redirigir
+                window.location.href = "Usuarios";
+            })
+
+            // ===============================
+            // ERROR LOGIN / SERVER
+            // ===============================
+            .catch(error => {
+
+                console.error("Login error:", error);
+
+                const mensaje =
+                    error?.message ||
+                    error?.Message ||
+                    "Usuario o contraseña incorrectos.";
+
+                $("#errorMessage").text(mensaje);
+                $("#diverrorMessage").stop(true, true).fadeIn();
+
+                setTimeout(() => {
+                    $("#diverrorMessage").fadeOut();
+                }, 3000);
+            });
+
+    });
     // Al cambiar el estado del checkbox, mostrar u ocultar el ícono
     $("#rememberMe").on("change", function () {
         var username = $("#username").val(); // Obtener el nombre de usuario

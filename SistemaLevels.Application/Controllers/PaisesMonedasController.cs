@@ -100,6 +100,27 @@ namespace SistemaLevels.Application.Controllers
             }
         }
 
+        [HttpPut]
+        public async Task<IActionResult> ActualizarMasivo([FromBody] List<VMMonedaActualizacion> lista)
+        {
+            try
+            {
+                if (lista == null || lista.Count == 0)
+                    return Ok(new { valor = false });
+
+                // 🔥 Convertimos a estructura limpia para BLL
+                var dic = lista.ToDictionary(x => x.Id, x => x.Cotizacion);
+
+                bool ok = await _service.ActualizarMasivo(dic);
+
+                return Ok(new { valor = ok });
+            }
+            catch
+            {
+                return Ok(new { valor = false });
+            }
+        }
+
         [HttpDelete]
         public async Task<IActionResult> Eliminar(int id)
         {
