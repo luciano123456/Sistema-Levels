@@ -141,6 +141,8 @@ function guardarProductora() {
 
         Email: $("#txtEmail").val(),
 
+        AsociacionAutomatica: $("#chkAsociacionAutomatica").is(":checked"),
+
         ClientesIds: clientesIds
     };
 
@@ -194,6 +196,8 @@ function nuevaProductora() {
     $("#infoAuditoria").addClass("d-none");
     $("#infoRegistro").html("");
     $("#infoModificacion").html("");
+
+    $("#chkAsociacionAutomatica").prop("checked", true);
 }
 
 async function mostrarModal(modelo) {
@@ -212,6 +216,8 @@ async function mostrarModal(modelo) {
     $("#txtCodigoPostal").val(modelo.CodigoPostal || "");
 
     $("#txtEmail").val(modelo.Email || "");
+
+    $("#chkAsociacionAutomatica").prop("checked", !!modelo.AsociacionAutomatica);
 
     await Promise.all([
         listaPaises(),
@@ -755,6 +761,12 @@ function limpiarModal() {
     if (!formulario) return;
 
     formulario.querySelectorAll("input, select, textarea").forEach(el => {
+        if (el.type === "checkbox") {
+            el.checked = false;
+            el.classList.remove("is-invalid", "is-valid");
+            return;
+        }
+
         if (el.tagName === "SELECT") el.selectedIndex = 0;
         else el.value = "";
 
@@ -763,7 +775,6 @@ function limpiarModal() {
 
     $("#errorCampos").addClass("d-none");
 }
-
 function validarCampoIndividual(el) {
     const id = el.id;
     const camposObligatorios = ["txtNombre", "cmbPais", "cmbProvincia"];

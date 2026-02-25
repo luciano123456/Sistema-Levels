@@ -29,8 +29,6 @@ public partial class Cliente
 
     public string? Email { get; set; }
 
-    public int IdProductora { get; set; }
-
     public int IdPais { get; set; }
 
     public int IdProvincia { get; set; }
@@ -45,13 +43,15 @@ public partial class Cliente
 
     public int? IdCondicionIva { get; set; }
 
+    public int? AsociacionAutomatica { get; set; }
+
     public virtual ICollection<ClientesCuentaCorriente> ClientesCuentaCorrientes { get; set; } = new List<ClientesCuentaCorriente>();
+
+    public virtual ICollection<ClientesProductorasAsignada> ClientesProductorasAsignada { get; set; } = new List<ClientesProductorasAsignada>();
 
     public virtual PaisesCondicionesIva? IdCondicionIvaNavigation { get; set; }
 
     public virtual Pais IdPaisNavigation { get; set; } = null!;
-
-    public virtual Productora IdProductoraNavigation { get; set; } = null!;
 
     public virtual PaisesProvincia IdProvinciaNavigation { get; set; } = null!;
 

@@ -5,10 +5,13 @@ namespace SistemaLevels.BLL.Service
     public interface IClientesService
     {
         Task<bool> Eliminar(int id);
-        Task<bool> Actualizar(Cliente model);
-        Task<bool> Insertar(Cliente model);
+
+        Task<bool> Insertar(Cliente model, List<int> productorasIds);
+
+        Task<bool> Actualizar(Cliente model, List<int> productorasIds);
 
         Task<Cliente?> Obtener(int id);
+
         Task<IQueryable<Cliente>> ObtenerTodos();
     }
 }

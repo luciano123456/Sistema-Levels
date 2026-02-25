@@ -45,7 +45,9 @@ public class ProductorasController : Controller
 
             IdUsuarioModifica = c.IdUsuarioModifica,
             FechaModifica = c.FechaModifica,
-            UsuarioModifica = c.IdUsuarioModificaNavigation.Usuario
+            UsuarioModifica = c.IdUsuarioModificaNavigation.Usuario,
+
+             AsociacionAutomatica = (c.AsociacionAutomatica ?? 0) == 1,
         }).ToList();
 
         return Ok(lista);
@@ -72,6 +74,7 @@ public class ProductorasController : Controller
             EntreCalles = model.EntreCalles,
             Direccion = model.Direccion,
             CodigoPostal = model.CodigoPostal,
+            AsociacionAutomatica = model.AsociacionAutomatica ? 1 : 0,
 
             IdUsuarioRegistra = idUsuario,
             FechaRegistra = DateTime.Now
@@ -103,6 +106,8 @@ public class ProductorasController : Controller
             EntreCalles = model.EntreCalles,
             Direccion = model.Direccion,
             CodigoPostal = model.CodigoPostal,
+
+            AsociacionAutomatica = model.AsociacionAutomatica ? 1 : 0,
 
             IdUsuarioModifica = idUsuario,
             FechaModifica = DateTime.Now
@@ -148,6 +153,8 @@ public class ProductorasController : Controller
             EntreCalles = p.EntreCalles,
             Direccion = p.Direccion,
             CodigoPostal = p.CodigoPostal,
+
+            AsociacionAutomatica = (p.AsociacionAutomatica ?? 0) == 1,
 
             // ✅ clientes asignados
             ClientesIds = (p.ProductorasClientesAsignados ?? new List<ProductorasClientesAsignado>())

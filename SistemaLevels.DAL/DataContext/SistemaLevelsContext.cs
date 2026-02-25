@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using SistemaLevels.Models;
 
 namespace SistemaLevels.DAL.DataContext;
@@ -17,18 +16,6 @@ public partial class SistemaLevelsContext : DbContext
     {
     }
 
-    private readonly IConfiguration _configuration;
-
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            var connectionString = _configuration.GetConnectionString("SistemaDB");
-            optionsBuilder.UseSqlServer(connectionString);
-        }
-    }
-
     public virtual DbSet<Artista> Artistas { get; set; }
 
     public virtual DbSet<ArtistasCuentaCorriente> ArtistasCuentaCorrientes { get; set; }
@@ -42,6 +29,8 @@ public partial class SistemaLevelsContext : DbContext
     public virtual DbSet<Cliente> Clientes { get; set; }
 
     public virtual DbSet<ClientesCuentaCorriente> ClientesCuentaCorrientes { get; set; }
+
+    public virtual DbSet<ClientesProductorasAsignada> ClientesProductorasAsignadas { get; set; }
 
     public virtual DbSet<Gasto> Gastos { get; set; }
 
@@ -118,6 +107,10 @@ public partial class SistemaLevelsContext : DbContext
     public virtual DbSet<VentasEstado> VentasEstados { get; set; }
 
     public virtual DbSet<VentasPersonal> VentasPersonals { get; set; }
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=DESKTOP-3MT5F5F; Database=Sistema_Levels; Integrated Security=true; Trusted_Connection=True; Encrypt=False");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -408,10 +401,6 @@ public partial class SistemaLevelsContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Clientes_Paises");
 
-            entity.HasOne(d => d.IdProductoraNavigation).WithMany(p => p.Clientes)
-                .HasForeignKey(d => d.IdProductora)
-                .HasConstraintName("FK_Clientes_Productoras");
-
             entity.HasOne(d => d.IdProvinciaNavigation).WithMany(p => p.Clientes)
                 .HasForeignKey(d => d.IdProvincia)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -465,6 +454,22 @@ public partial class SistemaLevelsContext : DbContext
                 .HasForeignKey(d => d.IdUsuarioRegistra)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Clientes_CuentaCorriente_UsuariosRegistra");
+        });
+
+        modelBuilder.Entity<ClientesProductorasAsignada>(entity =>
+        {
+            entity.ToTable("Clientes_ProductorasAsignadas");
+
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+            entity.HasOne(d => d.IdNavigation).WithOne(p => p.ClientesProductorasAsignada)
+                .HasForeignKey<ClientesProductorasAsignada>(d => d.Id)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Clientes_ProductorasAsignadas_Productoras");
+
+            entity.HasOne(d => d.IdClienteNavigation).WithMany(p => p.ClientesProductorasAsignada)
+                .HasForeignKey(d => d.IdCliente)
+                .HasConstraintName("FK_Clientes_ProductorasAsignadas_Clientes");
         });
 
         modelBuilder.Entity<Gasto>(entity =>
