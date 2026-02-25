@@ -285,3 +285,78 @@ function abrirModalEdicion() {
 
     modal.show();
 }
+
+
+function setModalSoloLectura(esSoloLectura) {
+    const $modal = $("#modalEdicion");
+
+    // Ocultar botón guardar/registrar
+    $("#btnGuardar").toggleClass("d-none", esSoloLectura);
+
+    // Opcional: por si tenés otro botón en el footer
+    // $("#btnAlgoMas").toggleClass("d-none", esSoloLectura);
+
+    // Deshabilitar inputs/textareas
+    $modal.find("input, textarea").prop("disabled", esSoloLectura);
+
+    // Deshabilitar selects normales + select2
+    $modal.find("select").each(function () {
+        const $el = $(this);
+        $el.prop("disabled", esSoloLectura);
+
+        if ($el.data("select2")) {
+            $el.prop("disabled", esSoloLectura);
+            $el.trigger("change.select2");
+        }
+    });
+
+    // Evitar que se “pinten” validaciones mientras está solo lectura
+    $modal.attr("data-sololectura", esSoloLectura ? "1" : "0");
+}
+
+
+
+/* =====================================
+GS-UI — Render Acciones Grid GLOBAL
+===================================== */
+
+function renderAccionesGrid(id, acciones) {
+
+    const btnVer = acciones.ver
+        ? `
+        <button type="button"
+            class="btn btn-sm rp-act rp-act-view"
+            title="Ver"
+            onclick="${acciones.ver}(${id})">
+            <i class="fa fa-file-text-o"></i>
+        </button>`
+        : "";
+
+    const btnEditar = acciones.editar
+        ? `
+        <button type="button"
+            class="btn btn-sm rp-act rp-act-edit"
+            title="Editar"
+            onclick="${acciones.editar}(${id})">
+            <i class="fa fa-pencil-square-o"></i>
+        </button>`
+        : "";
+
+    const btnEliminar = acciones.eliminar
+        ? `
+        <button type="button"
+            class="btn btn-sm rp-act rp-act-del"
+            title="Eliminar"
+            onclick="${acciones.eliminar}(${id})">
+            <i class="fa fa-trash-o"></i>
+        </button>`
+        : "";
+
+    return `
+        <div class="rp-row-actions" data-id="${id}">
+            ${btnVer}
+            ${btnEditar}
+            ${btnEliminar}
+        </div>
+    `;
+}

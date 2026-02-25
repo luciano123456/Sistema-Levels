@@ -30,7 +30,7 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<ClientesCuentaCorriente> ClientesCuentaCorrientes { get; set; }
 
-    public virtual DbSet<ClientesProductorasAsignada> ClientesProductorasAsignadas { get; set; }
+    public virtual DbSet<ClientesProductora> ClientesProductoras { get; set; }
 
     public virtual DbSet<Gasto> Gastos { get; set; }
 
@@ -75,8 +75,6 @@ public partial class SistemaLevelsContext : DbContext
     public virtual DbSet<PresupuestosEstado> PresupuestosEstados { get; set; }
 
     public virtual DbSet<Productora> Productoras { get; set; }
-
-    public virtual DbSet<ProductorasClientesAsignado> ProductorasClientesAsignados { get; set; }
 
     public virtual DbSet<Representante> Representantes { get; set; }
 
@@ -456,20 +454,24 @@ public partial class SistemaLevelsContext : DbContext
                 .HasConstraintName("FK_Clientes_CuentaCorriente_UsuariosRegistra");
         });
 
-        modelBuilder.Entity<ClientesProductorasAsignada>(entity =>
+        modelBuilder.Entity<ClientesProductora>(entity =>
         {
-            entity.ToTable("Clientes_ProductorasAsignadas");
+            entity.HasKey(e => e.Id).HasName("PK__Clientes__3214EC079F60F017");
 
-            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+            entity.HasIndex(e => new { e.IdCliente, e.IdProductora }, "UX_Cliente_Productora").IsUnique();
 
-            entity.HasOne(d => d.IdNavigation).WithOne(p => p.ClientesProductorasAsignada)
-                .HasForeignKey<ClientesProductorasAsignada>(d => d.Id)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Clientes_ProductorasAsignadas_Productoras");
+            entity.Property(e => e.FechaRegistro)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.OrigenAsignacion).HasDefaultValueSql("((1))");
 
-            entity.HasOne(d => d.IdClienteNavigation).WithMany(p => p.ClientesProductorasAsignada)
+            entity.HasOne(d => d.IdClienteNavigation).WithMany(p => p.ClientesProductoras)
                 .HasForeignKey(d => d.IdCliente)
-                .HasConstraintName("FK_Clientes_ProductorasAsignadas_Clientes");
+                .HasConstraintName("FK_CP_Cliente");
+
+            entity.HasOne(d => d.IdProductoraNavigation).WithMany(p => p.ClientesProductoras)
+                .HasForeignKey(d => d.IdProductora)
+                .HasConstraintName("FK_CP_Productora");
         });
 
         modelBuilder.Entity<Gasto>(entity =>
@@ -1025,27 +1027,6 @@ public partial class SistemaLevelsContext : DbContext
             entity.HasOne(d => d.IdpaisNavigation).WithMany(p => p.Productoras)
                 .HasForeignKey(d => d.Idpais)
                 .HasConstraintName("FK_Productoras_Paises");
-        });
-
-        modelBuilder.Entity<ProductorasClientesAsignado>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__Producto__3214EC072FA0984E");
-
-            entity.ToTable("Productoras_ClientesAsignados");
-
-            entity.HasIndex(e => e.IdCliente, "IX_ProdCliente_Cliente");
-
-            entity.HasIndex(e => e.IdProductora, "IX_ProdCliente_Productora");
-
-            entity.HasOne(d => d.IdClienteNavigation).WithMany(p => p.ProductorasClientesAsignados)
-                .HasForeignKey(d => d.IdCliente)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ProdCliente_Cliente");
-
-            entity.HasOne(d => d.IdProductoraNavigation).WithMany(p => p.ProductorasClientesAsignados)
-                .HasForeignKey(d => d.IdProductora)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_ProdCliente_Productora");
         });
 
         modelBuilder.Entity<Representante>(entity =>

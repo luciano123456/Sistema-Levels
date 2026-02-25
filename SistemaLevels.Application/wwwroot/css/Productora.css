@@ -20,26 +20,83 @@
     padding: 10px;
 }
 
+/* ===============================
+   CHECKLIST MODERNO — PERSONAL
+=============================== */
+
 .rp-check-item {
-    background: rgba(255,255,255,0.04);
-    border-radius: 10px;
-    padding: 10px 14px;
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
-    transition: 0.2s;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: all .25s ease;
 }
 
+    /* hover */
     .rp-check-item:hover {
         background: rgba(255,255,255,0.08);
+        transform: translateY(-1px);
     }
 
+    /* ocultamos checkbox real */
     .rp-check-item input {
-        width: 18px;
-        height: 18px;
+        appearance: none;
+        -webkit-appearance: none;
+        width: 22px;
+        height: 22px;
+        border-radius: 7px;
+        border: 2px solid rgba(255,255,255,0.35);
+        background: transparent;
+        display: grid;
+        place-content: center;
+        transition: all .25s ease;
+        cursor: pointer;
     }
 
+        /* check interno */
+        .rp-check-item input::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            transform: scale(0);
+            transition: transform .18s ease;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0, 43% 62%);
+            background: white;
+        }
 
+        /* CHECK ACTIVO */
+        .rp-check-item input:checked {
+            background: linear-gradient(135deg,#2d5cff,#4f7cff);
+            border-color: #4f7cff;
+            box-shadow: 0 0 0 3px rgba(79,124,255,0.15), 0 4px 12px rgba(45,92,255,0.35);
+        }
+
+            .rp-check-item input:checked::before {
+                transform: scale(1);
+            }
+
+    /* TEXTO */
+    .rp-check-item span {
+        font-weight: 500;
+        color: #e6e9ff;
+        transition: .2s;
+    }
+
+    /* fila activa completa */
+    .rp-check-item:has(input:checked) {
+        background: rgba(79,124,255,0.12);
+        border-color: rgba(79,124,255,0.35);
+    }
+
+        /* glow suave */
+        .rp-check-item:has(input:checked):hover {
+            background: rgba(79,124,255,0.18);
+        }
 /* ===============================
    TABS MODERNOS PERSONAL
 =============================== */
@@ -212,4 +269,65 @@
 /* glow */
 .rp-switch input:checked + .rp-slider {
     box-shadow: 0 0 10px rgba(120,198,203,0.6);
+}
+
+.rp-check-item.auto {
+    opacity: .75;
+    background: rgba(80,140,255,.08);
+}
+
+.rp-auto-badge {
+    margin-left: 8px;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: #4f7cff;
+    color: white;
+    font-weight: 600;
+}
+
+/* ===== BADGES ===== */
+
+.rp-badge {
+    margin-left: 10px;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+    .rp-badge.manual {
+        background: #28c76f;
+        color: #fff;
+    }
+
+    .rp-badge.auto {
+        background: #00cfe8;
+        color: #fff;
+    }
+
+    .rp-badge.cli,
+    .rp-badge.prod {
+        background: #7367f0;
+        color: #fff;
+    }
+
+
+.rp-check-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ===== estilos visuales ===== */
+
+.rp-check-item.auto {
+    opacity: .75;
+}
+
+.rp-check-item.prod {
+    opacity: .75;
+}
+
+.rp-check-item.manual:hover {
+    background: rgba(255,255,255,.08);
 }

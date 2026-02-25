@@ -1,26 +1,33 @@
-﻿using SistemaLevels.Models;
+﻿using SistemaLevels.DAL.Repository;
+using SistemaLevels.Models;
 
-public class ProductorasService : IProductorasService
+namespace SistemaLevels.BLL.Service
 {
-    private readonly IProductorasRepository<Productora> _repo;
-
-    public ProductorasService(IProductorasRepository<Productora> repo)
+    public class ProductorasService : IProductorasService
     {
-        _repo = repo;
+        private readonly IProductorasRepository _repo;
+
+        public ProductorasService(IProductorasRepository repo)
+        {
+            _repo = repo;
+        }
+
+        public Task<bool> Insertar(Productora model, List<int> clientesIds)
+            => _repo.Insertar(model, clientesIds);
+
+        public Task<bool> Actualizar(Productora model, List<int> clientesIds)
+            => _repo.Actualizar(model, clientesIds);
+
+        public Task<bool> Eliminar(int id)
+            => _repo.Eliminar(id);
+
+        public Task<Productora?> Obtener(int id)
+            => _repo.Obtener(id);
+
+        public Task<IQueryable<Productora>> ObtenerTodos()
+            => _repo.ObtenerTodos();
+
+        public Task<List<int>> ObtenerClientesAsociadosAutomaticos(int idProductora)
+            => _repo.ObtenerClientesAsociadosAutomaticos(idProductora);
     }
-
-    public async Task<bool> Actualizar(Productora model, List<int> clientesIds)
-        => await _repo.Actualizar(model, clientesIds);
-
-    public async Task<bool> Eliminar(int id)
-        => await _repo.Eliminar(id);
-
-    public async Task<bool> Insertar(Productora model, List<int> clientesIds)
-        => await _repo.Insertar(model, clientesIds);
-
-    public async Task<Productora?> Obtener(int id)
-        => await _repo.Obtener(id);
-
-    public async Task<IQueryable<Productora>> ObtenerTodos()
-        => await _repo.ObtenerTodos();
 }

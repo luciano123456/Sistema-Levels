@@ -47,7 +47,7 @@ public partial class Cliente
 
     public virtual ICollection<ClientesCuentaCorriente> ClientesCuentaCorrientes { get; set; } = new List<ClientesCuentaCorriente>();
 
-    public virtual ICollection<ClientesProductorasAsignada> ClientesProductorasAsignada { get; set; } = new List<ClientesProductorasAsignada>();
+    public virtual ICollection<ClientesProductora> ClientesProductoras { get; set; } = new List<ClientesProductora>();
 
     public virtual PaisesCondicionesIva? IdCondicionIvaNavigation { get; set; }
 
@@ -62,8 +62,6 @@ public partial class Cliente
     public virtual User IdUsuarioRegistraNavigation { get; set; } = null!;
 
     public virtual ICollection<Presupuesto> Presupuestos { get; set; } = new List<Presupuesto>();
-
-    public virtual ICollection<ProductorasClientesAsignado> ProductorasClientesAsignados { get; set; } = new List<ProductorasClientesAsignado>();
 
     public virtual ICollection<Venta> Venta { get; set; } = new List<Venta>();
 }

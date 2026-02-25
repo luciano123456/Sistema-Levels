@@ -37,7 +37,7 @@ namespace SistemaLevels.Application.Models.ViewModels
         public int? AsociacionAutomatica { get; set; }
 
         // 🔥 NUEVO
-        public List<int> ProductorasIds { get; set; } = new();
+        public List<int>? ProductorasIds { get; set; } = new();
 
         // auditoría
         public int IdUsuarioRegistra { get; set; }

@@ -169,7 +169,7 @@ async function mostrarModal(modelo) {
 }
 
 const editarRepresentante = id => {
-    $('.acciones-dropdown').hide();
+    
 
     fetch("/Representantes/EditarInfo?id=" + id, {
         method: 'GET',
@@ -190,7 +190,7 @@ const editarRepresentante = id => {
 };
 
 async function eliminarRepresentante(id) {
-    $('.acciones-dropdown').hide();
+    
 
     const confirmado = await confirmarModal("¿Desea eliminar este representante?");
     if (!confirmado) return;
@@ -494,14 +494,14 @@ function toggleAcciones(id) {
     if ($dropdown.is(":visible")) {
         $dropdown.hide();
     } else {
-        $('.acciones-dropdown').hide();
+        
         $dropdown.show();
     }
 }
 
 $(document).on('click', function (e) {
     if (!$(e.target).closest('.acciones-menu').length) {
-        $('.acciones-dropdown').hide();
+        
     }
 });
 /* =========================
