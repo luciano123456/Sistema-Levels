@@ -5,26 +5,26 @@ namespace SistemaLevels.BLL.Service
 {
     public class ClientesService : IClientesService
     {
-        private readonly IClientesRepository<Cliente> _repo;
+        private readonly IClientesRepository _repo;
 
-        public ClientesService(IClientesRepository<Cliente> repo)
+        public ClientesService(IClientesRepository repo)
         {
             _repo = repo;
         }
 
-        public async Task<bool> Insertar(Cliente model, List<int> productorasIds)
-            => await _repo.Insertar(model, productorasIds);
+        public Task<bool> Insertar(Cliente model, List<int> productorasIds)
+            => _repo.Insertar(model, productorasIds);
 
-        public async Task<bool> Actualizar(Cliente model, List<int> productorasIds)
-            => await _repo.Actualizar(model, productorasIds);
+        public Task<bool> Actualizar(Cliente model, List<int> productorasIds)
+            => _repo.Actualizar(model, productorasIds);
 
-        public async Task<bool> Eliminar(int id)
-            => await _repo.Eliminar(id);
+        public Task<bool> Eliminar(int id)
+            => _repo.Eliminar(id);
 
-        public async Task<Cliente?> Obtener(int id)
-            => await _repo.Obtener(id);
+        public Task<Cliente?> Obtener(int id)
+            => _repo.Obtener(id);
 
-        public async Task<IQueryable<Cliente>> ObtenerTodos()
-            => await _repo.ObtenerTodos();
+        public Task<IQueryable<Cliente>> ObtenerTodos()
+            => _repo.ObtenerTodos();
     }
 }

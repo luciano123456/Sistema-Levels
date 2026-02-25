@@ -10,6 +10,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -55,7 +56,7 @@ builder.Services.AddScoped<IRepresentantesRepository<Representante>, Representan
 builder.Services.AddScoped<IRepresentantesService, RepresentantesService>();
 
 
-builder.Services.AddScoped<IProductorasRepository<Productora>, ProductorasRepository>();
+builder.Services.AddScoped<IProductorasRepository, ProductorasRepository>();
 builder.Services.AddScoped<IProductorasService, ProductorasService>();
 
 builder.Services.AddScoped<IPersonalRepository, PersonalRepository>();
@@ -71,7 +72,7 @@ builder.Services.AddScoped<ITareasEstadosService, TareasEstadosService>();
 builder.Services.AddScoped<ITareasRepository<Tarea>, TareasRepository>();
 builder.Services.AddScoped<ITareasService, TareasService>();
 
-builder.Services.AddScoped<IClientesRepository<Cliente>, ClientesRepository>();
+builder.Services.AddScoped<IClientesRepository, ClientesRepository>();
 builder.Services.AddScoped<IClientesService, ClientesService>();
 
 builder.Services.AddScoped<IGastosCategoriasRepository<GastosCategoria>, GastosCategoriasRepository>();

@@ -47,6 +47,15 @@ namespace SistemaLevels.Application.Models.ViewModels
 
         // ✅ NUEVO: clientes asignados
         public List<int> ClientesIds { get; set; } = new();
+
+
+        // ✅ MANUALES (checkbox editable)
+        public List<int> ClientesAsignadosIds { get; set; } = new();
+
+        // ✅ AUTOMÁTICOS (solo visual)
+        public List<int> ClientesAsociadosIds { get; set; } = new();
+
+
     }
 
     public class ProductorasClientesAsignados

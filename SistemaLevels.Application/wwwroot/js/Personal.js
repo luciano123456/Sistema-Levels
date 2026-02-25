@@ -160,6 +160,8 @@ function guardarPersonal() {
 function nuevoPersonal() {
     limpiarModal();
 
+    setModalSoloLectura(false);
+
     Promise.all([
         listaPaises(),
         listaRoles(),
@@ -188,6 +190,8 @@ function nuevoPersonal() {
 
 async function mostrarModal(modelo) {
     limpiarModal();
+
+    setModalSoloLectura(false);
 
     // 🔹 SIEMPRE abrir en la pestaña de datos
     const tabDatos = document.querySelector('#personalTabs button[data-bs-target="#tabDatos"]');
@@ -300,7 +304,7 @@ async function mostrarModal(modelo) {
 }
 
 const editarPersonal = id => {
-    $('.acciones-dropdown').hide();
+    
 
     fetch("/Personal/EditarInfo?id=" + id, {
         method: 'GET',
@@ -321,7 +325,7 @@ const editarPersonal = id => {
 };
 
 async function eliminarPersonal(id) {
-    $('.acciones-dropdown').hide();
+    
 
     const confirmado = await confirmarModal("¿Desea eliminar este registro de personal?");
     if (!confirmado) return;
@@ -397,20 +401,11 @@ async function configurarDataTable(data) {
                     title: '',
                     width: "1%",
                     render: function (data) {
-                        return `
-                            <div class="acciones-menu" data-id="${data}">
-                                <button class='btn btn-sm btnacciones' type='button' onclick='toggleAcciones(${data})'>
-                                    <i class='fa fa-ellipsis-v fa-lg text-white'></i>
-                                </button>
-                                <div class="acciones-dropdown" style="display: none;">
-                                    <button class='btn btn-sm btneditar' onclick='editarPersonal(${data})'>
-                                        <i class='fa fa-pencil-square-o text-success'></i> Editar
-                                    </button>
-                                    <button class='btn btn-sm btneliminar' onclick='eliminarPersonal(${data})'>
-                                        <i class='fa fa-trash-o text-danger'></i> Eliminar
-                                    </button>
-                                </div>
-                            </div>`;
+                        return renderAccionesGrid(data, {
+                            ver: "verPersonal",
+                            editar: "editarPersonal",
+                            eliminar: "eliminarPersonal"
+                        });
                     },
                     orderable: false,
                     searchable: false,
@@ -667,22 +662,6 @@ function configurarOpcionesColumnas() {
 /* =========================
    ACCIONES DROPDOWN
 ========================= */
-
-function toggleAcciones(id) {
-    var $dropdown = $(`.acciones-menu[data-id="${id}"] .acciones-dropdown`);
-
-    if ($dropdown.is(":visible")) $dropdown.hide();
-    else {
-        $('.acciones-dropdown').hide();
-        $dropdown.show();
-    }
-}
-
-$(document).on('click', function (e) {
-    if (!$(e.target).closest('.acciones-menu').length) {
-        $('.acciones-dropdown').hide();
-    }
-});
 
 /* =========================
    VALIDACIONES
@@ -968,3 +947,31 @@ function actualizarContadoresTabs() {
     $("#contadorRoles").text(`(${cantRoles})`);
     $("#contadorArtistas").text(`(${cantArtistas})`);
 }
+
+
+const verPersonal = id => {
+
+    fetch("/Personal/EditarInfo?id=" + id, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ha ocurrido un error.");
+            return r.json();
+        })
+        .then(async dataJson => {
+
+            if (!dataJson) throw new Error("Ha ocurrido un error.");
+
+            await mostrarModal(dataJson);
+
+            // ⭐ reutiliza función global del site.js
+            setModalSoloLectura(true);
+
+            $("#modalEdicionLabel").text("Ver Personal");
+        })
+        .catch(_ => errorModal("Ha ocurrido un error."));
+};

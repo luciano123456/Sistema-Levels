@@ -47,7 +47,7 @@ public partial class Productora
 
     public virtual ICollection<Artista> Artista { get; set; } = new List<Artista>();
 
-    public virtual ClientesProductorasAsignada? ClientesProductorasAsignada { get; set; }
+    public virtual ICollection<ClientesProductora> ClientesProductoras { get; set; } = new List<ClientesProductora>();
 
     public virtual PaisesCondicionesIva? IdCondicionIvaNavigation { get; set; }
 
@@ -62,8 +62,6 @@ public partial class Productora
     public virtual Pais? IdpaisNavigation { get; set; }
 
     public virtual ICollection<Presupuesto> Presupuestos { get; set; } = new List<Presupuesto>();
-
-    public virtual ICollection<ProductorasClientesAsignado> ProductorasClientesAsignados { get; set; } = new List<ProductorasClientesAsignado>();
 
     public virtual ICollection<Venta> Venta { get; set; } = new List<Venta>();
 }

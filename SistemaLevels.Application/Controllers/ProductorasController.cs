@@ -20,38 +20,46 @@ public class ProductorasController : Controller
         return View();
     }
 
+    /* ===============================
+       LISTA (GRILLA)
+    =============================== */
+
     [HttpGet]
     public async Task<IActionResult> Lista()
     {
-        var reps = await _service.ObtenerTodos();
+        var productoras = await _service.ObtenerTodos();
 
-        var lista = reps.Select(c => new VMProductora
+        var lista = productoras.Select(p => new VMProductora
         {
-            Id = c.Id,
-            Nombre = c.Nombre,
+            Id = p.Id,
+            Nombre = p.Nombre,
 
-            Telefono = c.Telefono,
-            Email = c.Email,
-            Direccion = c.Direccion,
+            Telefono = p.Telefono,
+            Email = p.Email,
+            Direccion = p.Direccion,
 
-            Pais = c.IdpaisNavigation.Nombre,
-            TipoDocumento = c.IdTipoDocumentoNavigation.Nombre,
-            CondicionIva = c.IdCondicionIvaNavigation.Nombre,
-            Provincia = c.IdProvinciaNavigation.Nombre,
+            Pais = p.IdpaisNavigation != null ? p.IdpaisNavigation.Nombre : "",
+            TipoDocumento = p.IdTipoDocumentoNavigation != null ? p.IdTipoDocumentoNavigation.Nombre : "",
+            CondicionIva = p.IdCondicionIvaNavigation != null ? p.IdCondicionIvaNavigation.Nombre : "",
+            Provincia = p.IdProvinciaNavigation != null ? p.IdProvinciaNavigation.Nombre : "",
 
-            IdUsuarioRegistra = c.IdUsuarioRegistra,
-            FechaRegistra = c.FechaRegistra,
-            UsuarioRegistra = c.IdUsuarioRegistraNavigation.Usuario,
+            IdUsuarioRegistra = p.IdUsuarioRegistra,
+            FechaRegistra = p.FechaRegistra,
+            UsuarioRegistra = p.IdUsuarioRegistraNavigation != null ? p.IdUsuarioRegistraNavigation.Usuario : "",
 
-            IdUsuarioModifica = c.IdUsuarioModifica,
-            FechaModifica = c.FechaModifica,
-            UsuarioModifica = c.IdUsuarioModificaNavigation.Usuario,
+            IdUsuarioModifica = p.IdUsuarioModifica,
+            FechaModifica = p.FechaModifica,
+            UsuarioModifica = p.IdUsuarioModificaNavigation != null ? p.IdUsuarioModificaNavigation.Usuario : "",
 
-             AsociacionAutomatica = (c.AsociacionAutomatica ?? 0) == 1,
+            AsociacionAutomatica = (p.AsociacionAutomatica ?? 0) == 1
         }).ToList();
 
         return Ok(lista);
     }
+
+    /* ===============================
+       INSERTAR
+    =============================== */
 
     [HttpPost]
     public async Task<IActionResult> Insertar([FromBody] VMProductora model)
@@ -64,16 +72,20 @@ public class ProductorasController : Controller
             Telefono = model.Telefono,
             TelefonoAlternativo = model.TelefonoAlternativo,
             Dni = model.Dni,
+
             Idpais = model.Idpais,
             IdTipoDocumento = model.IdTipoDocumento,
             NumeroDocumento = model.NumeroDocumento,
             IdCondicionIva = model.IdCondicionIva,
+
             Email = model.Email,
+
             IdProvincia = model.IdProvincia,
             Localidad = model.Localidad,
             EntreCalles = model.EntreCalles,
             Direccion = model.Direccion,
             CodigoPostal = model.CodigoPostal,
+
             AsociacionAutomatica = model.AsociacionAutomatica ? 1 : 0,
 
             IdUsuarioRegistra = idUsuario,
@@ -84,6 +96,10 @@ public class ProductorasController : Controller
         return Ok(new { valor = respuesta });
     }
 
+    /* ===============================
+       ACTUALIZAR
+    =============================== */
+
     [HttpPut]
     public async Task<IActionResult> Actualizar([FromBody] VMProductora model)
     {
@@ -92,15 +108,19 @@ public class ProductorasController : Controller
         var prod = new Productora
         {
             Id = model.Id,
+
             Nombre = model.Nombre,
             Telefono = model.Telefono,
             TelefonoAlternativo = model.TelefonoAlternativo,
             Dni = model.Dni,
+
             Idpais = model.Idpais,
             IdTipoDocumento = model.IdTipoDocumento,
             NumeroDocumento = model.NumeroDocumento,
             IdCondicionIva = model.IdCondicionIva,
+
             Email = model.Email,
+
             IdProvincia = model.IdProvincia,
             Localidad = model.Localidad,
             EntreCalles = model.EntreCalles,
@@ -117,6 +137,9 @@ public class ProductorasController : Controller
         return Ok(new { valor = respuesta });
     }
 
+    /* ===============================
+       ELIMINAR
+    =============================== */
 
     [HttpDelete]
     public async Task<IActionResult> Eliminar(int id)
@@ -124,6 +147,12 @@ public class ProductorasController : Controller
         bool respuesta = await _service.Eliminar(id);
         return Ok(new { valor = respuesta });
     }
+
+    /* ===============================
+       EDITAR INFO (MODAL)
+       - manuales: OrigenAsignacion=1
+       - automáticos: OrigenAsignacion=2
+    =============================== */
 
     [HttpGet]
     public async Task<IActionResult> EditarInfo(int id)
@@ -133,6 +162,31 @@ public class ProductorasController : Controller
         if (p == null)
             return NotFound();
 
+        var relaciones = p.ClientesProductoras ?? new List<ClientesProductora>();
+
+        // manuales creados DESDE PRODUCTORA
+        // ✅ manuales creados DESDE PRODUCTORA
+        var clientesManuales = relaciones
+            .Where(x => x.OrigenAsignacion == 1)
+            .Select(x => x.IdCliente)
+            .Distinct()
+            .ToList();
+
+        // ✅ creados manualmente DESDE CLIENTE
+        var clientesDesdeCliente = relaciones
+            .Where(x => x.OrigenAsignacion == 2)
+            .Select(x => x.IdCliente)
+            .Distinct()
+            .ToList();
+
+        // ✅ automáticos reales
+        var clientesAutomaticos = relaciones
+            .Where(x => x.OrigenAsignacion == 3)
+            .Select(x => x.IdCliente)
+            .Distinct()
+            .ToList();
+
+        // VM base
         var vm = new VMProductora
         {
             Id = p.Id,
@@ -156,10 +210,8 @@ public class ProductorasController : Controller
 
             AsociacionAutomatica = (p.AsociacionAutomatica ?? 0) == 1,
 
-            // ✅ clientes asignados
-            ClientesIds = (p.ProductorasClientesAsignados ?? new List<ProductorasClientesAsignado>())
-                .Select(x => x.IdCliente)
-                .ToList(),
+            // 🔵 solo manuales se guardan desde Productoras
+            ClientesIds = clientesManuales,
 
             FechaRegistra = p.FechaRegistra,
             UsuarioRegistra = p.IdUsuarioRegistraNavigation?.Usuario,
@@ -168,6 +220,34 @@ public class ProductorasController : Controller
             UsuarioModifica = p.IdUsuarioModificaNavigation?.Usuario
         };
 
-        return Ok(vm);
+        // Respuesta extendida (como venías haciendo)
+        return Ok(new
+        {
+            vm.Id,
+            vm.Nombre,
+            vm.Telefono,
+            vm.TelefonoAlternativo,
+            vm.Dni,
+            vm.Idpais,
+            vm.IdTipoDocumento,
+            vm.NumeroDocumento,
+            vm.IdCondicionIva,
+            vm.Email,
+            vm.IdProvincia,
+            vm.Localidad,
+            vm.EntreCalles,
+            vm.Direccion,
+            vm.CodigoPostal,
+            vm.AsociacionAutomatica,
+
+            clientesManualesIds = clientesManuales,
+            clientesAutomaticosIds = clientesAutomaticos,
+            clientesDesdeClienteIds = clientesDesdeCliente,
+
+            vm.FechaRegistra,
+            vm.UsuarioRegistra,
+            vm.FechaModifica,
+            vm.UsuarioModifica
+        });
     }
 }

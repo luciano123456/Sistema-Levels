@@ -11,12 +11,6 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-                <li class="nav-item" id="seccionProductoras">
-                    <a class="nav-link" href="@Url.Action("Index", "Productoras")">
-                        Productoras
-                    </a>
-                </li>
-
                 <li class="nav-item" id="seccionPersonal">
                     <a class="nav-link" href="@Url.Action("Index", "Personal")">
                         Personal
@@ -29,21 +23,28 @@
                     </a>
                 </li>
 
-                <li class="nav-item" id="seccionTareas">
-                    <a class="nav-link" href="@Url.Action("Index", "Tareas")">
-                        Tareas
-                    </a>
-                </li>
-
                 <li class="nav-item" id="seccionClientes">
                     <a class="nav-link" href="@Url.Action("Index", "Clientes")">
                         Clientes
                     </a>
                 </li>
 
+                <li class="nav-item" id="seccionProductoras">
+                    <a class="nav-link" href="@Url.Action("Index", "Productoras")">
+                        Productoras
+                    </a>
+                </li>
+
+
                 <li class="nav-item" id="seccionMonedas">
                     <a class="nav-link" href="@Url.Action("Index", "PaisesMoneda")">
                         Monedas
+                    </a>
+                </li>
+              
+                <li class="nav-item" id="seccionTareas">
+                    <a class="nav-link" href="@Url.Action("Index", "Tareas")">
+                        Tareas
                     </a>
                 </li>
 
@@ -83,11 +84,6 @@
                         <i class="fa-lg me-2" id="userName"></i>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li>
-                            <a class="dropdown-item" href="#" onclick="window.location.href='/Usuarios/Configuracion';">
-                                Configuración
-                            </a>
-                        </li>
                         <li>
                             <a class="dropdown-item" href="#" onclick="cerrarSesion()">
                                 Cerrar Sesión

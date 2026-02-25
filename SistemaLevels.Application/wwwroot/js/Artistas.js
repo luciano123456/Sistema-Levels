@@ -226,6 +226,8 @@ function guardarArtista() {
 function nuevaArtista() {
     limpiarModal();
 
+    setModalSoloLectura(false); 
+
     Promise.all([
         listaProductoras(),
         listaRepresentantes(),
@@ -251,6 +253,8 @@ function nuevaArtista() {
 
 async function mostrarModal(modelo) {
     limpiarModal();
+
+    setModalSoloLectura(false);
 
     $("#txtId").val(modelo.Id || "");
 
@@ -349,7 +353,6 @@ async function mostrarModal(modelo) {
 }
 
 const editarArtista = id => {
-    $('.acciones-dropdown').hide();
 
     fetch("/Artistas/EditarInfo?id=" + id, {
         method: 'GET',
@@ -370,7 +373,6 @@ const editarArtista = id => {
 };
 
 async function eliminarArtista(id) {
-    $('.acciones-dropdown').hide();
 
     const confirmado = await confirmarModal("¿Desea eliminar este artista?");
     if (!confirmado) return;
@@ -448,20 +450,11 @@ async function configurarDataTable(data) {
                     title: '',
                     width: "1%",
                     render: function (data) {
-                        return `
-                            <div class="acciones-menu" data-id="${data}">
-                                <button class='btn btn-sm btnacciones' type='button' onclick='toggleAcciones(${data})'>
-                                    <i class='fa fa-ellipsis-v fa-lg text-white'></i>
-                                </button>
-                                <div class="acciones-dropdown" style="display: none;">
-                                    <button class='btn btn-sm btneditar' onclick='editarArtista(${data})'>
-                                        <i class='fa fa-pencil-square-o text-success'></i> Editar
-                                    </button>
-                                    <button class='btn btn-sm btneliminar' onclick='eliminarArtista(${data})'>
-                                        <i class='fa fa-trash-o text-danger'></i> Eliminar
-                                    </button>
-                                </div>
-                            </div>`;
+                        return renderAccionesGrid(data, {
+                            ver: "verArtista",
+                            editar: "editarArtista",
+                            eliminar: "eliminarArtista"
+                        });
                     },
                     orderable: false,
                     searchable: false,
@@ -832,26 +825,6 @@ function configurarOpcionesColumnas() {
 }
 
 /* =========================
-   ACCIONES DROPDOWN
-========================= */
-
-function toggleAcciones(id) {
-    var $dropdown = $(`.acciones-menu[data-id="${id}"] .acciones-dropdown`);
-
-    if ($dropdown.is(":visible")) $dropdown.hide();
-    else {
-        $('.acciones-dropdown').hide();
-        $dropdown.show();
-    }
-}
-
-$(document).on('click', function (e) {
-    if (!$(e.target).closest('.acciones-menu').length) {
-        $('.acciones-dropdown').hide();
-    }
-});
-
-/* =========================
    VALIDACIONES
 ========================= */
 
@@ -919,6 +892,11 @@ function limpiarModal() {
 }
 
 function validarCampoIndividual(el) {
+
+    if (document.querySelector("#modalEdicion")?.getAttribute("data-sololectura") === "1") {
+        return true; // en modo ver, no bloquea
+    }
+
     const id = el.id;
 
     const camposObligatorios = [
@@ -951,6 +929,10 @@ function verificarErroresGenerales() {
 }
 
 function validarCampos() {
+
+    if (document.querySelector("#modalEdicion")?.getAttribute("data-sololectura") === "1") {
+        return true; // en modo ver, no bloquea
+    }
 
     const campos = [
         "#txtNombre",
@@ -1031,3 +1013,31 @@ function refreshSelect2(id) {
         $el.trigger('change.select2');
     }
 }
+
+
+
+const verArtista = id => {
+
+    fetch("/Artistas/EditarInfo?id=" + id, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ha ocurrido un error.");
+            return r.json();
+        })
+        .then(async dataJson => {
+            if (!dataJson) throw new Error("Ha ocurrido un error.");
+
+            await mostrarModal(dataJson);
+
+            // Pasar a modo solo lectura
+            setModalSoloLectura(true);
+
+            $("#modalEdicionLabel").text("Ver Artista");
+        })
+        .catch(_ => errorModal("Ha ocurrido un error."));
+};

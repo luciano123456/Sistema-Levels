@@ -1,5 +1,10 @@
 ﻿let gridProductoras;
-let clientesCatalogo = [];
+
+let clientesCache = [];
+let clientesSeleccionados = [];
+
+let clientesAutomaticos = [];
+let clientesDesdeCliente = [];
 
 
 /**
@@ -110,16 +115,13 @@ function inicializarSelect2Filtro($select) {
 ========================= */
 
 function guardarProductora() {
+
     if (!validarCampos()) return false;
 
     const id = $("#txtId").val();
 
-    const clientesIds = [];
-    document.querySelectorAll("#listaClientes input[type=checkbox]:checked")
-        .forEach(cb => clientesIds.push(parseInt(cb.value)));
-
     const modelo = {
-        Id: id !== "" ? id : 0,
+        Id: id !== "" ? parseInt(id) : 0,
 
         Nombre: $("#txtNombre").val(),
 
@@ -128,7 +130,6 @@ function guardarProductora() {
         NumeroDocumento: $("#txtNumeroDocumento").val(),
 
         IdCondicionIva: $("#cmbCondicionIva").val() || null,
-
         IdProvincia: $("#cmbProvincia").val() || null,
 
         Telefono: $("#txtTelefono").val(),
@@ -136,154 +137,139 @@ function guardarProductora() {
 
         Direccion: $("#txtDireccion").val(),
         Localidad: $("#txtLocalidad").val(),
-        EntreCalles: $("#txtEntreCalles").val ? $("#txtEntreCalles").val() : null,
+        EntreCalles: $("#txtEntreCalles").val(),
         CodigoPostal: $("#txtCodigoPostal").val(),
 
         Email: $("#txtEmail").val(),
 
-        AsociacionAutomatica: $("#chkAsociacionAutomatica").is(":checked"),
+        AsociacionAutomatica:
+            $("#chkAsociacionAutomatica").is(":checked"),
 
-        ClientesIds: clientesIds
+        // ⭐ SIEMPRE manuales
+        ClientesIds: clientesSeleccionados
     };
 
     const url = id === "" ? "/Productoras/Insertar" : "/Productoras/Actualizar";
     const method = id === "" ? "POST" : "PUT";
 
     fetch(url, {
-        method: method,
+        method,
         headers: {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json;charset=utf-8'
         },
         body: JSON.stringify(modelo)
     })
-        .then(r => {
-            if (!r.ok) throw new Error(r.statusText);
-            return r.json();
-        })
-        .then(_ => {
-            const mensaje = id === "" ? "Productora registrada correctamente" : "Productora modificada correctamente";
+        .then(r => r.json())
+        .then(() => {
+
             $('#modalEdicion').modal('hide');
-            exitoModal(mensaje);
+
+            exitoModal(
+                id === ""
+                    ? "Productora registrada correctamente"
+                    : "Productora modificada correctamente"
+            );
+
             listaProductoras();
         })
-        .catch(err => {
-            console.error('Error:', err);
-            errorModal("Ha ocurrido un error.");
-        });
+        .catch(() => errorModal("Ha ocurrido un error."));
 }
 
-function nuevaProductora() {
+async function nuevaProductora() {
+
     limpiarModal();
+    setModalSoloLectura(false);
 
-    Promise.all([
+    clientesSeleccionados = [];
+
+    await Promise.all([
         listaPaises(),
-        listaProvincias(null),
-        listaClientes()
-    ])
-        .then(() => {
-            resetSelect("cmbTipoDocumento", "Seleccionar");
-            resetSelect("cmbCondicionIva", "Seleccionar");
-            activarBuscadorClientes();
-        });
+        cargarClientesChecklist()
+    ]);
 
-    abrirModalEdicion();
+    resetSelect("cmbProvincia", "Seleccionar");
+    resetSelect("cmbTipoDocumento", "Seleccionar");
+    resetSelect("cmbCondicionIva", "Seleccionar");
 
+    inicializarSelect2Modal();
+
+    renderChecklistClientes();
+
+    $('#modalEdicion').modal('show');
 
     $("#btnGuardar").html(`<i class="fa fa-check"></i> Registrar`);
     $("#modalEdicionLabel").text("Nueva Productora");
 
-    $("#infoAuditoria").addClass("d-none");
-    $("#infoRegistro").html("");
-    $("#infoModificacion").html("");
-
-    $("#chkAsociacionAutomatica").prop("checked", true);
+    $("#chkAsociacionAutomatica")
+        .prop("checked", true)
+        .prop("disabled", true);
 }
 
 async function mostrarModal(modelo) {
+
     limpiarModal();
+   
+    setModalSoloLectura(false);
 
     $("#txtId").val(modelo.Id || "");
     $("#txtNombre").val(modelo.Nombre || "");
-    $("#txtNumeroDocumento").val(modelo.NumeroDocumento || "");
 
+    $("#txtNumeroDocumento").val(modelo.NumeroDocumento || "");
     $("#txtTelefono").val(modelo.Telefono || "");
     $("#txtTelefonoAlternativo").val(modelo.TelefonoAlternativo || "");
-
     $("#txtDireccion").val(modelo.Direccion || "");
     $("#txtLocalidad").val(modelo.Localidad || "");
-    if ($("#txtEntreCalles").length) $("#txtEntreCalles").val(modelo.EntreCalles || "");
+    $("#txtEntreCalles").val(modelo.EntreCalles || "");
     $("#txtCodigoPostal").val(modelo.CodigoPostal || "");
-
     $("#txtEmail").val(modelo.Email || "");
 
-    $("#chkAsociacionAutomatica").prop("checked", !!modelo.AsociacionAutomatica);
+    $("#chkAsociacionAutomatica")
+        .prop("checked", true)
+        .prop("disabled", true);
 
-    await Promise.all([
-        listaPaises(),
-        listaClientes()
-    ]);
+    // ⭐ cargar todo primero
+    await listaPaises();
+    await cargarClientesChecklist(true);
 
-    if (modelo.Idpais != null) {
+    if (modelo.Idpais) {
         await listaProvincias(modelo.Idpais);
-        $("#cmbPais").val(modelo.Idpais).trigger("change.select2");
         await listaTiposDocumento(modelo.Idpais);
         await listaCondicionesIva(modelo.Idpais);
+
+        $("#cmbPais").val(modelo.Idpais).trigger("change.select2");
     }
 
-    if (modelo.IdTipoDocumento != null) {
+    if (modelo.IdTipoDocumento)
         $("#cmbTipoDocumento").val(modelo.IdTipoDocumento).trigger("change.select2");
-    }
 
-    if (modelo.IdCondicionIva != null) {
+    if (modelo.IdCondicionIva)
         $("#cmbCondicionIva").val(modelo.IdCondicionIva).trigger("change.select2");
-    }
 
-    if (modelo.IdProvincia != null) {
+    if (modelo.IdProvincia)
         $("#cmbProvincia").val(modelo.IdProvincia).trigger("change.select2");
-    }
 
-    renderListaClientes(modelo.ClientesIds || []);
+
+    clientesSeleccionados =
+        modelo.clientesManualesIds || [];
+
+    clientesAutomaticos =
+        modelo.clientesAutomaticosIds || [];
+
+    clientesDesdeCliente =
+        modelo.clientesDesdeClienteIds || [];
+
+    renderChecklistClientes();
     activarBuscadorClientes();
-
-    // auditoría
-    let textoAuditoria = "";
-
-    if (modelo.UsuarioModifica && modelo.FechaModifica) {
-        textoAuditoria = `
-            <i class="fa fa-edit"></i>
-            Última modificación por 
-            <strong>${modelo.UsuarioModifica}</strong> 
-            el <strong>${formatearFecha(modelo.FechaModifica)}</strong>
-        `;
-        $("#infoModificacion").html(textoAuditoria);
-        $("#infoRegistro").html("");
-    } else if (modelo.UsuarioRegistra && modelo.FechaRegistra) {
-        textoAuditoria = `
-            <i class="fa fa-user"></i>
-            Registrado por 
-            <strong>${modelo.UsuarioRegistra}</strong> 
-            el <strong>${formatearFecha(modelo.FechaRegistra)}</strong>
-        `;
-        $("#infoRegistro").html(textoAuditoria);
-        $("#infoModificacion").html("");
-    }
-
-    if (textoAuditoria !== "") $("#infoAuditoria").removeClass("d-none");
-    else $("#infoAuditoria").addClass("d-none");
 
     abrirModalEdicion();
 
-
     $("#btnGuardar").html(`<i class="fa fa-check"></i> Guardar`);
     $("#modalEdicionLabel").text("Editar Productora");
-
-    // siempre volver a la pestaña datos
-    document.querySelector('#productoraTabs .nav-link[data-bs-target="#tabDatos"]').click();
 }
 
 const editarProductora = id => {
-    $('.acciones-dropdown').hide();
+    
 
     fetch("/Productoras/EditarInfo?id=" + id, {
         method: 'GET',
@@ -304,7 +290,7 @@ const editarProductora = id => {
 };
 
 async function eliminarProductora(id) {
-    $('.acciones-dropdown').hide();
+    
 
     const confirmado = await confirmarModal("¿Desea eliminar esta productora?");
     if (!confirmado) return;
@@ -380,20 +366,11 @@ async function configurarDataTable(data) {
                     title: '',
                     width: "1%",
                     render: function (data) {
-                        return `
-                <div class="acciones-menu" data-id="${data}">
-                    <button class='btn btn-sm btnacciones' type='button' onclick='toggleAcciones(${data})'>
-                        <i class='fa fa-ellipsis-v fa-lg text-white'></i>
-                    </button>
-                    <div class="acciones-dropdown" style="display: none;">
-                        <button class='btn btn-sm btneditar' onclick='editarProductora(${data})'>
-                            <i class='fa fa-pencil-square-o text-success'></i> Editar
-                        </button>
-                        <button class='btn btn-sm btneliminar' onclick='eliminarProductora(${data})'>
-                            <i class='fa fa-trash-o text-danger'></i> Eliminar
-                        </button>
-                    </div>
-                </div>`;
+                        return renderAccionesGrid(data, {
+                            ver: "verProductora",
+                            editar: "editarProductora",
+                            eliminar: "eliminarProductora"
+                        });
                     },
                     orderable: false,
                     searchable: false,
@@ -680,25 +657,6 @@ function configurarOpcionesColumnas() {
     });
 }
 
-/* =========================
-   ACCIONES DROPDOWN
-========================= */
-
-function toggleAcciones(id) {
-    var $dropdown = $(`.acciones-menu[data-id="${id}"] .acciones-dropdown`);
-
-    if ($dropdown.is(":visible")) $dropdown.hide();
-    else {
-        $('.acciones-dropdown').hide();
-        $dropdown.show();
-    }
-}
-
-$(document).on('click', function (e) {
-    if (!$(e.target).closest('.acciones-menu').length) {
-        $('.acciones-dropdown').hide();
-    }
-});
 
 /* =========================
    VALIDACIONES
@@ -839,52 +797,13 @@ function formatearFecha(fecha) {
 }
 
 
-async function listaClientes() {
-    const response = await fetch(`/Clientes/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-    clientesCatalogo = data || [];
-
-    renderListaClientes([]);
-}
-
-function renderListaClientes(idsSeleccionados) {
-
-    const cont = document.getElementById("listaClientes");
-    cont.innerHTML = "";
-
-    clientesCatalogo.forEach(c => {
-
-        const checked = idsSeleccionados.includes(c.Id) ? "checked" : "";
-
-        cont.innerHTML += `
-            <label class="rp-check-item">
-                <input type="checkbox"
-                       value="${c.Id}"
-                       ${checked}
-                       onchange="actualizarContadorClientes()">
-                <span>${c.Nombre}</span>
-            </label>
-        `;
-    });
-
-    actualizarContadorClientes();
-}
-
-function actualizarContadorClientes() {
-
-    const cantClientes = $("#listaClientes input:checked").length;
-    $("#cntClientes").text(`(${cantClientes})`);
-}
-
-
 function activarBuscadorClientes() {
+
     const input = document.getElementById("txtBuscarCliente");
     if (!input) return;
 
-    input.addEventListener("input", function () {
+    input.oninput = function () {
+
         const texto = this.value.toLowerCase();
 
         document.querySelectorAll("#listaClientes .rp-check-item")
@@ -892,5 +811,134 @@ function activarBuscadorClientes() {
                 const nombre = el.innerText.toLowerCase();
                 el.style.display = nombre.includes(texto) ? "" : "none";
             });
-    });
+    };
 }
+
+
+const verProductora = id => {
+
+    fetch("/Productoras/EditarInfo?id=" + id, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ha ocurrido un error.");
+            return r.json();
+        })
+        .then(async dataJson => {
+
+            if (!dataJson) throw new Error("Ha ocurrido un error.");
+
+            await mostrarModal(dataJson);
+
+            // ⭐ GLOBAL (site.js)
+            setModalSoloLectura(true);
+
+            $("#modalEdicionLabel").text("Ver Productora");
+        })
+        .catch(_ => errorModal("Ha ocurrido un error."));
+};
+
+async function cargarClientesChecklist(force = false) {
+
+    if (!force && clientesCache.length > 0) return;
+
+    const res = await fetch("/Clientes/Lista", {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    clientesCache = await res.json() || [];
+}
+
+function renderChecklistClientes() {
+
+    const cont = document.getElementById("listaClientes");
+    cont.innerHTML = "";
+
+    clientesCache.forEach(c => {
+
+        const id = parseInt(c.Id);
+
+        const esManual = clientesSeleccionados.includes(id);
+        const esAuto = clientesAutomaticos.includes(id);
+        const esDesdeCliente = clientesDesdeCliente.includes(id);
+
+        let checked = "";
+        let disabled = "";
+        let badge = "";
+        let claseExtra = "";
+
+        if (esManual) {
+            checked = "checked";
+            badge = `<span class="rp-badge manual">Manual</span>`;
+            claseExtra = "manual";
+        }
+        else if (esAuto) {
+            checked = "checked";
+            disabled = "disabled";
+            badge = `<span class="rp-badge auto">Automático</span>`;
+            claseExtra = "auto";
+        }
+        else if (esDesdeCliente) {
+            checked = "checked";
+            disabled = "disabled";
+            badge = `<span class="rp-badge cli">Automático</span>`;
+            claseExtra = "cli";
+        }
+
+        cont.insertAdjacentHTML("beforeend", `
+            <label class="rp-check-item ${claseExtra}">
+                <input type="checkbox"
+                       value="${id}"
+                       ${checked}
+                       ${disabled}
+                       onchange="toggleCliente(${id})">
+
+                <span class="rp-check-text">
+                    ${c.Nombre}
+                    ${badge}
+                </span>
+            </label>
+        `);
+    });
+
+    actualizarContadorClientes();
+}
+
+function toggleCliente(id) {
+
+    id = parseInt(id);
+
+    if (clientesAutomaticos.includes(id)) return;
+    if (clientesDesdeCliente.includes(id)) return;
+
+    if (clientesSeleccionados.includes(id))
+        clientesSeleccionados =
+            clientesSeleccionados.filter(x => x !== id);
+    else
+        clientesSeleccionados.push(id);
+
+    actualizarContadorClientes();
+}
+
+function actualizarContadorClientes() {
+
+    $("#cntClientes").text(
+        `(${clientesSeleccionados.length +
+        clientesAutomaticos.length +
+        clientesDesdeCliente.length})`
+    );
+}
+
+$("#chkAsociacionAutomatica").on("change", function () {
+
+    const automatico = $(this).is(":checked");
+
+    const cont = document.getElementById("listaClientes");
+    if (!cont) return;
+
+    cont.style.opacity = automatico ? "0.85" : "1";
+});

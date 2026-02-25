@@ -153,6 +153,7 @@ function guardarTarea() {
 function nuevaTarea() {
     limpiarModal();
 
+    setModalSoloLectura(false);
     // ===== fechas por defecto con moment =====
     const hoy = moment().format("YYYY-MM-DD");
     const fechaLimite = moment().add(7, "days").format("YYYY-MM-DD");
@@ -180,6 +181,8 @@ function nuevaTarea() {
 
 async function mostrarModal(modelo) {
     limpiarModal();
+
+    setModalSoloLectura(false);
 
     $("#txtId").val(modelo.Id || "");
 
@@ -229,7 +232,7 @@ async function mostrarModal(modelo) {
 }
 
 const editarTarea = id => {
-    $('.acciones-dropdown').hide();
+    
 
     fetch("/Tareas/EditarInfo?id=" + id, {
         method: 'GET',
@@ -250,7 +253,7 @@ const editarTarea = id => {
 };
 
 async function eliminarTarea(id) {
-    $('.acciones-dropdown').hide();
+    
 
     const confirmado = await confirmarModal("¿Desea eliminar esta tarea?");
     if (!confirmado) return;
@@ -335,20 +338,11 @@ async function configurarDataTable(data) {
                     title: '',
                     width: "1%",
                     render: function (data) {
-                        return `
-                            <div class="acciones-menu" data-id="${data}">
-                                <button class='btn btn-sm btnacciones' type='button' onclick='toggleAcciones(${data})'>
-                                    <i class='fa fa-ellipsis-v fa-lg text-white'></i>
-                                </button>
-                                <div class="acciones-dropdown" style="display:none;">
-                                    <button class='btn btn-sm btneditar' type="button" onclick='editarTarea(${data})'>
-                                        <i class='fa fa-pencil-square-o text-success'></i> Editar
-                                    </button>
-                                    <button class='btn btn-sm btneliminar' type="button" onclick='eliminarTarea(${data})'>
-                                        <i class='fa fa-trash-o text-danger'></i> Eliminar
-                                    </button>
-                                </div>
-                            </div>`;
+                        return renderAccionesGrid(data, {
+                            ver: "verTarea",
+                            editar: "editarTarea",
+                            eliminar: "eliminarTarea"
+                        });
                     },
                     orderable: false,
                     searchable: false,
@@ -553,26 +547,6 @@ function configurarOpcionesColumnas() {
 }
 
 /* =========================
-   ACCIONES DROPDOWN
-========================= */
-
-function toggleAcciones(id) {
-    const $dropdown = $(`.acciones-menu[data-id="${id}"] .acciones-dropdown`);
-
-    if ($dropdown.is(":visible")) $dropdown.hide();
-    else {
-        $('.acciones-dropdown').hide();
-        $dropdown.show();
-    }
-}
-
-$(document).on('click', function (e) {
-    if (!$(e.target).closest('.acciones-menu').length) {
-        $('.acciones-dropdown').hide();
-    }
-});
-
-/* =========================
    VALIDACIONES
 ========================= */
 
@@ -690,3 +664,31 @@ function actualizarKpis(data) {
 function escapeRegex(text) {
     return (text || "").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+
+const verTarea = id => {
+
+    fetch("/Tareas/EditarInfo?id=" + id, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ha ocurrido un error.");
+            return r.json();
+        })
+        .then(async dataJson => {
+
+            if (!dataJson) throw new Error("Ha ocurrido un error.");
+
+            await mostrarModal(dataJson);
+
+            // ⭐ GLOBAL
+            setModalSoloLectura(true);
+
+            $("#modalEdicionLabel").text("Ver Tarea");
+        })
+        .catch(_ => errorModal("Ha ocurrido un error."));
+};

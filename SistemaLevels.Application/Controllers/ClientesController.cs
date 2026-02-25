@@ -29,54 +29,50 @@ public class ClientesController : Controller
     {
         var clientes = await _service.ObtenerTodos();
 
-        var lista = clientes
-            .Select(c => new VMCliente
-            {
-                Id = c.Id,
-                Nombre = c.Nombre,
-                Telefono = c.Telefono,
-                TelefonoAlternativo = c.TelefonoAlternativo,
-                Email = c.Email,
+        var lista = clientes.Select(c => new VMCliente
+        {
+            Id = c.Id,
+            Nombre = c.Nombre,
+            Telefono = c.Telefono,
+            TelefonoAlternativo = c.TelefonoAlternativo,
+            Email = c.Email,
 
-                Dni = c.Dni,
-                IdTipoDocumento = c.IdTipoDocumento,
-                NumeroDocumento = c.NumeroDocumento,
+            Dni = c.Dni,
+            IdTipoDocumento = c.IdTipoDocumento,
+            NumeroDocumento = c.NumeroDocumento,
 
-                IdPais = c.IdPais,
-                IdProvincia = c.IdProvincia,
-                Localidad = c.Localidad,
-                EntreCalles = c.EntreCalles,
-                Direccion = c.Direccion,
-                CodigoPostal = c.CodigoPostal,
-                IdCondicionIva = c.IdCondicionIva,
+            IdPais = c.IdPais,
+            IdProvincia = c.IdProvincia,
+            Localidad = c.Localidad,
+            EntreCalles = c.EntreCalles,
+            Direccion = c.Direccion,
+            CodigoPostal = c.CodigoPostal,
+            IdCondicionIva = c.IdCondicionIva,
 
-                AsociacionAutomatica = c.AsociacionAutomatica,
+            AsociacionAutomatica = c.AsociacionAutomatica,
 
-                // nombres descriptivos (para grilla)
-                Pais = c.IdPaisNavigation != null ? c.IdPaisNavigation.Nombre : "",
-                Provincia = c.IdProvinciaNavigation != null ? c.IdProvinciaNavigation.Nombre : "",
-                TipoDocumento = c.IdTipoDocumentoNavigation != null ? c.IdTipoDocumentoNavigation.Nombre : "",
-                CondicionIva = c.IdCondicionIvaNavigation != null ? c.IdCondicionIvaNavigation.Nombre : "",
+            Pais = c.IdPaisNavigation != null ? c.IdPaisNavigation.Nombre : "",
+            Provincia = c.IdProvinciaNavigation != null ? c.IdProvinciaNavigation.Nombre : "",
+            TipoDocumento = c.IdTipoDocumentoNavigation != null ? c.IdTipoDocumentoNavigation.Nombre : "",
+            CondicionIva = c.IdCondicionIvaNavigation != null ? c.IdCondicionIvaNavigation.Nombre : "",
 
-                // si tu grilla sigue mostrando "Productora", armamos un texto:
-                // - si hay 1: nombre
-                // - si hay varias: "N asignadas"
-                Productora = (c.ClientesProductorasAsignada != null && c.ClientesProductorasAsignada.Count > 0)
-                    ? (c.ClientesProductorasAsignada.Count == 1
-                        ? (c.ClientesProductorasAsignada.First().IdNavigation != null ? c.ClientesProductorasAsignada.First().IdNavigation.Nombre : "1 asignada")
-                        : $"{c.ClientesProductorasAsignada.Count} asignadas")
-                    : "",
+            // texto de productoras (si querés mostrarlo en grilla)
+            Productora = (c.ClientesProductoras != null && c.ClientesProductoras.Count > 0)
+                ? (c.ClientesProductoras.Count == 1
+                    ? (c.ClientesProductoras.First().IdProductoraNavigation != null
+                        ? c.ClientesProductoras.First().IdProductoraNavigation.Nombre
+                        : "1 asignada")
+                    : $"{c.ClientesProductoras.Count} asignadas")
+                : "",
 
-                // auditoría
-                IdUsuarioRegistra = c.IdUsuarioRegistra,
-                FechaRegistra = c.FechaRegistra,
-                UsuarioRegistra = c.IdUsuarioRegistraNavigation != null ? c.IdUsuarioRegistraNavigation.Usuario : "",
+            IdUsuarioRegistra = c.IdUsuarioRegistra,
+            FechaRegistra = c.FechaRegistra,
+            UsuarioRegistra = c.IdUsuarioRegistraNavigation != null ? c.IdUsuarioRegistraNavigation.Usuario : "",
 
-                IdUsuarioModifica = c.IdUsuarioModifica,
-                FechaModifica = c.FechaModifica,
-                UsuarioModifica = c.IdUsuarioModificaNavigation != null ? c.IdUsuarioModificaNavigation.Usuario : ""
-            })
-            .ToList();
+            IdUsuarioModifica = c.IdUsuarioModifica,
+            FechaModifica = c.FechaModifica,
+            UsuarioModifica = c.IdUsuarioModificaNavigation != null ? c.IdUsuarioModificaNavigation.Usuario : ""
+        }).ToList();
 
         return Ok(lista);
     }
@@ -114,7 +110,7 @@ public class ClientesController : Controller
             FechaRegistra = DateTime.Now
         };
 
-        bool respuesta = await _service.Insertar(cliente, model.ProductorasIds);
+        bool respuesta = await _service.Insertar(cliente, model.ProductorasIds ?? new List<int>());
         return Ok(new { valor = respuesta });
     }
 
@@ -127,6 +123,8 @@ public class ClientesController : Controller
     {
         int idUsuario = int.Parse(User.FindFirst("Id")!.Value);
 
+        model.ProductorasIds ??= new List<int>();
+
         var cliente = new Cliente
         {
             Id = model.Id,
@@ -137,25 +135,23 @@ public class ClientesController : Controller
             IdTipoDocumento = model.IdTipoDocumento,
             NumeroDocumento = model.NumeroDocumento,
             Email = model.Email,
-
             IdPais = model.IdPais,
             IdProvincia = model.IdProvincia,
             Localidad = model.Localidad,
             EntreCalles = model.EntreCalles,
             Direccion = model.Direccion,
             CodigoPostal = model.CodigoPostal,
-
             IdCondicionIva = model.IdCondicionIva,
             AsociacionAutomatica = model.AsociacionAutomatica,
-
             IdUsuarioModifica = idUsuario,
             FechaModifica = DateTime.Now
         };
 
-        bool respuesta = await _service.Actualizar(cliente, model.ProductorasIds);
+        bool respuesta =
+            await _service.Actualizar(cliente, model.ProductorasIds);
+
         return Ok(new { valor = respuesta });
     }
-
     /* ===============================
        ELIMINAR
     =============================== */
@@ -169,6 +165,8 @@ public class ClientesController : Controller
 
     /* ===============================
        EDITAR INFO (MODAL)
+       - Devuelve SOLO productoras MANUALES del cliente
+       - No mezcla automáticas / no mezcla asignadas desde productora
     =============================== */
 
     [HttpGet]
@@ -179,45 +177,53 @@ public class ClientesController : Controller
         if (c == null)
             return NotFound();
 
-        var vm = new VMCliente
+        var manual =
+     c.ClientesProductoras
+         .Where(x => x.OrigenAsignacion == 2) // CLIENTE
+         .Select(x => x.IdProductora)
+         .ToList();
+
+        var automaticas =
+            c.ClientesProductoras
+                .Where(x => x.OrigenAsignacion == 3)
+                .Select(x => x.IdProductora)
+                .ToList();
+
+        var desdeProductora =
+            c.ClientesProductoras
+                .Where(x => x.OrigenAsignacion == 1) // PRODUCTORA
+                .Select(x => x.IdProductora)
+                .ToList();
+
+        return Ok(new
         {
-            Id = c.Id,
-            Nombre = c.Nombre,
-            Telefono = c.Telefono,
-            TelefonoAlternativo = c.TelefonoAlternativo,
-            Dni = c.Dni,
+            c.Id,
+            c.Nombre,
+            c.Telefono,
+            c.TelefonoAlternativo,
+            c.Email,
 
-            IdTipoDocumento = c.IdTipoDocumento,
-            NumeroDocumento = c.NumeroDocumento,
+            c.IdPais,
+            c.IdProvincia,
+            c.IdTipoDocumento,
+            c.NumeroDocumento,
+            c.IdCondicionIva,
 
-            Email = c.Email,
+            c.Direccion,
+            c.Localidad,
+            c.EntreCalles,
+            c.CodigoPostal,
 
-            IdPais = c.IdPais,
-            IdProvincia = c.IdProvincia,
+            c.AsociacionAutomatica,
 
-            Localidad = c.Localidad,
-            EntreCalles = c.EntreCalles,
-            Direccion = c.Direccion,
-            CodigoPostal = c.CodigoPostal,
+            ProductorasManualIds = manual,
+            ProductorasAutomaticasIds = automaticas,
+            ProductorasDesdeProductoraIds = desdeProductora,
 
-            IdCondicionIva = c.IdCondicionIva,
-            AsociacionAutomatica = c.AsociacionAutomatica,
-
-            // ✅ NUEVO: productoras asignadas desde tabla puente
-            ProductorasIds = (c.ClientesProductorasAsignada ?? new List<ClientesProductorasAsignada>())
-                .Where(x => x.IdProductora.HasValue)
-                .Select(x => x.IdProductora!.Value)
-                .Distinct()
-                .ToList(),
-
-            // auditoría
-            FechaRegistra = c.FechaRegistra,
+            c.FechaRegistra,
             UsuarioRegistra = c.IdUsuarioRegistraNavigation?.Usuario,
-
-            FechaModifica = c.FechaModifica,
+            c.FechaModifica,
             UsuarioModifica = c.IdUsuarioModificaNavigation?.Usuario
-        };
-
-        return Ok(vm);
+        });
     }
 }

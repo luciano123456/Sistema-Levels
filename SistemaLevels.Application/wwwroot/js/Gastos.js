@@ -153,6 +153,8 @@ function guardarCambios() {
 function nuevoGasto() {
     limpiarModal();
 
+    setModalSoloLectura(false);
+
     // Fecha por defecto HOY (moment) en input date -> YYYY-MM-DD
     const hoy = moment().format("YYYY-MM-DD");
     $("#txtFecha").val(hoy);
@@ -172,6 +174,8 @@ function nuevoGasto() {
 
 async function mostrarModal(modelo) {
     limpiarModal();
+
+    setModalSoloLectura(false);
 
     $("#txtId").val(modelo.Id || "");
     $("#txtFecha").val((modelo.Fecha || "").split("T")[0] || "");
@@ -223,7 +227,6 @@ async function mostrarModal(modelo) {
 }
 
 const editarGasto = id => {
-    $('.acciones-dropdown').hide();
 
     fetch("/Gastos/EditarInfo?id=" + id, {
         method: 'GET',
@@ -233,18 +236,24 @@ const editarGasto = id => {
         }
     })
         .then(r => {
-            if (!r.ok) throw new Error("Ha ocurrido un error.");
+            if (!r.ok) throw new Error("Error");
             return r.json();
         })
-        .then(dataJson => {
-            if (dataJson) mostrarModal(dataJson);
-            else throw new Error("Ha ocurrido un error.");
+        .then(data => {
+
+            if (!data) throw new Error();
+
+            mostrarModal(data);
+
+            // ✅ STANDARD LEVELS
+            setModalSoloLectura(false);
+
+            $("#modalEdicionLabel").text("Editar Gasto");
         })
         .catch(_ => errorModal("Ha ocurrido un error."));
 };
-
 async function eliminarGasto(id) {
-    $('.acciones-dropdown').hide();
+    
 
     const confirmado = await confirmarModal("¿Desea eliminar este gasto?");
     if (!confirmado) return;
@@ -387,23 +396,14 @@ async function configurarDataTable(data) {
                     title: '',
                     width: "1%",
                     render: function (data) {
-                        return `
-                            <div class="acciones-menu" data-id="${data}">
-                                <button class='btn btn-sm btnacciones' type='button' onclick='toggleAcciones(${data})'>
-                                    <i class='fa fa-ellipsis-v fa-lg text-white'></i>
-                                </button>
-                                <div class="acciones-dropdown" style="display:none;">
-                                    <button class='btn btn-sm btneditar' type="button" onclick='editarGasto(${data})'>
-                                        <i class='fa fa-pencil-square-o text-success'></i> Editar
-                                    </button>
-                                    <button class='btn btn-sm btneliminar' type="button" onclick='eliminarGasto(${data})'>
-                                        <i class='fa fa-trash-o text-danger'></i> Eliminar
-                                    </button>
-                                </div>
-                            </div>`;
+                        return renderAccionesGrid(data, {
+                            ver: "verGasto",
+                            editar: "editarGasto",
+                            eliminar: "eliminarGasto"
+                        });
                     },
                     orderable: false,
-                    searchable: false,
+                    searchable: false
                 },
                 { data: 'Fecha', render: d => normalizarFechaTabla(d) },
                 { data: 'Categoria' },
@@ -541,26 +541,6 @@ function configurarOpcionesColumnas() {
         grid.column(columnIdx).visible(isChecked);
     });
 }
-
-/* =========================
-   ACCIONES DROPDOWN
-========================= */
-
-function toggleAcciones(id) {
-    const $dropdown = $(`.acciones-menu[data-id="${id}"] .acciones-dropdown`);
-
-    if ($dropdown.is(":visible")) $dropdown.hide();
-    else {
-        $('.acciones-dropdown').hide();
-        $dropdown.show();
-    }
-}
-
-$(document).on('click', function (e) {
-    if (!$(e.target).closest('.acciones-menu').length) {
-        $('.acciones-dropdown').hide();
-    }
-});
 
 /* =========================
    COMBOS (MODAL + FILTROS)
@@ -942,8 +922,8 @@ function actualizarKpis(data) {
 function normalizarFechaTabla(fecha) {
     if (!fecha) return "—";
     // Si viene DateTime ISO: 2026-02-16T00:00:00
-    const f = fecha.toString().split("T")[0];
     // Mostrar DD/MM/YYYY
+    const f = fecha.toString().split("T")[0];
     return moment(f, "YYYY-MM-DD").isValid() ? moment(f, "YYYY-MM-DD").format("DD/MM/YYYY") : fecha;
 }
 
@@ -976,3 +956,31 @@ function setFiltrosUltimaSemana() {
 function escapeRegex(text) {
     return (text || "").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+
+const verGasto = id => {
+
+    fetch("/Gastos/EditarInfo?id=" + id, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ha ocurrido un error.");
+            return r.json();
+        })
+        .then(async dataJson => {
+
+            if (!dataJson) throw new Error("Ha ocurrido un error.");
+
+            await mostrarModal(dataJson);
+
+            // ⭐ GLOBAL
+            setModalSoloLectura(true);
+
+            $("#modalEdicionLabel").text("Ver Gasto");
+        })
+        .catch(_ => errorModal("Ha ocurrido un error."));
+};

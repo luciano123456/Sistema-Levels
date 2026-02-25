@@ -9,6 +9,9 @@ let gridClientes;
 let productorasCache = [];
 let productorasSeleccionadas = [];
 
+let productorasAutomaticas = [];
+let productorasDesdeProductora = [];
+
 /**
  * Columnas:
  * 0 Acciones
@@ -133,9 +136,16 @@ function inicializarSelect2Filtro($select) {
 ========================= */
 
 function guardarCliente() {
+
     if (!validarCampos()) return false;
 
     const id = $("#txtId").val();
+
+    const asociacionAutomatica =
+        $("#chkAsociacionAutomatica").is(":checked") ? 1 : 0;
+
+    // ✅ SIEMPRE enviar manuales
+    const productorasEnviar = productorasSeleccionadas;
 
     const modelo = {
         Id: id !== "" ? parseInt(id, 10) : 0,
@@ -147,14 +157,21 @@ function guardarCliente() {
 
         Dni: $("#txtDni").val(),
 
-        AsociacionAutomatica: $("#chkAsociacionAutomatica").is(":checked") ? 1 : 0,
-        ProductorasIds: productorasSeleccionadas,
+        AsociacionAutomatica: asociacionAutomatica,
+        ProductorasIds: productorasEnviar,
+
         IdPais: $("#cmbPais").val() ? parseInt($("#cmbPais").val(), 10) : null,
         IdProvincia: $("#cmbProvincia").val() ? parseInt($("#cmbProvincia").val(), 10) : null,
 
-        IdTipoDocumento: $("#cmbTipoDocumento").val() ? parseInt($("#cmbTipoDocumento").val(), 10) : null,
+        IdTipoDocumento: $("#cmbTipoDocumento").val()
+            ? parseInt($("#cmbTipoDocumento").val(), 10)
+            : null,
+
         NumeroDocumento: $("#txtNumeroDocumento").val(),
-        IdCondicionIva: $("#cmbCondicionIva").val() ? parseInt($("#cmbCondicionIva").val(), 10) : null,
+
+        IdCondicionIva: $("#cmbCondicionIva").val()
+            ? parseInt($("#cmbCondicionIva").val(), 10)
+            : null,
 
         Direccion: $("#txtDireccion").val(),
         Localidad: $("#txtLocalidad").val(),
@@ -178,9 +195,14 @@ function guardarCliente() {
             return r.json();
         })
         .then(_ => {
-            const mensaje = id === "" ? "Cliente registrado correctamente" : "Cliente modificado correctamente";
             $('#modalEdicion').modal('hide');
-            exitoModal(mensaje);
+
+            exitoModal(
+                id === ""
+                    ? "Cliente registrado correctamente"
+                    : "Cliente modificado correctamente"
+            );
+
             listaClientes();
         })
         .catch(err => {
@@ -188,9 +210,11 @@ function guardarCliente() {
             errorModal("Ha ocurrido un error.");
         });
 }
-
 function nuevoCliente() {
     limpiarModal();
+
+    setModalSoloLectura(false);
+
 
     productorasSeleccionadas = [];
 
@@ -207,6 +231,7 @@ function nuevoCliente() {
             resetSelect("cmbCondicionIva", "Seleccionar");
 
             inicializarSelect2Modal();
+            renderChecklistProductoras();
         });
 
     $('#modalEdicion').modal('show');
@@ -218,11 +243,17 @@ function nuevoCliente() {
     $("#infoRegistro").html("");
     $("#infoModificacion").html("");
 
-    $("#chkAsociacionAutomatica").prop("checked", true);
+    $("#chkAsociacionAutomatica")
+        .prop("checked", true)
+        .prop("disabled", true);
+
+
 }
 
 async function mostrarModal(modelo) {
     limpiarModal();
+
+    setModalSoloLectura(false);
 
     $("#txtId").val(modelo.Id || "");
 
@@ -240,7 +271,9 @@ async function mostrarModal(modelo) {
     $("#txtEntreCalles").val(modelo.EntreCalles || "");
     $("#txtCodigoPostal").val(modelo.CodigoPostal || "");
 
-    $("#chkAsociacionAutomatica").prop("checked", !!modelo.AsociacionAutomatica);
+    $("#chkAsociacionAutomatica")
+        .prop("checked", true)
+        .prop("disabled", true);
 
     await listaPaises();
 
@@ -275,14 +308,20 @@ async function mostrarModal(modelo) {
 
     inicializarSelect2Modal();
 
-    // ===== PRODUCTORAS ASOCIADAS =====
-    productorasSeleccionadas = modelo.ProductorasIds || [];
+    // ===== PRODUCTORAS MANUALES DEL CLIENTE =====
+    // backend ya devuelve SOLO ClienteManual
+
+    productorasSeleccionadas =
+        modelo.ProductorasManualIds || [];
+
+    productorasAutomaticas =
+        modelo.ProductorasAutomaticasIds || [];
+
+    productorasDesdeProductora =
+        modelo.ProductorasDesdeProductoraIds || [];
+
     renderChecklistProductoras();
 
-    $("#chkAsociacionAutomatica").prop(
-        "checked",
-        (modelo.AsociacionAutomatica || 0) === 1
-    );
 
     // Auditoría (igual que Artistas)
     let textoAuditoria = "";
@@ -317,7 +356,7 @@ async function mostrarModal(modelo) {
 }
 
 const editarCliente = id => {
-    $('.acciones-dropdown').hide();
+    
 
     fetch("/Clientes/EditarInfo?id=" + id, {
         method: 'GET',
@@ -338,7 +377,7 @@ const editarCliente = id => {
 };
 
 async function eliminarCliente(id) {
-    $('.acciones-dropdown').hide();
+    
 
     const confirmado = await confirmarModal("¿Desea eliminar este cliente?");
     if (!confirmado) return;
@@ -416,20 +455,11 @@ async function configurarDataTable(data) {
                     title: '',
                     width: "1%",
                     render: function (data) {
-                        return `
-                            <div class="acciones-menu" data-id="${data}">
-                                <button class='btn btn-sm btnacciones' type='button' onclick='toggleAcciones(${data})'>
-                                    <i class='fa fa-ellipsis-v fa-lg text-white'></i>
-                                </button>
-                                <div class="acciones-dropdown" style="display: none;">
-                                    <button class='btn btn-sm btneditar' onclick='editarCliente(${data})'>
-                                        <i class='fa fa-pencil-square-o text-success'></i> Editar
-                                    </button>
-                                    <button class='btn btn-sm btneliminar' onclick='eliminarCliente(${data})'>
-                                        <i class='fa fa-trash-o text-danger'></i> Eliminar
-                                    </button>
-                                </div>
-                            </div>`;
+                        return renderAccionesGrid(data, {
+                            ver: "verCliente",
+                            editar: "editarCliente",
+                            eliminar: "eliminarCliente"
+                        });
                     },
                     orderable: false,
                     searchable: false,
@@ -720,26 +750,6 @@ function configurarOpcionesColumnas() {
 }
 
 /* =========================
-   ACCIONES DROPDOWN
-========================= */
-
-function toggleAcciones(id) {
-    var $dropdown = $(`.acciones-menu[data-id="${id}"] .acciones-dropdown`);
-
-    if ($dropdown.is(":visible")) $dropdown.hide();
-    else {
-        $('.acciones-dropdown').hide();
-        $dropdown.show();
-    }
-}
-
-$(document).on('click', function (e) {
-    if (!$(e.target).closest('.acciones-menu').length) {
-        $('.acciones-dropdown').hide();
-    }
-});
-
-/* =========================
    VALIDACIONES
 ========================= */
 
@@ -910,19 +920,52 @@ function renderChecklistProductoras() {
 
     productorasCache.forEach(p => {
 
-        const checked =
-            productorasSeleccionadas.includes(p.Id)
-                ? "checked"
-                : "";
+        const id = parseInt(p.Id);
+
+        const esManual =
+            productorasSeleccionadas.includes(id);
+
+        const esAuto =
+            productorasAutomaticas.includes(id);
+
+        const esDesdeProd =
+            productorasDesdeProductora.includes(id);
+
+        let checked = "";
+        let disabled = "";
+        let badge = "";
+        let claseExtra = "";
+
+        if (esManual) {
+            checked = "checked";
+            badge = `<span class="rp-badge manual">Manual</span>`;
+            claseExtra = "manual";
+        }
+        else if (esAuto) {
+            checked = "checked";
+            disabled = "disabled";
+            badge = `<span class="rp-badge auto">Automático</span>`;
+            claseExtra = "auto";
+        }
+        else if (esDesdeProd) {
+            checked = "checked";
+            disabled = "disabled";
+            badge = `<span class="rp-badge prod">Automático</span>`;
+            claseExtra = "prod";
+        }
 
         cont.insertAdjacentHTML("beforeend", `
-            <label class="rp-check-item">
+            <label class="rp-check-item ${claseExtra}">
                 <input type="checkbox"
-                       value="${p.Id}"
+                       value="${id}"
                        ${checked}
-                       onchange="toggleProductora(${p.Id})">
+                       ${disabled}
+                       onchange="toggleProductora(${id})">
 
-                <span>${p.Nombre}</span>
+                <span class="rp-check-text">
+                    ${p.Nombre}
+                    ${badge}
+                </span>
             </label>
         `);
     });
@@ -934,6 +977,10 @@ function toggleProductora(id) {
 
     id = parseInt(id);
 
+    // seguridad extra
+    if (productorasAutomaticas.includes(id)) return;
+    if (productorasDesdeProductora.includes(id)) return;
+
     if (productorasSeleccionadas.includes(id))
         productorasSeleccionadas =
             productorasSeleccionadas.filter(x => x !== id);
@@ -942,10 +989,24 @@ function toggleProductora(id) {
 
     actualizarContadorProductoras();
 }
+
+$("#chkAsociacionAutomatica").on("change", function () {
+    const automatico = $(this).is(":checked");
+    const cont = document.getElementById("listaProductoras");
+    if (!cont) return;
+
+    // Solo efecto visual suave, NO bloquear clicks
+    cont.style.opacity = automatico ? "0.85" : "1";
+});
+
 function actualizarContadorProductoras() {
-    $("#cntProductoras").text(
-        `(${productorasSeleccionadas.length})`
-    );
+
+    const total =
+        (productorasSeleccionadas?.length || 0) +
+        (productorasAutomaticas?.length || 0) +
+        (productorasDesdeProductora?.length || 0);
+
+    $("#cntProductoras").text(`(${total})`);
 }
 
 function aplicarFiltroProductorasChecklist() {
@@ -959,3 +1020,30 @@ function aplicarFiltroProductorasChecklist() {
             el.style.display = txt.includes(q) ? "" : "none";
         });
 }
+
+const verCliente = id => {
+
+    fetch("/Clientes/EditarInfo?id=" + id, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ha ocurrido un error.");
+            return r.json();
+        })
+        .then(async dataJson => {
+
+            if (!dataJson) throw new Error("Ha ocurrido un error.");
+
+            await mostrarModal(dataJson);
+
+            // ⭐ función global (site.js)
+            setModalSoloLectura(true);
+
+            $("#modalEdicionLabel").text("Ver Cliente");
+        })
+        .catch(_ => errorModal("Ha ocurrido un error."));
+};

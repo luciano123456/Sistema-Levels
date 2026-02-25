@@ -462,7 +462,7 @@ function toggleAcciones(id) {
         $dropdown.hide();
     } else {
         // Ocultar todos los dropdowns antes de mostrar el seleccionado
-        $('.acciones-dropdown').hide();
+        
         $dropdown.show();
     }
 }
@@ -470,7 +470,7 @@ function toggleAcciones(id) {
 $(document).on('click', function (e) {
     // Verificar si el clic está fuera de cualquier dropdown
     if (!$(e.target).closest('.acciones-menu').length) {
-        $('.acciones-dropdown').hide(); // Cerrar todos los dropdowns
+         // Cerrar todos los dropdowns
     }
 });
 /* =========================

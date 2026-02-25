@@ -1,17 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SistemaLevels.DAL.DataContext;
 using SistemaLevels.Models;
-using System.Linq.Expressions;
 
 namespace SistemaLevels.DAL.Repository
 {
-    public class ClientesRepository : IClientesRepository<Cliente>
+    public class ClientesRepository : IClientesRepository
     {
-        private readonly SistemaLevelsContext _dbcontext;
+        private readonly SistemaLevelsContext _db;
 
         public ClientesRepository(SistemaLevelsContext context)
         {
-            _dbcontext = context;
+            _db = context;
         }
 
         /* =====================================================
@@ -20,14 +19,18 @@ namespace SistemaLevels.DAL.Repository
 
         public async Task<bool> Insertar(Cliente model, List<int> productorasIds)
         {
-            using var trx = await _dbcontext.Database.BeginTransactionAsync();
+            using var trx = await _db.Database.BeginTransactionAsync();
 
             try
             {
-                _dbcontext.Clientes.Add(model);
-                await _dbcontext.SaveChangesAsync();
+                _db.Clientes.Add(model);
+                await _db.SaveChangesAsync();
 
-                await SincronizarProductoras(model.Id, productorasIds);
+                await SincronizarProductoras(
+                    model.Id,
+                    productorasIds,
+                    2 // Desde Cliente
+                );
 
                 await trx.CommitAsync();
                 return true;
@@ -45,48 +48,45 @@ namespace SistemaLevels.DAL.Repository
 
         public async Task<bool> Actualizar(Cliente model, List<int> productorasIds)
         {
-            using var trx = await _dbcontext.Database.BeginTransactionAsync();
+            using var trx = await _db.Database.BeginTransactionAsync();
 
             try
             {
-                var entity = await _dbcontext.Clientes
+                var entity = await _db.Clientes
                     .FirstOrDefaultAsync(x => x.Id == model.Id);
 
-                if (entity == null) return false;
+                if (entity == null)
+                    return false;
 
                 entity.Nombre = model.Nombre;
                 entity.Telefono = model.Telefono;
                 entity.TelefonoAlternativo = model.TelefonoAlternativo;
-
-                entity.Dni = model.Dni;
-                entity.IdTipoDocumento = model.IdTipoDocumento;
-                entity.NumeroDocumento = model.NumeroDocumento;
-
                 entity.Email = model.Email;
 
                 entity.IdPais = model.IdPais;
                 entity.IdProvincia = model.IdProvincia;
 
+                entity.IdTipoDocumento = model.IdTipoDocumento;
+                entity.NumeroDocumento = model.NumeroDocumento;
+                entity.IdCondicionIva = model.IdCondicionIva;
+
+                entity.Direccion = model.Direccion;
                 entity.Localidad = model.Localidad;
                 entity.EntreCalles = model.EntreCalles;
-                entity.Direccion = model.Direccion;
                 entity.CodigoPostal = model.CodigoPostal;
-
-                entity.IdCondicionIva = model.IdCondicionIva;
 
                 entity.AsociacionAutomatica = model.AsociacionAutomatica;
 
                 entity.IdUsuarioModifica = model.IdUsuarioModifica;
+                entity.FechaModifica = DateTime.Now;
 
-                // ✅ fecha segura (si te llega rara)
-                if (model.FechaModifica.HasValue && model.FechaModifica.Value >= new DateTime(1753, 1, 1))
-                    entity.FechaModifica = model.FechaModifica;
-                else
-                    entity.FechaModifica = DateTime.Now;
+                await _db.SaveChangesAsync();
 
-                await _dbcontext.SaveChangesAsync();
-
-                await SincronizarProductoras(entity.Id, productorasIds);
+                await SincronizarProductoras(
+                    entity.Id,
+                    productorasIds,
+                    2 // Desde Cliente
+                );
 
                 await trx.CommitAsync();
                 return true;
@@ -96,6 +96,45 @@ namespace SistemaLevels.DAL.Repository
                 await trx.RollbackAsync();
                 return false;
             }
+        }
+
+        /* =====================================================
+           SINCRONIZADOR CENTRAL ⭐⭐⭐
+        ===================================================== */
+
+        private async Task SincronizarProductoras(
+            int idCliente,
+            List<int> nuevasIds,
+            byte origenAsignacion)
+        {
+            nuevasIds ??= new List<int>();
+
+            nuevasIds = nuevasIds
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList();
+
+            // SOLO relaciones creadas desde CLIENTE
+            var actuales = await _db.ClientesProductoras
+                .Where(x =>
+                    x.IdCliente == idCliente &&
+                    x.OrigenAsignacion == origenAsignacion)
+                .ToListAsync();
+
+            _db.ClientesProductoras.RemoveRange(actuales);
+
+            foreach (var idProd in nuevasIds)
+            {
+                _db.ClientesProductoras.Add(new ClientesProductora
+                {
+                    IdCliente = idCliente,
+                    IdProductora = idProd,
+                    OrigenAsignacion = origenAsignacion,
+                    FechaRegistro = DateTime.Now
+                });
+            }
+
+            await _db.SaveChangesAsync();
         }
 
         /* =====================================================
@@ -104,27 +143,26 @@ namespace SistemaLevels.DAL.Repository
 
         public async Task<bool> Eliminar(int id)
         {
-            using var trx = await _dbcontext.Database.BeginTransactionAsync();
+            using var trx = await _db.Database.BeginTransactionAsync();
 
             try
             {
-                var entity = await _dbcontext.Clientes
+                var cliente = await _db.Clientes
                     .FirstOrDefaultAsync(x => x.Id == id);
 
-                if (entity == null) return false;
+                if (cliente == null)
+                    return false;
 
-                // ✅ borrar relaciones (tabla puente)
-                var relaciones = await _dbcontext.ClientesProductorasAsignadas
+                var relaciones = await _db.ClientesProductoras
                     .Where(x => x.IdCliente == id)
                     .ToListAsync();
 
-                _dbcontext.ClientesProductorasAsignadas.RemoveRange(relaciones);
+                _db.ClientesProductoras.RemoveRange(relaciones);
+                _db.Clientes.Remove(cliente);
 
-                _dbcontext.Clientes.Remove(entity);
+                await _db.SaveChangesAsync();
 
-                await _dbcontext.SaveChangesAsync();
                 await trx.CommitAsync();
-
                 return true;
             }
             catch
@@ -135,102 +173,42 @@ namespace SistemaLevels.DAL.Repository
         }
 
         /* =====================================================
-           OBTENER (para EditarInfo)
+           OBTENER
         ===================================================== */
 
         public async Task<Cliente?> Obtener(int id)
         {
-            try
-            {
-                return await _dbcontext.Clientes
-                    // ✅ tabla puente + navegación a Productora (para armar nombres si querés)
-                    .Include(x => x.ClientesProductorasAsignada)
-                        .ThenInclude(x => x.IdNavigation)
-
-                    // ✅ combos / descriptivos
-                    .Include(x => x.IdPaisNavigation)
-                    .Include(x => x.IdProvinciaNavigation)
-                    .Include(x => x.IdTipoDocumentoNavigation)
-                    .Include(x => x.IdCondicionIvaNavigation)
-
-                    // ✅ auditoría
-                    .Include(x => x.IdUsuarioRegistraNavigation)
-                    .Include(x => x.IdUsuarioModificaNavigation)
-
-                    .FirstOrDefaultAsync(x => x.Id == id);
-            } catch (Exception ex)
-            {
-                return null;
-            }
+            return await _db.Clientes
+                .AsNoTracking()
+                .Include(x => x.ClientesProductoras)
+                    .ThenInclude(cp => cp.IdProductoraNavigation)
+                .Include(x => x.IdPaisNavigation)
+                .Include(x => x.IdProvinciaNavigation)
+                .Include(x => x.IdTipoDocumentoNavigation)
+                .Include(x => x.IdCondicionIvaNavigation)
+                .Include(x => x.IdUsuarioRegistraNavigation)
+                .Include(x => x.IdUsuarioModificaNavigation)
+                .FirstOrDefaultAsync(x => x.Id == id);
         }
 
         /* =====================================================
-           OBTENER TODOS (grilla)
+           LISTA
         ===================================================== */
 
         public async Task<IQueryable<Cliente>> ObtenerTodos()
         {
-            IQueryable<Cliente> query = _dbcontext.Clientes
-                 // ✅ tabla puente + navegación a Productora (para grilla: "N asignadas" o nombre)
-                 .Include(x => x.ClientesProductorasAsignada)
-        .ThenInclude(x => x.IdNavigation)
-    .Include(x => x.IdPaisNavigation)
-    .Include(x => x.IdProvinciaNavigation)
-    .Include(x => x.IdTipoDocumentoNavigation)
-    .Include(x => x.IdCondicionIvaNavigation)
-    .Include(x => x.IdUsuarioRegistraNavigation)
-    .Include(x => x.IdUsuarioModificaNavigation);
+            var query = _db.Clientes
+                .AsNoTracking()
+                .Include(x => x.ClientesProductoras)
+                    .ThenInclude(cp => cp.IdProductoraNavigation)
+                .Include(x => x.IdPaisNavigation)
+                .Include(x => x.IdProvinciaNavigation)
+                .Include(x => x.IdTipoDocumentoNavigation)
+                .Include(x => x.IdCondicionIvaNavigation)
+                .Include(x => x.IdUsuarioRegistraNavigation)
+                .Include(x => x.IdUsuarioModificaNavigation);
 
             return await Task.FromResult(query);
-        }
-
-        /* =====================================================
-           HELPER: SINCRONIZAR PRODUCTORAS (REEMPLAZO TOTAL)
-        ===================================================== */
-
-        private async Task SincronizarProductoras(int idCliente, List<int> productorasIds)
-        {
-            try
-            {
-                productorasIds ??= new List<int>();
-
-                // ✅ limpiar ids inválidos
-                productorasIds = productorasIds
-                    .Where(x => x > 0)
-                    .Distinct()
-                    .ToList();
-
-                // ✅ traer SOLO productoras existentes (FK SAFE)
-                var productorasValidas = await _dbcontext.Productoras
-                    .Where(p => productorasIds.Contains(p.Id))
-                    .Select(p => p.Id)
-                    .ToListAsync();
-
-                // ===== borrar actuales =====
-                var actuales = await _dbcontext.ClientesProductorasAsignadas
-                    .Where(x => x.IdCliente == idCliente)
-                    .ToListAsync();
-
-                _dbcontext.ClientesProductorasAsignadas.RemoveRange(actuales);
-
-                // ===== insertar nuevas =====
-                foreach (var idProd in productorasValidas)
-                {
-                    _dbcontext.ClientesProductorasAsignadas.Add(
-                        new ClientesProductorasAsignada
-                        {
-                            IdCliente = idCliente,
-                            IdProductora = idProd
-                        });
-                }
-
-                await _dbcontext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                // Manejo de errores opcional, pero no se debe retornar null en un método async Task
-                // Puedes registrar el error o manejarlo según sea necesario
-            }
         }
     }
 }

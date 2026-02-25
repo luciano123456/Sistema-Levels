@@ -4,7 +4,7 @@ using SistemaLevels.Models;
 
 namespace SistemaLevels.DAL.Repository
 {
-    public class ProductorasRepository : IProductorasRepository<Productora>
+    public class ProductorasRepository : IProductorasRepository
     {
         private readonly SistemaLevelsContext _dbcontext;
 
@@ -14,34 +14,37 @@ namespace SistemaLevels.DAL.Repository
         }
 
         /* =====================================================
-           SYNC CLIENTES ↔ PRODUCTORAS
+           SYNC CLIENTES (MISMA LÓGICA QUE CLIENTES)
         ===================================================== */
 
-        private async Task SyncClientesProductorasAsignadas(
-            int idProductora,
-            List<int> clientesIds)
+        private async Task SincronizarClientes(int idProductora, List<int> clientesIds)
         {
-            clientesIds ??= new List<int>();
-            clientesIds = clientesIds.Distinct().ToList();
+            clientesIds ??= new();
 
-            var actuales = await _dbcontext.ClientesProductorasAsignadas
-                .Where(x => x.IdProductora == idProductora)
+            clientesIds = clientesIds
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList();
+
+            // SOLO MANUALES
+            var actuales = await _dbcontext.ClientesProductoras
+                .Where(x =>
+                    x.IdProductora == idProductora &&
+                    x.OrigenAsignacion == 1)
                 .ToListAsync();
 
-            _dbcontext.ClientesProductorasAsignadas.RemoveRange(actuales);
-            await _dbcontext.SaveChangesAsync();
+            _dbcontext.ClientesProductoras.RemoveRange(actuales);
 
             foreach (var idCliente in clientesIds)
             {
-                _dbcontext.ClientesProductorasAsignadas.Add(
-                    new ClientesProductorasAsignada
-                    {
-                        IdProductora = idProductora,
-                        IdCliente = idCliente
-                    });
+                _dbcontext.ClientesProductoras.Add(new ClientesProductora
+                {
+                    IdCliente = idCliente,
+                    IdProductora = idProductora,
+                    OrigenAsignacion = 1,
+                    FechaRegistro = DateTime.Now
+                });
             }
-
-            await _dbcontext.SaveChangesAsync();
         }
 
         /* =====================================================
@@ -57,10 +60,9 @@ namespace SistemaLevels.DAL.Repository
                 _dbcontext.Productoras.Add(model);
                 await _dbcontext.SaveChangesAsync();
 
-                await SyncClientesProductorasAsignadas(
-                    model.Id,
-                    clientesIds
-                );
+                await SincronizarClientes(model.Id, clientesIds);
+
+                await _dbcontext.SaveChangesAsync();
 
                 await trx.CommitAsync();
                 return true;
@@ -85,7 +87,8 @@ namespace SistemaLevels.DAL.Repository
                 var entity = await _dbcontext.Productoras
                     .FirstOrDefaultAsync(x => x.Id == model.Id);
 
-                if (entity == null) return false;
+                if (entity == null)
+                    return false;
 
                 entity.Nombre = model.Nombre;
                 entity.Telefono = model.Telefono;
@@ -106,12 +109,9 @@ namespace SistemaLevels.DAL.Repository
                 entity.IdUsuarioModifica = model.IdUsuarioModifica;
                 entity.FechaModifica = DateTime.Now;
 
-                await _dbcontext.SaveChangesAsync();
+                await SincronizarClientes(entity.Id, clientesIds);
 
-                await SyncClientesProductorasAsignadas(
-                    entity.Id,
-                    clientesIds
-                );
+                await _dbcontext.SaveChangesAsync();
 
                 await trx.CommitAsync();
                 return true;
@@ -136,23 +136,19 @@ namespace SistemaLevels.DAL.Repository
                 var entity = await _dbcontext.Productoras
                     .FirstOrDefaultAsync(x => x.Id == id);
 
-                if (entity == null)
-                    return false;
+                if (entity == null) return false;
 
-                // 🔥 SOLO BORRAMOS RELACIONES MANY-TO-MANY
-                var relaciones = await _dbcontext.ClientesProductorasAsignadas
+                var relaciones = await _dbcontext.ClientesProductoras
                     .Where(x => x.IdProductora == id)
                     .ToListAsync();
 
-                _dbcontext.ClientesProductorasAsignadas.RemoveRange(relaciones);
-
-                await _dbcontext.SaveChangesAsync();
+                _dbcontext.ClientesProductoras.RemoveRange(relaciones);
 
                 _dbcontext.Productoras.Remove(entity);
 
                 await _dbcontext.SaveChangesAsync();
-
                 await trx.CommitAsync();
+
                 return true;
             }
             catch
@@ -169,18 +165,20 @@ namespace SistemaLevels.DAL.Repository
         public async Task<Productora?> Obtener(int id)
         {
             return await _dbcontext.Productoras
+                .AsNoTracking()
+                .Include(x => x.ClientesProductoras)
+                    .ThenInclude(cp => cp.IdClienteNavigation)
                 .Include(x => x.IdpaisNavigation)
                 .Include(x => x.IdTipoDocumentoNavigation)
                 .Include(x => x.IdCondicionIvaNavigation)
                 .Include(x => x.IdProvinciaNavigation)
                 .Include(x => x.IdUsuarioRegistraNavigation)
                 .Include(x => x.IdUsuarioModificaNavigation)
-                .Include(x => x.ProductorasClientesAsignados)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
 
         /* =====================================================
-           OBTENER TODOS
+           LISTA
         ===================================================== */
 
         public async Task<IQueryable<Productora>> ObtenerTodos()
@@ -194,6 +192,20 @@ namespace SistemaLevels.DAL.Repository
                 .Include(x => x.IdUsuarioModificaNavigation);
 
             return await Task.FromResult(query);
+        }
+
+        /* =====================================================
+           CLIENTES AUTOMÁTICOS
+        ===================================================== */
+
+        public async Task<List<int>> ObtenerClientesAsociadosAutomaticos(int idProductora)
+        {
+            return await _dbcontext.ClientesProductoras
+                .Where(x =>
+                    x.IdProductora == idProductora &&
+                    x.OrigenAsignacion == 2)
+                .Select(x => x.IdCliente)
+                .ToListAsync();
         }
     }
 }
