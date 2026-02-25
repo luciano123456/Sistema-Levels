@@ -6,6 +6,9 @@
 
 let gridClientes;
 
+let productorasCache = [];
+let productorasSeleccionadas = [];
+
 /**
  * Columnas:
  * 0 Acciones
@@ -19,6 +22,7 @@ let gridClientes;
  * 8 Teléfono (TEXT)
  * 9 Email (TEXT)
  */
+
 const columnConfig = [
     { index: 1, filterType: 'text' },
     { index: 2, filterType: 'select', fetchDataFunc: listaProductorasFilter },
@@ -32,6 +36,8 @@ const columnConfig = [
 ];
 
 $(document).ready(() => {
+
+    $("#txtBuscarProductora").on("input", aplicarFiltroProductorasChecklist);
 
     // Ejecutar SOLO una vez (igual que Artistas)
     $(document).off("click.select2fix").on(
@@ -107,8 +113,6 @@ function inicializarSelect2Modal() {
         dropdownParent: $('#modalEdicion')
     };
 
-    ensureSelect2($("#cmbProductora"), opts);
-
     ensureSelect2($("#cmbPais"), opts);
     ensureSelect2($("#cmbProvincia"), opts);
     ensureSelect2($("#cmbTipoDocumento"), opts);
@@ -143,7 +147,8 @@ function guardarCliente() {
 
         Dni: $("#txtDni").val(),
 
-        IdProductora: $("#cmbProductora").val() ? parseInt($("#cmbProductora").val(), 10) : null,
+        AsociacionAutomatica: $("#chkAsociacionAutomatica").is(":checked") ? 1 : 0,
+        ProductorasIds: productorasSeleccionadas,
         IdPais: $("#cmbPais").val() ? parseInt($("#cmbPais").val(), 10) : null,
         IdProvincia: $("#cmbProvincia").val() ? parseInt($("#cmbProvincia").val(), 10) : null,
 
@@ -187,10 +192,13 @@ function guardarCliente() {
 function nuevoCliente() {
     limpiarModal();
 
+    productorasSeleccionadas = [];
+
     // cargar combos base
     Promise.all([
-        listaProductoras(),
-        listaPaises()
+        
+        listaPaises(),
+        cargarProductorasChecklist()
     ])
         .then(() => {
             // combos dependientes vacíos
@@ -209,6 +217,8 @@ function nuevoCliente() {
     $("#infoAuditoria").addClass("d-none");
     $("#infoRegistro").html("");
     $("#infoModificacion").html("");
+
+    $("#chkAsociacionAutomatica").prop("checked", true);
 }
 
 async function mostrarModal(modelo) {
@@ -230,8 +240,11 @@ async function mostrarModal(modelo) {
     $("#txtEntreCalles").val(modelo.EntreCalles || "");
     $("#txtCodigoPostal").val(modelo.CodigoPostal || "");
 
-    await listaProductoras();
+    $("#chkAsociacionAutomatica").prop("checked", !!modelo.AsociacionAutomatica);
+
     await listaPaises();
+
+    await cargarProductorasChecklist();
 
     // primero setear país
     if (modelo.IdPais != null) {
@@ -246,8 +259,6 @@ async function mostrarModal(modelo) {
         resetSelect("cmbProvincia", "Seleccionar");
     }
 
-    // Set combos
-    if (modelo.IdProductora != null) $("#cmbProductora").val(modelo.IdProductora).trigger("change.select2");
 
     if (modelo.IdPais != null) {
         $("#cmbPais").val(modelo.IdPais).trigger("change.select2");
@@ -263,6 +274,15 @@ async function mostrarModal(modelo) {
     if (modelo.IdProvincia != null) $("#cmbProvincia").val(modelo.IdProvincia).trigger("change.select2");
 
     inicializarSelect2Modal();
+
+    // ===== PRODUCTORAS ASOCIADAS =====
+    productorasSeleccionadas = modelo.ProductorasIds || [];
+    renderChecklistProductoras();
+
+    $("#chkAsociacionAutomatica").prop(
+        "checked",
+        (modelo.AsociacionAutomatica || 0) === 1
+    );
 
     // Auditoría (igual que Artistas)
     let textoAuditoria = "";
@@ -548,19 +568,7 @@ function resetSelect(id, placeholder) {
     el.append(new Option(placeholder || "Seleccionar", "", true, true));
 }
 
-async function listaProductoras() {
-    const response = await fetch(`/Productoras/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
 
-    const data = await response.json();
-
-    resetSelect("cmbProductora", "Seleccionar");
-    const select = document.getElementById("cmbProductora");
-    (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    inicializarSelect2Modal();
-}
 
 async function listaPaises() {
     const response = await fetch(`/Paises/Lista`, {
@@ -795,7 +803,6 @@ function validarCampoIndividual(el) {
 
     const camposObligatorios = [
         "txtNombre",
-        "cmbProductora",
         "cmbPais",
         "cmbProvincia"
     ];
@@ -821,7 +828,6 @@ function validarCampos() {
 
     const campos = [
         "#txtNombre",
-        "#cmbProductora",
         "#cmbPais",
         "#cmbProvincia"
     ];
@@ -883,4 +889,73 @@ function normalizarDateInput(fecha) {
     } catch {
         return "";
     }
+}
+
+
+async function cargarProductorasChecklist() {
+
+    const res = await fetch("/Productoras/Lista", {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    productorasCache = await res.json();
+
+    renderChecklistProductoras();
+}
+
+function renderChecklistProductoras() {
+
+    const cont = document.getElementById("listaProductoras");
+    cont.innerHTML = "";
+
+    productorasCache.forEach(p => {
+
+        const checked =
+            productorasSeleccionadas.includes(p.Id)
+                ? "checked"
+                : "";
+
+        cont.insertAdjacentHTML("beforeend", `
+            <label class="rp-check-item">
+                <input type="checkbox"
+                       value="${p.Id}"
+                       ${checked}
+                       onchange="toggleProductora(${p.Id})">
+
+                <span>${p.Nombre}</span>
+            </label>
+        `);
+    });
+
+    actualizarContadorProductoras();
+}
+
+function toggleProductora(id) {
+
+    id = parseInt(id);
+
+    if (productorasSeleccionadas.includes(id))
+        productorasSeleccionadas =
+            productorasSeleccionadas.filter(x => x !== id);
+    else
+        productorasSeleccionadas.push(id);
+
+    actualizarContadorProductoras();
+}
+function actualizarContadorProductoras() {
+    $("#cntProductoras").text(
+        `(${productorasSeleccionadas.length})`
+    );
+}
+
+function aplicarFiltroProductorasChecklist() {
+
+    const q = ($("#txtBuscarProductora").val() || "").toLowerCase();
+
+    document.querySelectorAll("#listaProductoras .rp-check-item")
+        .forEach(el => {
+
+            const txt = el.innerText.toLowerCase();
+            el.style.display = txt.includes(q) ? "" : "none";
+        });
 }

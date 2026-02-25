@@ -20,60 +20,70 @@ public class ClientesController : Controller
         return View();
     }
 
+    /* ===============================
+       LISTA (GRILLA)
+    =============================== */
+
     [HttpGet]
     public async Task<IActionResult> Lista()
     {
         var clientes = await _service.ObtenerTodos();
 
-        var lista = clientes.Select(c => new VMCliente
-        {
-            Id = c.Id,
-            Nombre = c.Nombre,
-            Telefono = c.Telefono,
-            TelefonoAlternativo = c.TelefonoAlternativo,
-            Email = c.Email,
+        var lista = clientes
+            .Select(c => new VMCliente
+            {
+                Id = c.Id,
+                Nombre = c.Nombre,
+                Telefono = c.Telefono,
+                TelefonoAlternativo = c.TelefonoAlternativo,
+                Email = c.Email,
 
-            // IDs (para edición)
-            IdProductora = c.IdProductora,
-            IdPais = c.IdPais,
-            IdProvincia = c.IdProvincia,
-            IdTipoDocumento = c.IdTipoDocumento,
-            IdCondicionIva = c.IdCondicionIva,
+                Dni = c.Dni,
+                IdTipoDocumento = c.IdTipoDocumento,
+                NumeroDocumento = c.NumeroDocumento,
 
-            NumeroDocumento = c.NumeroDocumento,
-            Dni = c.Dni,
+                IdPais = c.IdPais,
+                IdProvincia = c.IdProvincia,
+                Localidad = c.Localidad,
+                EntreCalles = c.EntreCalles,
+                Direccion = c.Direccion,
+                CodigoPostal = c.CodigoPostal,
+                IdCondicionIva = c.IdCondicionIva,
 
-            Direccion = c.Direccion,
-            Localidad = c.Localidad,
-            EntreCalles = c.EntreCalles,
-            CodigoPostal = c.CodigoPostal,
+                AsociacionAutomatica = c.AsociacionAutomatica,
 
-            // Nombres para grilla
-            Productora = c.IdProductoraNavigation.Nombre,
-            Pais = c.IdPaisNavigation.Nombre,
-            Provincia = c.IdProvinciaNavigation.Nombre,
-            TipoDocumento = c.IdTipoDocumentoNavigation != null
-                ? c.IdTipoDocumentoNavigation.Nombre
-                : "",
-            CondicionIva = c.IdCondicionIvaNavigation != null
-                ? c.IdCondicionIvaNavigation.Nombre
-                : "",
+                // nombres descriptivos (para grilla)
+                Pais = c.IdPaisNavigation != null ? c.IdPaisNavigation.Nombre : "",
+                Provincia = c.IdProvinciaNavigation != null ? c.IdProvinciaNavigation.Nombre : "",
+                TipoDocumento = c.IdTipoDocumentoNavigation != null ? c.IdTipoDocumentoNavigation.Nombre : "",
+                CondicionIva = c.IdCondicionIvaNavigation != null ? c.IdCondicionIvaNavigation.Nombre : "",
 
-            // Auditoría
-            IdUsuarioRegistra = c.IdUsuarioRegistra,
-            FechaRegistra = c.FechaRegistra,
-            UsuarioRegistra = c.IdUsuarioRegistraNavigation.Usuario,
+                // si tu grilla sigue mostrando "Productora", armamos un texto:
+                // - si hay 1: nombre
+                // - si hay varias: "N asignadas"
+                Productora = (c.ClientesProductorasAsignada != null && c.ClientesProductorasAsignada.Count > 0)
+                    ? (c.ClientesProductorasAsignada.Count == 1
+                        ? (c.ClientesProductorasAsignada.First().IdNavigation != null ? c.ClientesProductorasAsignada.First().IdNavigation.Nombre : "1 asignada")
+                        : $"{c.ClientesProductorasAsignada.Count} asignadas")
+                    : "",
 
-            IdUsuarioModifica = c.IdUsuarioModifica,
-            FechaModifica = c.FechaModifica,
-            UsuarioModifica = c.IdUsuarioModificaNavigation != null
-                ? c.IdUsuarioModificaNavigation.Usuario
-                : ""
-        }).ToList();
+                // auditoría
+                IdUsuarioRegistra = c.IdUsuarioRegistra,
+                FechaRegistra = c.FechaRegistra,
+                UsuarioRegistra = c.IdUsuarioRegistraNavigation != null ? c.IdUsuarioRegistraNavigation.Usuario : "",
+
+                IdUsuarioModifica = c.IdUsuarioModifica,
+                FechaModifica = c.FechaModifica,
+                UsuarioModifica = c.IdUsuarioModificaNavigation != null ? c.IdUsuarioModificaNavigation.Usuario : ""
+            })
+            .ToList();
 
         return Ok(lista);
     }
 
+    /* ===============================
+       INSERTAR
+    =============================== */
 
     [HttpPost]
     public async Task<IActionResult> Insertar([FromBody] VMCliente model)
@@ -89,27 +99,33 @@ public class ClientesController : Controller
             IdTipoDocumento = model.IdTipoDocumento,
             NumeroDocumento = model.NumeroDocumento,
             Email = model.Email,
-            IdProductora = model.IdProductora,
+
             IdPais = model.IdPais,
             IdProvincia = model.IdProvincia,
             Localidad = model.Localidad,
             EntreCalles = model.EntreCalles,
             Direccion = model.Direccion,
             CodigoPostal = model.CodigoPostal,
+
             IdCondicionIva = model.IdCondicionIva,
+            AsociacionAutomatica = model.AsociacionAutomatica,
 
             IdUsuarioRegistra = idUsuario,
             FechaRegistra = DateTime.Now
         };
 
-        bool respuesta = await _service.Insertar(cliente);
+        bool respuesta = await _service.Insertar(cliente, model.ProductorasIds);
         return Ok(new { valor = respuesta });
     }
+
+    /* ===============================
+       ACTUALIZAR
+    =============================== */
 
     [HttpPut]
     public async Task<IActionResult> Actualizar([FromBody] VMCliente model)
     {
-        int idUsuario = int.Parse(User.FindFirst("Id").Value);
+        int idUsuario = int.Parse(User.FindFirst("Id")!.Value);
 
         var cliente = new Cliente
         {
@@ -121,22 +137,28 @@ public class ClientesController : Controller
             IdTipoDocumento = model.IdTipoDocumento,
             NumeroDocumento = model.NumeroDocumento,
             Email = model.Email,
-            IdProductora = model.IdProductora,
+
             IdPais = model.IdPais,
             IdProvincia = model.IdProvincia,
             Localidad = model.Localidad,
             EntreCalles = model.EntreCalles,
             Direccion = model.Direccion,
             CodigoPostal = model.CodigoPostal,
+
             IdCondicionIva = model.IdCondicionIva,
+            AsociacionAutomatica = model.AsociacionAutomatica,
 
             IdUsuarioModifica = idUsuario,
-            FechaModifica = DateTime.Now,
+            FechaModifica = DateTime.Now
         };
 
-        bool respuesta = await _service.Actualizar(cliente);
+        bool respuesta = await _service.Actualizar(cliente, model.ProductorasIds);
         return Ok(new { valor = respuesta });
     }
+
+    /* ===============================
+       ELIMINAR
+    =============================== */
 
     [HttpDelete]
     public async Task<IActionResult> Eliminar(int id)
@@ -144,6 +166,10 @@ public class ClientesController : Controller
         bool respuesta = await _service.Eliminar(id);
         return Ok(new { valor = respuesta });
     }
+
+    /* ===============================
+       EDITAR INFO (MODAL)
+    =============================== */
 
     [HttpGet]
     public async Task<IActionResult> EditarInfo(int id)
@@ -160,18 +186,31 @@ public class ClientesController : Controller
             Telefono = c.Telefono,
             TelefonoAlternativo = c.TelefonoAlternativo,
             Dni = c.Dni,
+
             IdTipoDocumento = c.IdTipoDocumento,
             NumeroDocumento = c.NumeroDocumento,
+
             Email = c.Email,
-            IdProductora = c.IdProductora,
+
             IdPais = c.IdPais,
             IdProvincia = c.IdProvincia,
+
             Localidad = c.Localidad,
             EntreCalles = c.EntreCalles,
             Direccion = c.Direccion,
             CodigoPostal = c.CodigoPostal,
-            IdCondicionIva = c.IdCondicionIva,
 
+            IdCondicionIva = c.IdCondicionIva,
+            AsociacionAutomatica = c.AsociacionAutomatica,
+
+            // ✅ NUEVO: productoras asignadas desde tabla puente
+            ProductorasIds = (c.ClientesProductorasAsignada ?? new List<ClientesProductorasAsignada>())
+                .Where(x => x.IdProductora.HasValue)
+                .Select(x => x.IdProductora!.Value)
+                .Distinct()
+                .ToList(),
+
+            // auditoría
             FechaRegistra = c.FechaRegistra,
             UsuarioRegistra = c.IdUsuarioRegistraNavigation?.Usuario,
 

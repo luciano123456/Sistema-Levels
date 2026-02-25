@@ -43,6 +43,8 @@ namespace SistemaLevels.Application.Models.ViewModels
         public string? CondicionIva { get; set; }
         public string? Provincia { get; set; }
 
+        public bool AsociacionAutomatica { get; set; }
+
         // ✅ NUEVO: clientes asignados
         public List<int> ClientesIds { get; set; } = new();
     }

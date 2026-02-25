@@ -17,8 +17,6 @@ namespace SistemaLevels.Application.Models.ViewModels
 
         public string? Email { get; set; }
 
-        public int IdProductora { get; set; }
-
         public int IdPais { get; set; }
         public int IdProvincia { get; set; }
 
@@ -35,6 +33,11 @@ namespace SistemaLevels.Application.Models.ViewModels
         public string? Provincia { get; set; }
         public string? TipoDocumento { get; set; }
         public string? CondicionIva { get; set; }
+
+        public int? AsociacionAutomatica { get; set; }
+
+        // 🔥 NUEVO
+        public List<int> ProductorasIds { get; set; } = new();
 
         // auditoría
         public int IdUsuarioRegistra { get; set; }

@@ -13,6 +13,41 @@ namespace SistemaLevels.DAL.Repository
             _dbcontext = context;
         }
 
+        /* =====================================================
+           SYNC CLIENTES ↔ PRODUCTORAS
+        ===================================================== */
+
+        private async Task SyncClientesProductorasAsignadas(
+            int idProductora,
+            List<int> clientesIds)
+        {
+            clientesIds ??= new List<int>();
+            clientesIds = clientesIds.Distinct().ToList();
+
+            var actuales = await _dbcontext.ClientesProductorasAsignadas
+                .Where(x => x.IdProductora == idProductora)
+                .ToListAsync();
+
+            _dbcontext.ClientesProductorasAsignadas.RemoveRange(actuales);
+            await _dbcontext.SaveChangesAsync();
+
+            foreach (var idCliente in clientesIds)
+            {
+                _dbcontext.ClientesProductorasAsignadas.Add(
+                    new ClientesProductorasAsignada
+                    {
+                        IdProductora = idProductora,
+                        IdCliente = idCliente
+                    });
+            }
+
+            await _dbcontext.SaveChangesAsync();
+        }
+
+        /* =====================================================
+           INSERTAR
+        ===================================================== */
+
         public async Task<bool> Insertar(Productora model, List<int> clientesIds)
         {
             using var trx = await _dbcontext.Database.BeginTransactionAsync();
@@ -22,18 +57,11 @@ namespace SistemaLevels.DAL.Repository
                 _dbcontext.Productoras.Add(model);
                 await _dbcontext.SaveChangesAsync();
 
-                clientesIds ??= new List<int>();
+                await SyncClientesProductorasAsignadas(
+                    model.Id,
+                    clientesIds
+                );
 
-                foreach (var idCliente in clientesIds.Distinct())
-                {
-                    _dbcontext.ProductorasClientesAsignados.Add(new ProductorasClientesAsignado
-                    {
-                        IdProductora = model.Id,
-                        IdCliente = idCliente
-                    });
-                }
-
-                await _dbcontext.SaveChangesAsync();
                 await trx.CommitAsync();
                 return true;
             }
@@ -43,6 +71,10 @@ namespace SistemaLevels.DAL.Repository
                 return false;
             }
         }
+
+        /* =====================================================
+           ACTUALIZAR
+        ===================================================== */
 
         public async Task<bool> Actualizar(Productora model, List<int> clientesIds)
         {
@@ -55,7 +87,6 @@ namespace SistemaLevels.DAL.Repository
 
                 if (entity == null) return false;
 
-                // ===== CAMPOS PRINCIPALES =====
                 entity.Nombre = model.Nombre;
                 entity.Telefono = model.Telefono;
                 entity.TelefonoAlternativo = model.TelefonoAlternativo;
@@ -70,38 +101,18 @@ namespace SistemaLevels.DAL.Repository
                 entity.EntreCalles = model.EntreCalles;
                 entity.Direccion = model.Direccion;
                 entity.CodigoPostal = model.CodigoPostal;
+                entity.AsociacionAutomatica = model.AsociacionAutomatica;
 
-                // ===== FECHA SEGURA =====
                 entity.IdUsuarioModifica = model.IdUsuarioModifica;
-
-                if (model.FechaModifica.HasValue && model.FechaModifica.Value >= new DateTime(1753, 1, 1))
-                    entity.FechaModifica = model.FechaModifica;
-                else
-                    entity.FechaModifica = DateTime.Now;
+                entity.FechaModifica = DateTime.Now;
 
                 await _dbcontext.SaveChangesAsync();
 
-                // ===== CLIENTES: REEMPLAZO TOTAL =====
-                clientesIds ??= new List<int>();
-                clientesIds = clientesIds.Distinct().ToList();
+                await SyncClientesProductorasAsignadas(
+                    entity.Id,
+                    clientesIds
+                );
 
-                var actuales = await _dbcontext.ProductorasClientesAsignados
-                    .Where(x => x.IdProductora == model.Id)
-                    .ToListAsync();
-
-                _dbcontext.ProductorasClientesAsignados.RemoveRange(actuales);
-                await _dbcontext.SaveChangesAsync();
-
-                foreach (var idCliente in clientesIds)
-                {
-                    _dbcontext.ProductorasClientesAsignados.Add(new ProductorasClientesAsignado
-                    {
-                        IdProductora = model.Id,
-                        IdCliente = idCliente
-                    });
-                }
-
-                await _dbcontext.SaveChangesAsync();
                 await trx.CommitAsync();
                 return true;
             }
@@ -112,25 +123,48 @@ namespace SistemaLevels.DAL.Repository
             }
         }
 
+        /* =====================================================
+           ELIMINAR
+        ===================================================== */
 
         public async Task<bool> Eliminar(int id)
         {
+            using var trx = await _dbcontext.Database.BeginTransactionAsync();
+
             try
             {
                 var entity = await _dbcontext.Productoras
                     .FirstOrDefaultAsync(x => x.Id == id);
 
-                if (entity == null) return false;
+                if (entity == null)
+                    return false;
+
+                // 🔥 SOLO BORRAMOS RELACIONES MANY-TO-MANY
+                var relaciones = await _dbcontext.ClientesProductorasAsignadas
+                    .Where(x => x.IdProductora == id)
+                    .ToListAsync();
+
+                _dbcontext.ClientesProductorasAsignadas.RemoveRange(relaciones);
+
+                await _dbcontext.SaveChangesAsync();
 
                 _dbcontext.Productoras.Remove(entity);
+
                 await _dbcontext.SaveChangesAsync();
+
+                await trx.CommitAsync();
                 return true;
             }
             catch
             {
+                await trx.RollbackAsync();
                 return false;
             }
         }
+
+        /* =====================================================
+           OBTENER
+        ===================================================== */
 
         public async Task<Productora?> Obtener(int id)
         {
@@ -144,6 +178,10 @@ namespace SistemaLevels.DAL.Repository
                 .Include(x => x.ProductorasClientesAsignados)
                 .FirstOrDefaultAsync(x => x.Id == id);
         }
+
+        /* =====================================================
+           OBTENER TODOS
+        ===================================================== */
 
         public async Task<IQueryable<Productora>> ObtenerTodos()
         {

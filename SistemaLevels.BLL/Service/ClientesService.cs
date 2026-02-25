@@ -12,14 +12,14 @@ namespace SistemaLevels.BLL.Service
             _repo = repo;
         }
 
-        public async Task<bool> Actualizar(Cliente model)
-            => await _repo.Actualizar(model);
+        public async Task<bool> Insertar(Cliente model, List<int> productorasIds)
+            => await _repo.Insertar(model, productorasIds);
+
+        public async Task<bool> Actualizar(Cliente model, List<int> productorasIds)
+            => await _repo.Actualizar(model, productorasIds);
 
         public async Task<bool> Eliminar(int id)
             => await _repo.Eliminar(id);
-
-        public async Task<bool> Insertar(Cliente model)
-            => await _repo.Insertar(model);
 
         public async Task<Cliente?> Obtener(int id)
             => await _repo.Obtener(id);

@@ -43,9 +43,11 @@ public partial class Productora
 
     public string? CodigoPostal { get; set; }
 
+    public int? AsociacionAutomatica { get; set; }
+
     public virtual ICollection<Artista> Artista { get; set; } = new List<Artista>();
 
-    public virtual ICollection<Cliente> Clientes { get; set; } = new List<Cliente>();
+    public virtual ClientesProductorasAsignada? ClientesProductorasAsignada { get; set; }
 
     public virtual PaisesCondicionesIva? IdCondicionIvaNavigation { get; set; }
 
