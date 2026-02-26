@@ -13,6 +13,51 @@ namespace SistemaLevels.DAL.Repository
             _dbcontext = context;
         }
 
+        public async Task<IQueryable<Personal>> ListarFiltrado(
+    string? nombre,
+    int? idPais,
+    int? idTipoDocumento,
+    int? idCondicionIva,
+    int? idRol,
+    int? idArtista
+)
+        {
+            IQueryable<Personal> query = _dbcontext.Personals
+                .Include(x => x.IdPaisNavigation)
+                .Include(x => x.IdTipoDocumentoNavigation)
+                .Include(x => x.IdCondicionIvaNavigation)
+                .Include(x => x.IdUsuarioRegistraNavigation)
+                .Include(x => x.IdUsuarioModificaNavigation)
+                .Include(x => x.PersonalRolesAsignados)
+                .Include(x => x.PersonalArtistasAsignados);
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+                query = query.Where(x => x.Nombre.Contains(nombre));
+
+            if (idPais.HasValue)
+                query = query.Where(x => x.IdPais == idPais.Value);
+
+            if (idTipoDocumento.HasValue)
+                query = query.Where(x => x.IdTipoDocumento == idTipoDocumento.Value);
+
+            if (idCondicionIva.HasValue)
+                query = query.Where(x => x.IdCondicionIva == idCondicionIva.Value);
+
+            // ⭐ FILTRO MANY TO MANY → ROLES
+            if (idRol.HasValue)
+                query = query.Where(x =>
+                    x.PersonalRolesAsignados
+                     .Any(r => r.IdRol == idRol.Value));
+
+            // ⭐ FILTRO MANY TO MANY → ARTISTAS
+            if (idArtista.HasValue)
+                query = query.Where(x =>
+                    x.PersonalArtistasAsignados
+                     .Any(a => a.IdArtista == idArtista.Value));
+
+            return await Task.FromResult(query);
+        }
+
         public async Task<bool> Insertar(Personal model, List<int> rolesIds, List<int> artistasIds)
         {
             using var trx = await _dbcontext.Database.BeginTransactionAsync();

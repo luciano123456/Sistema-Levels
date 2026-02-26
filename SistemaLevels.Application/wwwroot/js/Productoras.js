@@ -389,25 +389,19 @@ async function configurarDataTable(data) {
             dom: 'Bfrtip',
             buttons: [
                 {
-                    extend: 'excelHtml5',
                     text: 'Excel',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridProductoras, 'excel', 'Productoras')
                 },
                 {
-                    extend: 'pdfHtml5',
                     text: 'PDF',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridProductoras, 'pdf', 'Productoras')
                 },
                 {
-                    extend: 'print',
                     text: 'Imprimir',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
-                },
-                'pageLength'
+                    action: () => abrirModalExportacion(gridProductoras, 'print', 'Productoras')
+                }
             ],
+
 
             orderCellsTop: true,
             fixedHeader: true,

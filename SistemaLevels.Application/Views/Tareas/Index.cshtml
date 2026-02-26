@@ -162,13 +162,34 @@
 
 <partial name="~/Views/Utils/Modals.cshtml" />
 
+
 @section Scripts {
+
+    <!-- 1️⃣ jQuery (SIEMPRE primero) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- 2️⃣ DataTables CORE -->
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 
-    <!-- Select2 -->
+    <!-- 3️⃣ DataTables Buttons (DESPUÉS del core) -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+
+    <!-- 4️⃣ Dependencias exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <!-- 5️⃣ Botones HTML5 -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+    <!-- 6️⃣ Select2 -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <script src="~/js/Tareas.js"></script>
 
     <script src="~/js/utils/moment.js"></script>
+
+    <!-- 7️⃣ TU SCRIPT (SIEMPRE ÚLTIMO) -->
+    <script src="~/js/Tareas.js?v=1.0"></script>
+
 }

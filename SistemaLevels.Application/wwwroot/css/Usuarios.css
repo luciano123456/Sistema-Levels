@@ -14,3 +14,82 @@
         max-width: 98%; /* o lo que necesites */
     }
 }
+
+
+/* ==============================
+   PERSONAL SELECTOR CARDS
+============================== */
+
+.rp-personal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill,minmax(260px,1fr));
+    gap: 16px;
+}
+
+/* CARD BASE */
+.rp-personal-card {
+    background: linear-gradient( 145deg, rgba(20,35,60,.95), rgba(12,22,40,.95) );
+    border-radius: 14px;
+    padding: 16px;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,.08);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+    /* glow suave */
+    .rp-personal-card::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient( 120deg, transparent, rgba(80,160,255,.08), transparent );
+        opacity: 0;
+        transition: .2s;
+    }
+
+    /* HOVER */
+    .rp-personal-card:hover {
+        transform: translateY(-4px);
+        border-color: #3aa0ff;
+        box-shadow: 0 8px 22px rgba(0,0,0,.45);
+    }
+
+        .rp-personal-card:hover::before {
+            opacity: 1;
+        }
+
+    /* SELECCIONADA */
+    .rp-personal-card.selected {
+        border: 2px solid #28d17c;
+        background: linear-gradient( 145deg, rgba(22,60,45,.95), rgba(12,35,28,.95) );
+        box-shadow: 0 0 0 1px rgba(40,209,124,.25), 0 10px 26px rgba(40,209,124,.25);
+    }
+
+/* NOMBRE */
+.rp-personal-name {
+    font-weight: 600;
+    font-size: 16px;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+/* INFO */
+.rp-personal-info {
+    font-size: 13px;
+    color: #c9d4e3;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+    /* iconitos */
+    .rp-personal-info i {
+        color: #7fb3ff;
+        width: 16px;
+    }
+
+#modalSelectorPersonal .modal-body {
+    background: radial-gradient(circle at top, #15213a, #0b1426);
+}

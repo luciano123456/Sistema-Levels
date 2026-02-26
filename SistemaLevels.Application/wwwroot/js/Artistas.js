@@ -1,5 +1,7 @@
 ﻿let gridArtistas;
 
+let exportTipo = null;
+
 /**
  * Columnas:
  * 0 Acciones
@@ -64,8 +66,7 @@ $(document).ready(() => {
         await listaTiposDocumento(idPais);
         await listaCondicionesIva(idPais);
         await listaProvincias(idPais);
-        await listaMonedas(idPais);
-
+     
         if (tipoDocActual) {
             $("#cmbTipoDocumento").val(tipoDocActual);
             refreshSelect2("#cmbTipoDocumento");
@@ -81,10 +82,6 @@ $(document).ready(() => {
             refreshSelect2("#cmbProvincia");
         }
 
-        if (monedaActual) {
-            $("#cmbMoneda").val(monedaActual);
-            refreshSelect2("#cmbMoneda");
-        }
     });
 
 
@@ -231,13 +228,14 @@ function nuevaArtista() {
     Promise.all([
         listaProductoras(),
         listaRepresentantes(),
-        listaPaises()
+        listaPaises(),
+        listaMonedas()
     ])
         .then(() => {
             resetSelect("cmbProvincia", "Seleccionar");
             resetSelect("cmbTipoDocumento", "Seleccionar");
             resetSelect("cmbCondicionIva", "Seleccionar");
-            resetSelect("cmbMoneda", "Seleccionar");
+            
         });
 
     abrirModalEdicion();
@@ -290,7 +288,7 @@ async function mostrarModal(modelo) {
         await listaTiposDocumento(modelo.IdPais);
         await listaCondicionesIva(modelo.IdPais);
         await listaProvincias(modelo.IdPais);
-        await listaMonedas(modelo.IdPais);
+        await listaMonedas();
     } else {
         resetSelect("cmbTipoDocumento", "Seleccionar");
         resetSelect("cmbCondicionIva", "Seleccionar");
@@ -485,24 +483,17 @@ async function configurarDataTable(data) {
             dom: 'Bfrtip',
             buttons: [
                 {
-                    extend: 'excelHtml5',
                     text: 'Excel',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridArtistas, 'excel', 'Artistas')
                 },
                 {
-                    extend: 'pdfHtml5',
                     text: 'PDF',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridArtistas, 'pdf', 'Artistas')
                 },
                 {
-                    extend: 'print',
                     text: 'Imprimir',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
-                },
-                'pageLength'
+                    action: () => abrirModalExportacion(gridArtistas, 'print', 'Artistas')
+                }
             ],
 
             orderCellsTop: true,
@@ -638,15 +629,9 @@ async function listaRepresentantes() {
     
 }
 
-async function listaMonedas(idPaisSeleccionado = null) {
+async function listaMonedas() {
 
     resetSelect("cmbMoneda", "Seleccionar");
-
-    // si no hay país, no cargar monedas
-    if (!idPaisSeleccionado) {
-        
-        return;
-    }
 
     const response = await fetch(`/PaisesMoneda/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
@@ -655,14 +640,10 @@ async function listaMonedas(idPaisSeleccionado = null) {
     const data = await response.json();
     const select = document.getElementById("cmbMoneda");
 
-    (data || [])
-        .filter(x => String(x.IdPais) === String(idPaisSeleccionado))
-        .forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    
+    (data || []).forEach(x => {
+        select.append(new Option(x.Nombre, x.Id));
+    });
 }
-
-
 async function listaPaises() {
     const response = await fetch(`/Paises/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
@@ -1041,3 +1022,6 @@ const verArtista = id => {
         })
         .catch(_ => errorModal("Ha ocurrido un error."));
 };
+
+
+

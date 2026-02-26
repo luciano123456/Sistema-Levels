@@ -1,6 +1,8 @@
 ﻿let gridPersonal;
 let rolesCatalogo = [];
 
+let filtrosPersonalActivos = false;
+
 
 /**
  * Columnas:
@@ -24,6 +26,8 @@ const columnConfig = [
 ];
 
 $(document).ready(() => {
+
+
 
     listaPersonal();
 
@@ -50,6 +54,7 @@ $(document).ready(() => {
         validarCampoIndividual(this);
     });
 
+    inicializarFiltrosPersonal();
 });
 
 /* =========================
@@ -422,24 +427,17 @@ async function configurarDataTable(data) {
             dom: 'Bfrtip',
             buttons: [
                 {
-                    extend: 'excelHtml5',
                     text: 'Excel',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridPersonal, 'excel', 'Personal')
                 },
                 {
-                    extend: 'pdfHtml5',
                     text: 'PDF',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridPersonal, 'pdf', 'Personal')
                 },
                 {
-                    extend: 'print',
                     text: 'Imprimir',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
-                },
-                'pageLength'
+                    action: () => abrirModalExportacion(gridPersonal, 'print', 'Personal')
+                }
             ],
 
             orderCellsTop: true,
@@ -975,3 +973,163 @@ const verPersonal = id => {
         })
         .catch(_ => errorModal("Ha ocurrido un error."));
 };
+
+async function inicializarFiltrosPersonal() {
+
+    await Promise.all([
+        cargarFiltroPaises(),
+        cargarFiltroTiposDocumento(),
+        cargarFiltroCondicionesIva(),
+        cargarFiltroRoles(),
+        cargarFiltroArtistas()
+    ]);
+
+    inicializarSelect2Filtro($("#fPais"));
+    inicializarSelect2Filtro($("#fTipoDocumento"));
+    inicializarSelect2Filtro($("#fCondicionIva"));
+    inicializarSelect2Filtro($("#fRol"));
+    inicializarSelect2Filtro($("#fArtista"));
+}
+
+async function cargarFiltroPaises() {
+
+    const r = await fetch(`/Paises/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const data = await r.json();
+
+    const $sel = $("#fPais");
+    $sel.empty().append(`<option value="">Todos</option>`);
+
+    (data || []).forEach(x =>
+        $sel.append(`<option value="${x.Id}">${x.Nombre}</option>`)
+    );
+}
+
+async function cargarFiltroTiposDocumento() {
+
+    const r = await fetch(`/PaisesTiposDocumentos/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const data = await r.json();
+
+    const $sel = $("#fTipoDocumento");
+    $sel.empty().append(`<option value="">Todos</option>`);
+
+    (data || []).forEach(x =>
+        $sel.append(`<option value="${x.Id}">${x.Nombre}</option>`)
+    );
+}
+
+async function cargarFiltroCondicionesIva() {
+
+    const r = await fetch(`/PaisesCondicionesIVA/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const data = await r.json();
+
+    const $sel = $("#fCondicionIva");
+    $sel.empty().append(`<option value="">Todos</option>`);
+
+    (data || []).forEach(x =>
+        $sel.append(`<option value="${x.Id}">${x.Nombre}</option>`)
+    );
+}
+
+async function cargarFiltroRoles() {
+
+    const r = await fetch(`/PersonalRol/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const data = await r.json();
+
+    const $sel = $("#fRol");
+    $sel.empty().append(`<option value="">Todos</option>`);
+
+    (data || []).forEach(x =>
+        $sel.append(`<option value="${x.Id}">${x.Nombre}</option>`)
+    );
+}
+
+async function cargarFiltroArtistas() {
+
+    const r = await fetch(`/Artistas/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    const data = await r.json();
+
+    const $sel = $("#fArtista");
+    $sel.empty().append(`<option value="">Todos</option>`);
+
+    (data || []).forEach(x =>
+        $sel.append(`<option value="${x.Id}">${x.NombreArtistico}</option>`)
+    );
+}
+
+/* =========================
+APLICAR FILTROS
+========================= */
+
+async function aplicarFiltrosPersonal() {
+
+    const filtros = {
+        Nombre: $("#fNombre").val() || null,
+        IdPais: $("#fPais").val() || null,
+        IdTipoDocumento: $("#fTipoDocumento").val() || null,
+        IdCondicionIva: $("#fCondicionIva").val() || null,
+        IdRol: $("#fRol").val() || null,
+        IdArtista: $("#fArtista").val() || null
+    };
+
+    filtrosPersonalActivos =
+        Object.values(filtros).some(x => x !== null && x !== "");
+
+    actualizarEstadoFiltrosPersonal();
+
+    const response = await fetch(`/Personal/ListaFiltrada`, {
+        method: "POST",
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(filtros)
+    });
+
+    if (!response.ok)
+        return errorModal("Error aplicando filtros");
+
+    const data = await response.json();
+
+    gridPersonal.clear().rows.add(data).draw();
+    actualizarKpis(data);
+}
+
+function limpiarFiltrosPersonal() {
+
+    $("#fNombre").val("");
+
+    $("#fPais").val(null).trigger("change");
+    $("#fTipoDocumento").val(null).trigger("change");
+    $("#fCondicionIva").val(null).trigger("change");
+    $("#fRol").val(null).trigger("change");
+    $("#fArtista").val(null).trigger("change");
+
+    filtrosPersonalActivos = false;
+    actualizarEstadoFiltrosPersonal();
+
+    listaPersonal();
+}
+
+function actualizarEstadoFiltrosPersonal() {
+
+    const txt = filtrosPersonalActivos
+        ? "Filtros activos"
+        : "";
+
+    $("#txtFiltrosEstadoPersonal").text(txt);
+}

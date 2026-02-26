@@ -59,6 +59,98 @@
         </div>
 
         <div class="card-glass p-3">
+
+            <!-- =========================
+                 FILTROS PERSONAL
+            ========================= -->
+            <div class="rp-filtros-wrap mb-3">
+
+                <div class="rp-filtros-head"
+                     data-bs-toggle="collapse"
+                     data-bs-target="#panelFiltrosPersonal"
+                     aria-expanded="false">
+
+                    <div class="title">
+                        <i class="fa fa-filter"></i>
+                        <span>Filtros</span>
+                        <small class="text-muted-cc" id="txtFiltrosEstadoPersonal"
+                               style="margin-left:8px;"></small>
+                    </div>
+
+                    <i class="fa fa-chevron-down chev"></i>
+                </div>
+
+                <div id="panelFiltrosPersonal" class="collapse">
+                    <div class="rp-filtros-body">
+
+                        <div class="row g-3">
+
+                            <!-- Nombre -->
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Nombre contiene</div>
+                                <input type="text"
+                                       id="fNombre"
+                                       class="rp-filter-input"
+                                       placeholder="Ej: Juan..." />
+                            </div>
+
+                            <!-- País -->
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">País</div>
+                                <select id="fPais"
+                                        class="rp-filter-select select2"></select>
+                            </div>
+
+                            <!-- Tipo Documento -->
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Tipo Documento</div>
+                                <select id="fTipoDocumento"
+                                        class="rp-filter-select select2"></select>
+                            </div>
+
+                            <!-- Condición IVA -->
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Condición IVA</div>
+                                <select id="fCondicionIva"
+                                        class="rp-filter-select select2"></select>
+                            </div>
+
+                            <!-- 🔥 NUEVO: Rol -->
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Rol asignado</div>
+                                <select id="fRol"
+                                        class="rp-filter-select select2"></select>
+                            </div>
+
+                            <!-- 🔥 NUEVO: Artista -->
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Artista asignado</div>
+                                <select id="fArtista"
+                                        class="rp-filter-select select2"></select>
+                            </div>
+
+                        </div>
+
+                        <!-- BOTONES -->
+                        <div class="rp-filtros-actions mt-3">
+
+                            <button class="btn btn-outline-light"
+                                    type="button"
+                                    onclick="limpiarFiltrosPersonal()">
+                                <i class="fa fa-eraser"></i> Limpiar
+                            </button>
+
+                            <button class="btn btn-primary"
+                                    type="button"
+                                    onclick="aplicarFiltrosPersonal()">
+                                <i class="fa fa-check"></i> Aplicar
+                            </button>
+
+                        </div>
+
+                    </div>
+                </div>
+            </div>
             <div class="dt-dark-wrap">
                 <table class="dt-dark display nowrap compact"
                        id="grd_Personal" style="width:100%">
@@ -223,11 +315,30 @@
 </div>
 
 <partial name="~/Views/Utils/Modals.cshtml" />
-
 @section Scripts {
+
+    <!-- 1️⃣ jQuery (SIEMPRE primero) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- 2️⃣ DataTables CORE -->
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+    <!-- 3️⃣ DataTables Buttons (DESPUÉS del core) -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+
+    <!-- 4️⃣ Dependencias exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <!-- 5️⃣ Botones HTML5 -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+    <!-- 6️⃣ Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- 7️⃣ TU SCRIPT (SIEMPRE ÚLTIMO) -->
     <script src="~/js/Personal.js?v=1.0"></script>
 
-    <!-- Select2 -->
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 }

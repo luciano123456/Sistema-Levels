@@ -53,6 +53,45 @@ public class PersonalController : Controller
     }
 
     [HttpPost]
+    public async Task<IActionResult> ListaFiltrada([FromBody] VMPersonalFiltro f)
+    {
+        var query = await _service.ListarFiltrado(
+            f.Nombre,
+            f.IdPais,
+            f.IdTipoDocumento,
+            f.IdCondicionIva,
+            f.IdRol,
+            f.IdArtista
+        );
+
+        var lista = query.Select(c => new VMPersonal
+        {
+            Id = c.Id,
+            Nombre = c.Nombre,
+            Dni = c.Dni,
+            Telefono = c.Telefono,
+            Email = c.Email,
+            Direccion = c.Direccion,
+            NumeroDocumento = c.NumeroDocumento,
+            FechaNacimiento = c.FechaNacimiento,
+
+            Pais = c.IdPaisNavigation.Nombre,
+            TipoDocumento = c.IdTipoDocumentoNavigation != null ? c.IdTipoDocumentoNavigation.Nombre : "",
+            CondicionIva = c.IdCondicionIvaNavigation != null ? c.IdCondicionIvaNavigation.Nombre : "",
+
+            IdUsuarioRegistra = c.IdUsuarioRegistra,
+            FechaRegistra = c.FechaRegistra,
+            UsuarioRegistra = c.IdUsuarioRegistraNavigation.Usuario,
+
+            IdUsuarioModifica = c.IdUsuarioModifica,
+            FechaModifica = c.FechaModifica,
+            UsuarioModifica = c.IdUsuarioModificaNavigation != null ? c.IdUsuarioModificaNavigation.Usuario : ""
+        }).ToList();
+
+        return Ok(lista);
+    }
+
+    [HttpPost]
     public async Task<IActionResult> Insertar([FromBody] VMPersonal model)
     {
         int idUsuario = int.Parse(User.FindFirst("Id")!.Value);
