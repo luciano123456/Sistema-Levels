@@ -33,9 +33,9 @@ public partial class Artista
 
     public string? Email { get; set; }
 
-    public int IdProductora { get; set; }
+    public int? IdProductora { get; set; }
 
-    public int IdProvincia { get; set; }
+    public int? IdProvincia { get; set; }
 
     public string? Localidad { get; set; }
 
@@ -47,11 +47,11 @@ public partial class Artista
 
     public int? IdCondicionIva { get; set; }
 
-    public int IdRepresentante { get; set; }
+    public int? IdRepresentante { get; set; }
 
     public DateTime? FechaNacimiento { get; set; }
 
-    public int IdMoneda { get; set; }
+    public int? IdMoneda { get; set; }
 
     public decimal PrecioUnitario { get; set; }
 

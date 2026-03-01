@@ -29,9 +29,9 @@ public partial class Cliente
 
     public string? Email { get; set; }
 
-    public int IdPais { get; set; }
+    public int? IdPais { get; set; }
 
-    public int IdProvincia { get; set; }
+    public int? IdProvincia { get; set; }
 
     public string? Localidad { get; set; }
 

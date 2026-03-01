@@ -122,5 +122,44 @@ namespace SistemaLevels.DAL.Repository
 
             return await Task.FromResult(query);
         }
+
+        public async Task<Artista?> BuscarDuplicado(
+    int? idExcluir,
+    string? nombre,
+    string? nombreArtistico,
+    string? numeroDocumento,
+    string? dni)
+        {
+            var query = _dbcontext.Artistas.AsQueryable();
+
+            if (idExcluir.HasValue)
+                query = query.Where(x => x.Id != idExcluir.Value);
+
+            if (!string.IsNullOrWhiteSpace(dni))
+            {
+                var a = await query.FirstOrDefaultAsync(x => x.Dni == dni);
+                if (a != null) return a;
+            }
+
+            if (!string.IsNullOrWhiteSpace(numeroDocumento))
+            {
+                var a = await query.FirstOrDefaultAsync(x => x.NumeroDocumento == numeroDocumento);
+                if (a != null) return a;
+            }
+
+            if (!string.IsNullOrWhiteSpace(nombreArtistico))
+            {
+                var a = await query.FirstOrDefaultAsync(x => x.NombreArtistico == nombreArtistico);
+                if (a != null) return a;
+            }
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+            {
+                var a = await query.FirstOrDefaultAsync(x => x.Nombre == nombre);
+                if (a != null) return a;
+            }
+
+            return null;
+        }
     }
 }

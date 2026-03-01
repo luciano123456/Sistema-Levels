@@ -23,12 +23,13 @@ let clientesDesdeCliente = [];
 const columnConfig = [
     { index: 1, filterType: 'text' },
     { index: 2, filterType: 'select', fetchDataFunc: listaPaisesFilter },
-    { index: 3, filterType: 'select', fetchDataFunc: listaTiposDocumentoFilter },
-    { index: 4, filterType: 'text' },
-    { index: 5, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter },
-    { index: 6, filterType: 'select', fetchDataFunc: listaProvinciasFilter },
-    { index: 7, filterType: 'text' },
+    { index: 3, filterType: 'text' },
+    { index: 4, filterType: 'select', fetchDataFunc: listaTiposDocumentoFilter },
+    { index: 5, filterType: 'text' },
+    { index: 6, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter },
+    { index: 7, filterType: 'select', fetchDataFunc: listaProvinciasFilter },
     { index: 8, filterType: 'text' },
+    { index: 9, filterType: 'text' },
 ];
 
 $(document).ready(() => {
@@ -82,14 +83,11 @@ function ensureSelect2($el, options) {
 
 
 function inicializarSelect2Modal() {
-
     const $modal = $('#modalEdicion');
 
     $modal.find("select").each(function () {
 
         const $el = $(this);
-
-        // si ya tiene select2, no lo vuelvas a crear
         if ($el.data('select2')) return;
 
         $el.select2({
@@ -98,8 +96,16 @@ function inicializarSelect2Modal() {
             allowClear: true,
             placeholder: "Seleccionar"
         });
+
     });
+
+    // ⭐ FIX SCROLL
+    $modal.off('scroll.select2fix')
+        .on('scroll.select2fix', () => {
+            $modal.find('select').select2('close');
+        });
 }
+
 
 function inicializarSelect2Filtro($select) {
     ensureSelect2($select, {
@@ -128,6 +134,7 @@ function guardarProductora() {
         Idpais: $("#cmbPais").val() || null,
         IdTipoDocumento: $("#cmbTipoDocumento").val() || null,
         NumeroDocumento: $("#txtNumeroDocumento").val(),
+        Dni: $("#txtDni").val(),
 
         IdCondicionIva: $("#cmbCondicionIva").val() || null,
         IdProvincia: $("#cmbProvincia").val() || null,
@@ -145,7 +152,6 @@ function guardarProductora() {
         AsociacionAutomatica:
             $("#chkAsociacionAutomatica").is(":checked"),
 
-        // ⭐ SIEMPRE manuales
         ClientesIds: clientesSeleccionados
     };
 
@@ -161,21 +167,32 @@ function guardarProductora() {
         body: JSON.stringify(modelo)
     })
         .then(r => r.json())
-        .then(() => {
+        .then(data => {
+
+            /* ⭐ MANEJO STANDARD GS */
+            if (!data.valor) {
+
+                mostrarErrorCampos(
+                    data.mensaje,
+                    data.idReferencia,
+                    data.tipo
+                );
+
+                return;
+            }
+
+            cerrarErrorCampos();
 
             $('#modalEdicion').modal('hide');
 
-            exitoModal(
-                id === ""
-                    ? "Productora registrada correctamente"
-                    : "Productora modificada correctamente"
-            );
+            exitoModal(data.mensaje);
 
             listaProductoras();
         })
-        .catch(() => errorModal("Ha ocurrido un error."));
+        .catch(() => {
+            mostrarErrorCampos("Error inesperado.");
+        });
 }
-
 async function nuevaProductora() {
 
     limpiarModal();
@@ -216,6 +233,7 @@ async function mostrarModal(modelo) {
     $("#txtNombre").val(modelo.Nombre || "");
 
     $("#txtNumeroDocumento").val(modelo.NumeroDocumento || "");
+    $("#txtDni").val(modelo.Dni || "");
     $("#txtTelefono").val(modelo.Telefono || "");
     $("#txtTelefonoAlternativo").val(modelo.TelefonoAlternativo || "");
     $("#txtDireccion").val(modelo.Direccion || "");
@@ -367,7 +385,7 @@ async function configurarDataTable(data) {
                     width: "1%",
                     render: function (data) {
                         return renderAccionesGrid(data, {
-                            ver: "verProductora",
+                            ver: "verFicha",
                             editar: "editarProductora",
                             eliminar: "eliminarProductora"
                         });
@@ -377,6 +395,7 @@ async function configurarDataTable(data) {
                 },
                 { data: 'Nombre' },
                 { data: 'Pais' },
+                { data: 'Dni' },
                 { data: 'TipoDocumento' },
                 { data: 'NumeroDocumento' },
                 { data: 'CondicionIva' },
@@ -729,7 +748,15 @@ function limpiarModal() {
 }
 function validarCampoIndividual(el) {
     const id = el.id;
-    const camposObligatorios = ["txtNombre", "cmbPais", "cmbProvincia"];
+    const camposObligatorios = [
+        "txtNombre",
+        "cmbPais",
+        "cmbProvincia",
+        "txtDni",
+        "txtNumeroDocumento",
+        "txtTelefono",
+        "txtEmail"
+    ];
 
     if (!camposObligatorios.includes(id)) return;
 
@@ -752,22 +779,51 @@ function verificarErroresGenerales() {
 
 function validarCampos() {
 
-    const campos = ["#txtNombre", "#cmbPais", "#cmbProvincia"];
-    let valido = true;
+    const campos = [
+        { selector: "#txtNombre", nombre: "Nombre" },
+        { selector: "#cmbPais", nombre: "País" },
+        { selector: "#cmbProvincia", nombre: "Provincia" },
+        { selector: "#txtDni", nombre: "DNI" },
+        { selector: "#txtNumeroDocumento", nombre: "CUIT" },
+        { selector: "#txtTelefono", nombre: "Teléfono" },
+        { selector: "#txtEmail", nombre: "Correo" }
+    ];
 
-    campos.forEach(selector => {
-        const el = document.querySelector(selector);
-        const valor = (el?.value ?? "").toString().trim();
-        const esValido = !!el && valor !== "" && valor !== "Seleccionar";
+    let errores = [];
 
-        if (!esValido) valido = false;
-        if (el) setEstadoCampo(el, esValido);
+    campos.forEach(c => {
+
+        const el = document.querySelector(c.selector);
+        if (!el) return;
+
+        const valor = (el.value ?? "").toString().trim();
+
+        const esValido =
+            valor !== "" &&
+            valor !== null &&
+            valor !== "Seleccionar";
+
+        setEstadoCampo(el, esValido);
+
+        if (!esValido)
+            errores.push(c.nombre);
     });
 
-    document.getElementById("errorCampos")?.classList.toggle("d-none", valido);
-    return valido;
-}
+    if (errores.length > 0) {
 
+        mostrarErrorCampos(
+            `Debes completar los campos requeridos:<br>
+             <strong>${errores.join(", ")}</strong>`,
+            null,
+            "validacion"
+        );
+
+        return false;
+    }
+
+    cerrarErrorCampos();
+    return true;
+}
 /* =========================
    KPI + helpers
 ========================= */
@@ -809,7 +865,7 @@ function activarBuscadorClientes() {
 }
 
 
-const verProductora = id => {
+const verFicha = id => {
 
     fetch("/Productoras/EditarInfo?id=" + id, {
         method: 'GET',
@@ -935,4 +991,16 @@ $("#chkAsociacionAutomatica").on("change", function () {
     if (!cont) return;
 
     cont.style.opacity = automatico ? "0.85" : "1";
+});
+
+
+
+$('#modalEdicion').on('hidden.bs.modal', function () {
+
+    // eliminar backdrops huérfanos
+    $('.modal-backdrop').remove();
+
+    // restaurar scroll
+    $('body').removeClass('modal-open');
+    $('body').css('padding-right', '');
 });

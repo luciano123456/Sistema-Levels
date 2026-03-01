@@ -80,14 +80,14 @@ namespace SistemaLevels.DAL.Repository
         {
             try
             {
-                IQueryable<Pais> query = _dbcontext.Paises;
+                IQueryable<Pais> query = _dbcontext.Paises
+                    .OrderBy(x => x.Nombre);
 
                 return await Task.FromResult(query);
-
             }
-            catch (Exception ex)
+            catch
             {
-                return null;
+                return Enumerable.Empty<Pais>().AsQueryable();
             }
         }
 

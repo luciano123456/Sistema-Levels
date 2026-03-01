@@ -10,5 +10,12 @@ namespace SistemaLevels.DAL.Repository
 
         Task<Artista?> Obtener(int id);
         Task<IQueryable<Artista>> ObtenerTodos();
+
+        Task<Artista?> BuscarDuplicado(
+    int? idExcluir,
+    string? nombre,
+    string? nombreArtistico,
+    string? numeroDocumento,
+    string? dni);
     }
 }

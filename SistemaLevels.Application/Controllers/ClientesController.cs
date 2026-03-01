@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaLevels.Application.Models.ViewModels;
+using SistemaLevels.BLL.Common;
 using SistemaLevels.BLL.Service;
 using SistemaLevels.Models;
 
@@ -110,8 +111,18 @@ public class ClientesController : Controller
             FechaRegistra = DateTime.Now
         };
 
-        bool respuesta = await _service.Insertar(cliente, model.ProductorasIds ?? new List<int>());
-        return Ok(new { valor = respuesta });
+        ServiceResult result = await _service.Insertar(
+                cliente,
+                model.ProductorasIds ?? new List<int>()
+            );
+
+        return Ok(new
+        {
+            valor = result.Ok,
+            mensaje = result.Mensaje,
+            tipo = result.Tipo,
+            idReferencia = result.IdReferencia
+        });
     }
 
     /* ===============================
@@ -147,10 +158,18 @@ public class ClientesController : Controller
             FechaModifica = DateTime.Now
         };
 
-        bool respuesta =
-            await _service.Actualizar(cliente, model.ProductorasIds);
+        ServiceResult result = await _service.Actualizar(
+                cliente,
+                model.ProductorasIds ?? new List<int>()
+            );
 
-        return Ok(new { valor = respuesta });
+        return Ok(new
+        {
+            valor = result.Ok,
+            mensaje = result.Mensaje,
+            tipo = result.Tipo,
+            idReferencia = result.IdReferencia
+        });
     }
     /* ===============================
        ELIMINAR
@@ -159,8 +178,15 @@ public class ClientesController : Controller
     [HttpDelete]
     public async Task<IActionResult> Eliminar(int id)
     {
-        bool respuesta = await _service.Eliminar(id);
-        return Ok(new { valor = respuesta });
+        ServiceResult result = await _service.Eliminar(id);
+
+        return Ok(new
+        {
+            valor = result.Ok,
+            mensaje = result.Mensaje,
+            tipo = result.Tipo,
+            idReferencia = result.IdReferencia
+        });
     }
 
     /* ===============================
@@ -208,6 +234,8 @@ public class ClientesController : Controller
             c.IdTipoDocumento,
             c.NumeroDocumento,
             c.IdCondicionIva,
+
+            c.Dni,
 
             c.Direccion,
             c.Localidad,

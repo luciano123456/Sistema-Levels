@@ -4,6 +4,12 @@
     {
         public int Id { get; set; }
 
+        public int? IdProductora { get; set; }
+        public int? IdProvincia { get; set; }
+        public int? IdRepresentante { get; set; }
+        public int? IdMoneda { get; set; }
+        public int IdPais { get; set; }
+
         public string Nombre { get; set; }
         public string NombreArtistico { get; set; }
 
@@ -12,14 +18,11 @@
 
         public string Dni { get; set; }
 
-        public int IdPais { get; set; }
         public int? IdTipoDocumento { get; set; }
         public string NumeroDocumento { get; set; }
 
         public string Email { get; set; }
 
-        public int IdProductora { get; set; }
-        public int IdProvincia { get; set; }
 
         public string Localidad { get; set; }
         public string EntreCalles { get; set; }
@@ -28,11 +31,8 @@
 
         public int? IdCondicionIva { get; set; }
 
-        public int IdRepresentante { get; set; }
-
         public DateTime? FechaNacimiento { get; set; }
 
-        public int IdMoneda { get; set; }
         public decimal PrecioUnitario { get; set; }
         public decimal PrecioNegMax { get; set; }
         public decimal PrecioNegMin { get; set; }

@@ -172,8 +172,15 @@ namespace SistemaLevels.Application.Controllers
                 FechaRegistra = DateTime.Now
             };
 
-            bool respuesta = await _service.Insertar(artista);
-            return Ok(new { valor = respuesta });
+            var result = await _service.Insertar(artista);
+
+            return Ok(new
+            {
+                valor = result.Ok,
+                mensaje = result.Mensaje,
+                tipo = result.Tipo,
+                idReferencia = result.IdReferencia
+            });
         }
 
         [HttpPut]
@@ -211,15 +218,29 @@ namespace SistemaLevels.Application.Controllers
                 FechaModifica = DateTime.Now
             };
 
-            bool respuesta = await _service.Actualizar(artista);
-            return Ok(new { valor = respuesta });
+            var result = await _service.Actualizar(artista);
+
+            return Ok(new
+            {
+                valor = result.Ok,
+                mensaje = result.Mensaje,
+                tipo = result.Tipo,
+                idReferencia = result.IdReferencia
+            });
         }
 
         [HttpDelete]
         public async Task<IActionResult> Eliminar(int id)
         {
-            bool respuesta = await _service.Eliminar(id);
-            return Ok(new { valor = respuesta });
+            var result = await _service.Eliminar(id);
+
+            return Ok(new
+            {
+                valor = result.Ok,
+                mensaje = result.Mensaje,
+                tipo = result.Tipo,
+                idReferencia = result.IdReferencia
+            });
         }
     }
 }

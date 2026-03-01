@@ -849,3 +849,16 @@ thead tr.filters th {
 .rp-act:hover i {
     transform: scale(1.15);
 }
+
+#modalEdicion .modal-body {
+    -webkit-overflow-scrolling: touch !important;
+}
+
+.modal {
+    touch-action: pan-y;
+}
+
+.modal-dialog-scrollable .modal-body {
+    overflow-y: auto;
+    max-height: calc(100vh - header - footer);
+}

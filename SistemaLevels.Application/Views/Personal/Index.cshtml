@@ -159,6 +159,7 @@
                             <th></th>
                             <th>Nombre</th>
                             <th>País</th>
+                            <th>Dni</th>
                             <th>Tipo Doc</th>
                             <th>Nro Doc</th>
                             <th>Condición IVA</th>
@@ -175,8 +176,12 @@
 
 
 <!-- MODAL -->
-<div class="modal fade" id="modalEdicion" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<div class="modal fade"
+     id="modalEdicion"
+     tabindex="-1"
+     data-bs-backdrop="static"
+     data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
 
             <div class="modal-header colorEncabezado">
@@ -188,6 +193,22 @@
             </div>
 
             <div class="modal-body">
+
+                <div id="errorCampos" class="rp-error-panel d-none mb-2">
+                    <div class="rp-error-icon">
+                        <i class="fa fa-exclamation-triangle"></i>
+                    </div>
+
+                    <div class="rp-error-content">
+                        <div class="rp-error-title">No se pudo guardar</div>
+                        <div class="rp-error-message"></div>
+                    </div>
+
+                    <button type="button" class="rp-error-close"
+                            onclick="cerrarErrorCampos()">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
 
                 <!-- NAV TABS -->
                 <ul class="nav rp-tabs-modern mb-3" id="personalTabs">
@@ -240,6 +261,14 @@
                                 <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
+
+                            <div class="col-md-6">
+                                <label class="form-label">Dni</label>
+                                <input id="txtDni" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+
                             <div class="col-md-6">
                                 <label class="form-label">Tipo Documento</label>
                                 <select id="cmbTipoDocumento" class="form-control"></select>
@@ -248,6 +277,7 @@
                             <div class="col-md-6">
                                 <label class="form-label">Número Documento</label>
                                 <input id="txtNumeroDocumento" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
                             <div class="col-md-6">
@@ -339,6 +369,6 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <!-- 7️⃣ TU SCRIPT (SIEMPRE ÚLTIMO) -->
-    <script src="~/js/Personal.js?v=1.0"></script>
+    <script src="~/js/Personal.js?v=1.1"></script>
 
 }

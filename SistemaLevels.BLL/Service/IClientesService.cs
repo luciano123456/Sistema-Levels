@@ -1,14 +1,19 @@
-﻿using SistemaLevels.Models;
+﻿using SistemaLevels.BLL.Common;
+using SistemaLevels.Models;
 
 namespace SistemaLevels.BLL.Service
 {
     public interface IClientesService
     {
-        Task<bool> Insertar(Cliente model, List<int> productorasIds);
+        Task<ServiceResult> Insertar(
+            Cliente model,
+            List<int> productorasIds);
 
-        Task<bool> Actualizar(Cliente model, List<int> productorasIds);
+        Task<ServiceResult> Actualizar(
+            Cliente model,
+            List<int> productorasIds);
 
-        Task<bool> Eliminar(int id);
+        Task<ServiceResult> Eliminar(int id);
 
         Task<Cliente?> Obtener(int id);
 

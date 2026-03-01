@@ -494,3 +494,96 @@ window.ExportadorDT = {
     tipo: null,
     nombreListado: null   // 👈 NUEVO
 };
+
+function cerrarErrorCampos() {
+    $("#errorCampos").addClass("d-none");
+}
+
+function mostrarErrorCampos(
+    mensaje,
+    idReferencia = null,
+    tipo = "validacion" // validacion | duplicado | relacion | error
+) {
+
+    const container = document.getElementById("errorCampos");
+    if (!container) return;
+
+    /* =========================
+       CONFIG SEGÚN TIPO
+    ========================= */
+
+    let titulo = "";
+    let icono = "fa-exclamation-triangle";
+
+    switch (tipo) {
+
+        case "duplicado":
+            titulo = "Registro duplicado detectado";
+            break;
+
+        case "relacion":
+            titulo = "No se puede eliminar";
+            icono = "fa-link";
+            break;
+
+        case "error":
+            titulo = "No se pudo guardar";
+            icono = "fa-times-circle";
+            break;
+
+        default:
+            titulo = "Campos requeridos";
+            icono = "fa-exclamation-circle";
+            break;
+    }
+
+    /* =========================
+       BOTON REFERENCIA
+    ========================= */
+
+    let botonReferencia = "";
+
+    if (idReferencia) {
+        botonReferencia = `
+            <button class="rp-btn-ref"
+                onclick="verFicha(${idReferencia})">
+                <i class="fa fa-eye me-1"></i>
+                Abrir ficha existente →
+            </button>`;
+    }
+
+    /* =========================
+       RENDER
+    ========================= */
+
+    container.innerHTML = `
+        <div class="rp-error-box">
+
+            <div class="rp-error-icon">
+                <i class="fa ${icono}"></i>
+            </div>
+
+            <div class="rp-error-content">
+                <div class="rp-error-title">
+                    ${titulo}
+                </div>
+
+                <div class="rp-error-text">
+                    ${mensaje}
+                </div>
+            </div>
+
+            ${botonReferencia}
+
+        </div>
+    `;
+
+    container.classList.remove("d-none");
+
+    container.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+}
+
+

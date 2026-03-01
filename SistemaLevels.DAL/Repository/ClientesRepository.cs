@@ -4,7 +4,7 @@ using SistemaLevels.Models;
 
 namespace SistemaLevels.DAL.Repository
 {
-    public class ClientesRepository : IClientesRepository
+    public class ClientesRepository : IClientesRepository<Cliente>
     {
         private readonly SistemaLevelsContext _db;
 
@@ -17,7 +17,9 @@ namespace SistemaLevels.DAL.Repository
            INSERTAR
         ===================================================== */
 
-        public async Task<bool> Insertar(Cliente model, List<int> productorasIds)
+        public async Task<bool> Insertar(
+            Cliente model,
+            List<int> productorasIds)
         {
             using var trx = await _db.Database.BeginTransactionAsync();
 
@@ -29,7 +31,7 @@ namespace SistemaLevels.DAL.Repository
                 await SincronizarProductoras(
                     model.Id,
                     productorasIds,
-                    2 // Desde Cliente
+                    2 // origen cliente
                 );
 
                 await trx.CommitAsync();
@@ -46,7 +48,9 @@ namespace SistemaLevels.DAL.Repository
            ACTUALIZAR
         ===================================================== */
 
-        public async Task<bool> Actualizar(Cliente model, List<int> productorasIds)
+        public async Task<bool> Actualizar(
+            Cliente model,
+            List<int> productorasIds)
         {
             using var trx = await _db.Database.BeginTransactionAsync();
 
@@ -62,6 +66,7 @@ namespace SistemaLevels.DAL.Repository
                 entity.Telefono = model.Telefono;
                 entity.TelefonoAlternativo = model.TelefonoAlternativo;
                 entity.Email = model.Email;
+                entity.Dni = model.Dni;
 
                 entity.IdPais = model.IdPais;
                 entity.IdProvincia = model.IdProvincia;
@@ -85,7 +90,7 @@ namespace SistemaLevels.DAL.Repository
                 await SincronizarProductoras(
                     entity.Id,
                     productorasIds,
-                    2 // Desde Cliente
+                    2
                 );
 
                 await trx.CommitAsync();
@@ -99,7 +104,52 @@ namespace SistemaLevels.DAL.Repository
         }
 
         /* =====================================================
-           SINCRONIZADOR CENTRAL ⭐⭐⭐
+           BUSCAR DUPLICADO ⭐
+        ===================================================== */
+
+        public async Task<Cliente?> BuscarDuplicado(
+            int? idExcluir,
+            string? nombre,
+            string? numeroDocumento,
+            string? dni)
+        {
+            var query = _db.Clientes.AsQueryable();
+
+            if (idExcluir.HasValue)
+                query = query.Where(x => x.Id != idExcluir.Value);
+
+            if (!string.IsNullOrWhiteSpace(dni))
+            {
+                var dup = await query
+                    .FirstOrDefaultAsync(x => x.Dni == dni);
+
+                if (dup != null)
+                    return dup;
+            }
+
+            if (!string.IsNullOrWhiteSpace(numeroDocumento))
+            {
+                var dup = await query
+                    .FirstOrDefaultAsync(x => x.NumeroDocumento == numeroDocumento);
+
+                if (dup != null)
+                    return dup;
+            }
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+            {
+                var dup = await query
+                    .FirstOrDefaultAsync(x => x.Nombre == nombre);
+
+                if (dup != null)
+                    return dup;
+            }
+
+            return null;
+        }
+
+        /* =====================================================
+           SINCRONIZADOR PRODUCTORAS
         ===================================================== */
 
         private async Task SincronizarProductoras(
@@ -114,7 +164,6 @@ namespace SistemaLevels.DAL.Repository
                 .Distinct()
                 .ToList();
 
-            // SOLO relaciones creadas desde CLIENTE
             var actuales = await _db.ClientesProductoras
                 .Where(x =>
                     x.IdCliente == idCliente &&

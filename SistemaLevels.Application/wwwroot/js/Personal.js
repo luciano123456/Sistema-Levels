@@ -18,11 +18,12 @@ let filtrosPersonalActivos = false;
 const columnConfig = [
     { index: 1, filterType: 'text' }, // Nombre
     { index: 2, filterType: 'select', fetchDataFunc: listaPaisesFilter }, // País
-    { index: 3, filterType: 'select', fetchDataFunc: listaTiposDocumentoFilter }, // Tipo Doc
-    { index: 4, filterType: 'text' }, // Nro Doc
-    { index: 5, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter }, // Condición IVA
-    { index: 6, filterType: 'text' }, // Teléfono
-    { index: 7, filterType: 'text' }, // Email
+    { index: 3, filterType: 'text' }, // Dni
+    { index: 4, filterType: 'select', fetchDataFunc: listaTiposDocumentoFilter }, // Tipo Doc
+    { index: 5, filterType: 'text' }, // Nro Doc
+    { index: 6, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter }, // Condición IVA
+    { index: 7, filterType: 'text' }, // Teléfono
+    { index: 8, filterType: 'text' }, // Email
 ];
 
 $(document).ready(() => {
@@ -100,20 +101,29 @@ function inicializarSelect2Filtro($select) {
    CRUD
 ========================= */
 
+
 function guardarPersonal() {
-    if (!validarCampos()) return false;
+
+    // ===============================
+    // VALIDACIÓN FRONT
+    // ===============================
+    if (!validarCampos())
+        return false;
 
     const id = $("#txtId").val();
 
     const fnRaw = $("#txtFechaNacimiento").val();
-    const fechaNacimiento = fnRaw && fnRaw.trim() !== "" ? fnRaw : null;
+    const fechaNacimiento =
+        fnRaw && fnRaw.trim() !== "" ? fnRaw : null;
 
     const rolesIds = getRolesSeleccionadosIds();
     const artistasIds = getArtistasSeleccionadosIds();
 
-
+    // ===============================
+    // MODELO
+    // ===============================
     const modelo = {
-        Id: id !== "" ? id : 0,
+        Id: id !== "" ? parseInt(id) : 0,
 
         Nombre: $("#txtNombre").val(),
         Dni: $("#txtDni").val(),
@@ -130,14 +140,21 @@ function guardarPersonal() {
 
         IdCondicionIva: $("#cmbCondicionIva").val() || null,
 
-        // NUEVO
         RolesIds: rolesIds,
         ArtistasIds: artistasIds
     };
 
-    const url = id === "" ? "/Personal/Insertar" : "/Personal/Actualizar";
-    const method = id === "" ? "POST" : "PUT";
+    const esNuevo = id === "";
 
+    const url = esNuevo
+        ? "/Personal/Insertar"
+        : "/Personal/Actualizar";
+
+    const method = esNuevo ? "POST" : "PUT";
+
+    // ===============================
+    // REQUEST
+    // ===============================
     fetch(url, {
         method: method,
         headers: {
@@ -146,22 +163,67 @@ function guardarPersonal() {
         },
         body: JSON.stringify(modelo)
     })
-        .then(r => {
-            if (!r.ok) throw new Error(r.statusText);
-            return r.json();
+        .then(async r => {
+
+            if (!r.ok)
+                throw new Error("Error HTTP");
+
+            return await r.json();
         })
-        .then(_ => {
-            const mensaje = id === "" ? "Personal registrado correctamente" : "Personal modificado correctamente";
+        .then(data => {
+
+            // =====================================
+            // ERROR DE NEGOCIO (ServiceResult)
+            // =====================================
+            if (!data.valor) {
+
+                // ⭐ AUTO-DETECCIÓN INTELIGENTE
+                let tipoError = data.tipo;
+
+                if (!tipoError) {
+
+                    if (data.idReferencia)
+                        tipoError = "duplicado";
+                    else if (data.mensaje?.toLowerCase().includes("no se puede"))
+                        tipoError = "relacion";
+                    else
+                        tipoError = "validacion";
+                }
+
+                mostrarErrorCampos(
+                    data.mensaje,
+                    data.idReferencia,
+                    tipoError
+                );
+
+                return;
+            }
+
+            // =====================================
+            // OK
+            // =====================================
+            cerrarErrorCampos();
+
             $('#modalEdicion').modal('hide');
-            exitoModal(mensaje);
+
+            exitoModal(
+                data.mensaje ||
+                (esNuevo
+                    ? "Personal registrado correctamente"
+                    : "Personal modificado correctamente")
+            );
+
             listaPersonal();
         })
         .catch(err => {
-            console.error('Error:', err);
-            errorModal("Ha ocurrido un error.");
+
+            console.error("Error:", err);
+
+            mostrarErrorCampos(
+                "Ha ocurrido un error inesperado al guardar."
+            );
         });
 }
-
 function nuevoPersonal() {
     limpiarModal();
 
@@ -210,6 +272,7 @@ async function mostrarModal(modelo) {
     $("#txtDni").val(modelo.Dni || "");
 
     $("#txtNumeroDocumento").val(modelo.NumeroDocumento || "");
+    $("#txtDni").val(modelo.Dni || "");
     $("#txtDireccion").val(modelo.Direccion || "");
     $("#txtTelefono").val(modelo.Telefono || "");
     $("#txtEmail").val(modelo.Email || "");
@@ -330,12 +393,15 @@ const editarPersonal = id => {
 };
 
 async function eliminarPersonal(id) {
-    
 
-    const confirmado = await confirmarModal("¿Desea eliminar este registro de personal?");
+    const confirmado = await confirmarModal(
+        "¿Desea eliminar este registro de personal?"
+    );
+
     if (!confirmado) return;
 
     try {
+
         const response = await fetch("/Personal/Eliminar?id=" + id, {
             method: "DELETE",
             headers: {
@@ -344,19 +410,31 @@ async function eliminarPersonal(id) {
             }
         });
 
-        if (!response.ok) throw new Error("Error al eliminar el Personal.");
+        if (!response.ok)
+            throw new Error("Error HTTP");
 
-        const dataJson = await response.json();
-        if (dataJson.valor) {
-            listaPersonal();
-            exitoModal("Personal eliminado correctamente");
+        const data = await response.json();
+
+        if (!data.valor) {
+
+            mostrarErrorCampos(
+                data.mensaje,
+                data.idReferencia
+            );
+
+            return;
         }
-    } catch (e) {
+
+        // ✅ OK
+        listaPersonal();
+        exitoModal(data.mensaje || "Personal eliminado correctamente");
+
+    }
+    catch (e) {
         console.error("Ha ocurrido un error:", e);
         errorModal("Ha ocurrido un error.");
     }
 }
-
 /* =========================
    LISTA + DATATABLE
 ========================= */
@@ -407,7 +485,7 @@ async function configurarDataTable(data) {
                     width: "1%",
                     render: function (data) {
                         return renderAccionesGrid(data, {
-                            ver: "verPersonal",
+                            ver: "verFicha",
                             editar: "editarPersonal",
                             eliminar: "eliminarPersonal"
                         });
@@ -417,6 +495,7 @@ async function configurarDataTable(data) {
                 },
                 { data: 'Nombre' },
                 { data: 'Pais' },
+                { data: 'Dni' },
                 { data: 'TipoDocumento' },
                 { data: 'NumeroDocumento' },
                 { data: 'CondicionIva' },
@@ -725,17 +804,26 @@ function limpiarModal() {
 
     $("#errorCampos").addClass("d-none");
 }
-
 function validarCampoIndividual(el) {
-    const id = el.id;
-    const camposObligatorios = ["txtNombre", "cmbPais"];
 
-    if (!camposObligatorios.includes(id)) return;
+    const camposObligatorios = [
+        "txtNombre",
+        "cmbPais",
+        "txtDni",
+        "txtNumeroDocumento"
+    ];
+
+    if (!camposObligatorios.includes(el.id)) return;
 
     const valor = (el.value ?? "").toString().trim();
-    const esValido = !(valor === "" || valor === "Seleccionar");
+
+    const esValido =
+        valor !== "" &&
+        valor !== "Seleccionar" &&
+        valor !== null;
 
     setEstadoCampo(el, esValido);
+
     verificarErroresGenerales();
 }
 
@@ -749,22 +837,44 @@ function verificarErroresGenerales() {
 
 function validarCampos() {
 
-    const campos = ["#txtNombre", "#cmbPais"];
-    let valido = true;
+    const campos = [
+        { selector: "#txtNombre", nombre: "Nombre" },
+        { selector: "#cmbPais", nombre: "País" },
+        { selector: "#txtDni", nombre: "DNI" },
+        { selector: "#txtNumeroDocumento", nombre: "Número Documento" }
+    ];
 
-    campos.forEach(selector => {
-        const el = document.querySelector(selector);
-        const valor = (el?.value ?? "").toString().trim();
-        const esValido = !!el && valor !== "" && valor !== "Seleccionar";
+    let errores = [];
 
-        if (!esValido) valido = false;
-        if (el) setEstadoCampo(el, esValido);
+    campos.forEach(c => {
+
+        const el = document.querySelector(c.selector);
+        if (!el) return;
+
+        const valor = (el.value ?? "").toString().trim();
+        const esValido = valor !== "" && valor !== "Seleccionar";
+
+        setEstadoCampo(el, esValido);
+
+        if (!esValido)
+            errores.push(c.nombre);
     });
 
-    document.getElementById("errorCampos")?.classList.toggle("d-none", valido);
-    return valido;
-}
+    if (errores.length > 0) {
 
+        mostrarErrorCampos(
+            `Debes completar los campos requeridos:<br>
+             <strong>${errores.join(", ")}</strong>`,
+            null,
+            "validacion"
+        );
+
+        return false;
+    }
+
+    cerrarErrorCampos();
+    return true;
+}
 /* =========================
    KPI + helpers
 ========================= */
@@ -947,7 +1057,7 @@ function actualizarContadoresTabs() {
 }
 
 
-const verPersonal = id => {
+const verFicha = id => {
 
     fetch("/Personal/EditarInfo?id=" + id, {
         method: 'GET',

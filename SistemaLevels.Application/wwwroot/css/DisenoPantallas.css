@@ -1971,3 +1971,73 @@ table.dataTable.display tbody tr.selected td {
     background: rgba(255,255,255,.03);
     border-top: 1px solid rgba(255,255,255,.08);
 }
+
+/* ===============================
+   ERROR NEGOCIO PRO
+================================ */
+
+.rp-error-box {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 22px;
+    border-radius: 14px;
+    background: linear-gradient( 135deg, rgba(255,70,70,0.10), rgba(255,70,70,0.05) );
+    border: 1px solid rgba(255,80,80,.35);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 8px 24px rgba(0,0,0,.35);
+    animation: fadeError .25s ease;
+}
+
+@keyframes fadeError {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rp-error-icon {
+    font-size: 26px;
+    color: #ff6b6b;
+}
+
+.rp-error-content {
+    flex: 1;
+}
+
+.rp-error-title {
+    font-weight: 700;
+    font-size: 15px;
+    color: #ffb3b3;
+    margin-bottom: 4px;
+}
+
+.rp-error-text {
+    font-size: 14px;
+    color: #e6e6e6;
+    opacity: .9;
+}
+
+/* BOTON VER FICHA */
+
+.rp-btn-ref {
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,.18);
+    color: #fff;
+    transition: all .18s ease;
+}
+
+    .rp-btn-ref:hover {
+        background: rgba(255,255,255,0.18);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0,0,0,.35);
+    }
