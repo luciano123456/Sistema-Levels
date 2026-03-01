@@ -1,4 +1,6 @@
 ﻿let gridUsuarios;
+let personalSelectorData = [];
+let personalSeleccionado = null;
 
 const columnConfig = [
     { index: 1, filterType: 'text' },
@@ -86,6 +88,9 @@ function nuevoUsuario() {
     limpiarModal();
     listaEstados();
     listaRoles();
+
+
+    setModalSoloLectura(false); 
     $('#modalEdicion').modal('show');
 
     $("#btnGuardar").html(`<i class="fa fa-check"></i> Registrar`);
@@ -97,6 +102,8 @@ function nuevoUsuario() {
 
 async function mostrarModal(modelo) {
     limpiarModal();
+
+    setModalSoloLectura(false);
 
     const campos = ["Id", "Usuario", "Nombre", "Apellido", "Dni", "Telefono", "Direccion", "Contrasena", "ContrasenaNueva"];
     campos.forEach(campo => {
@@ -220,22 +227,13 @@ async function configurarDataTable(data) {
                 {
                     data: "Id",
                     title: '',
-                    width: "1%", // Ancho fijo para la columna
+                    width: "1%",
                     render: function (data) {
-                        return `
-                <div class="acciones-menu" data-id="${data}">
-                    <button class='btn btn-sm btnacciones' type='button' onclick='toggleAcciones(${data})' title='Acciones'>
-                        <i class='fa fa-ellipsis-v fa-lg text-white' aria-hidden='true'></i>
-                    </button>
-                    <div class="acciones-dropdown" style="display: none;">
-                        <button class='btn btn-sm btneditar' type='button' onclick='editarUsuario(${data})' title='Editar'>
-                            <i class='fa fa-pencil-square-o fa-lg text-success' aria-hidden='true'></i> Editar
-                        </button>
-                        <button class='btn btn-sm btneliminar' type='button' onclick='eliminarUsuario(${data})' title='Eliminar'>
-                            <i class='fa fa-trash-o fa-lg text-danger' aria-hidden='true'></i> Eliminar
-                        </button>
-                    </div>
-                </div>`;
+                        return renderAccionesGrid(data, {
+                            ver: "verUsuario",
+                            editar: "editarUsuario",
+                            eliminar: "eliminarUsuario"
+                        });
                     },
                     orderable: false,
                     searchable: false,
@@ -493,25 +491,32 @@ function limpiarModal() {
 }
 
 function validarCampoIndividual(el) {
-    const tag = el.tagName.toLowerCase();
-    const id = el.id;
+
+    const obligatorios = [
+        "txtNombre",
+        "txtUsuario",
+        "txtApellido",
+        "txtDni",
+        "txtContrasena",
+        "Roles",
+        "Estados"
+    ];
+
+    if (!obligatorios.includes(el.id)) return;
+
     const valor = el.value ? el.value.trim() : "";
     const feedback = el.nextElementSibling;
 
-    if (id !== "txtNombre" && id !== "txtContrasena" && id !== "txtUsuario") return;
+    if (feedback && feedback.classList.contains("invalid-feedback")) {
+        feedback.textContent = "Campo obligatorio";
+    }
 
-    if (tag === "input" || tag === "select" || tag === "textarea") {
-        if (feedback && feedback.classList.contains("invalid-feedback")) {
-            feedback.textContent = "Campo obligatorio";
-        }
-
-        if (valor === "" || valor === "Seleccionar") {
-            el.classList.remove("is-valid");
-            el.classList.add("is-invalid");
-        } else {
-            el.classList.remove("is-invalid");
-            el.classList.add("is-valid");
-        }
+    if (valor === "" || valor === "Seleccionar" || valor === null) {
+        el.classList.remove("is-valid");
+        el.classList.add("is-invalid");
+    } else {
+        el.classList.remove("is-invalid");
+        el.classList.add("is-valid");
     }
 
     verificarErroresGenerales();
@@ -526,26 +531,54 @@ function verificarErroresGenerales() {
 }
 
 function validarCampos() {
-    const campos = ["#txtNombre", "#txtUsuario", "#txtContrasena"];
+
+    const idUsuario = $("#txtId").val();
+
+    const campos = [
+        "#txtNombre",
+        "#txtUsuario",
+        "#txtApellido",
+        "#txtDni",
+        "#Roles",
+        "#Estados"
+    ];
+
+    // contraseña solo si es nuevo
+    if (idUsuario === "") {
+        campos.push("#txtContrasena");
+    }
+
     let valido = true;
 
     campos.forEach(selector => {
-        const campo = document.querySelector(selector);
-        const valor = campo?.value.trim();
-        const feedback = campo?.nextElementSibling;
 
-        if (!campo || !valor || valor === "Seleccionar") {
-            campo?.classList.add("is-invalid");
-            campo?.classList.remove("is-valid");
-            if (feedback) feedback.textContent = "Campo obligatorio";
+        const campo = document.querySelector(selector);
+        if (!campo) return;
+
+        const valor = campo.value ? campo.value.trim() : "";
+        const feedback = campo.nextElementSibling;
+
+        if (!valor || valor === "Seleccionar") {
+
+            campo.classList.add("is-invalid");
+            campo.classList.remove("is-valid");
+
+            if (feedback && feedback.classList.contains("invalid-feedback")) {
+                feedback.textContent = "Campo obligatorio";
+            }
+
             valido = false;
+
         } else {
             campo.classList.remove("is-invalid");
             campo.classList.add("is-valid");
         }
     });
 
-    document.getElementById("errorCampos").classList.toggle("d-none", valido);
+    document
+        .getElementById("errorCampos")
+        ?.classList.toggle("d-none", valido);
+
     return valido;
 }
 
@@ -556,3 +589,142 @@ function actualizarKpis(data) {
     const el = document.getElementById('kpiCantUsuarios');
     if (el) el.textContent = cant;
 }
+
+const verUsuario = id => {
+
+    fetch("/Usuarios/EditarInfo?id=" + id, {
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ha ocurrido un error.");
+            return r.json();
+        })
+        .then(async dataJson => {
+            if (!dataJson) throw new Error("Ha ocurrido un error.");
+
+            await mostrarModal(dataJson);
+
+            // Pasar a modo solo lectura
+            setModalSoloLectura(true);
+
+            document.getElementById("divContrasenaNueva").setAttribute("hidden", "hidden");
+
+            $("#modalEdicionLabel").text("Ver Usuario");
+        })
+        .catch(_ => errorModal("Ha ocurrido un error."));
+};
+
+
+
+
+
+async function abrirSelectorPersonal() {
+
+    $('#modalSelectorPersonal').modal('show');
+
+    const r = await fetch('/Personal/Lista', {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    personalSelectorData = await r.json();
+
+    renderPersonalSelector(personalSelectorData);
+}
+
+function renderPersonalSelector(data) {
+
+    const container = $("#listaPersonalSelector");
+    container.empty();
+
+    data.forEach(p => {
+
+        container.append(`
+    <div class="rp-personal-card" data-id="${p.Id}">
+
+        <div class="rp-personal-name">
+            ${p.Nombre}
+        </div>
+
+        <div class="rp-personal-info">
+            <i class="fa fa-id-card"></i>
+            ${p.Dni ?? p.NumeroDocumento ?? "-"}
+        </div>
+
+        <div class="rp-personal-info">
+            <i class="fa fa-phone"></i>
+            ${p.Telefono ?? "-"}
+        </div>
+
+        <div class="rp-personal-info">
+            <i class="fa fa-envelope"></i>
+            ${p.Email ?? "-"}
+        </div>
+
+    </div>
+`);
+    });
+
+    // selección visual
+    // CLICK → solo seleccionar
+    $(".rp-personal-card").on("click", function () {
+
+        $(".rp-personal-card").removeClass("selected");
+
+        $(this).addClass("selected");
+
+        const id = $(this).data("id");
+
+        personalSeleccionado =
+            personalSelectorData.find(x => x.Id === id);
+    });
+
+
+    // DOBLE CLICK → seleccionar + aplicar
+    $(".rp-personal-card").on("dblclick", function () {
+
+        $(".rp-personal-card").removeClass("selected");
+        $(this).addClass("selected");
+
+        const id = $(this).data("id");
+
+        personalSeleccionado =
+            personalSelectorData.find(x => x.Id === id);
+
+        aplicarPersonalSeleccionado();
+    });
+}
+
+$("#buscarPersonalSelector").on("keyup", function () {
+
+    const txt = $(this).val().toLowerCase();
+
+    const filtrado = personalSelectorData.filter(p =>
+        (p.Nombre || "").toLowerCase().includes(txt) ||
+        (p.Dni || "").toLowerCase().includes(txt)
+    );
+
+    renderPersonalSelector(filtrado);
+});
+
+function aplicarPersonalSeleccionado() {
+
+    if (!personalSeleccionado) {
+        errorModal("Seleccione un personal.");
+        return;
+    }
+
+    const p = personalSeleccionado;
+
+    $("#txtNombre").val(p.Nombre ?? "");
+    $("#txtDni").val(p.Dni || p.NumeroDocumento || "");
+    $("#txtTelefono").val(p.Telefono ?? "");
+    $("#txtDireccion").val(p.Direccion ?? "");
+    $("#txtCorreo").val(p.Email ?? "");
+
+    $('#modalSelectorPersonal').modal('hide');
+}
+

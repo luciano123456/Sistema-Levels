@@ -13,7 +13,46 @@ namespace SistemaLevels.DAL.Repository
             _dbcontext = context;
         }
 
-        public async Task<bool> Insertar(Personal model, List<int> rolesIds, List<int> artistasIds)
+        /* ================= DUPLICADOS ================= */
+
+        public async Task<Personal?> BuscarDuplicado(
+            int? idExcluir,
+            string? nombre,
+            string? dni,
+            string? numeroDocumento)
+        {
+            var query = _dbcontext.Personals.AsQueryable();
+
+            if (idExcluir.HasValue)
+                query = query.Where(x => x.Id != idExcluir.Value);
+
+            if (!string.IsNullOrWhiteSpace(dni))
+            {
+                var p = await query.FirstOrDefaultAsync(x => x.Dni == dni);
+                if (p != null) return p;
+            }
+
+            if (!string.IsNullOrWhiteSpace(numeroDocumento))
+            {
+                var p = await query.FirstOrDefaultAsync(x => x.NumeroDocumento == numeroDocumento);
+                if (p != null) return p;
+            }
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+            {
+                var p = await query.FirstOrDefaultAsync(x => x.Nombre == nombre);
+                if (p != null) return p;
+            }
+
+            return null;
+        }
+
+        /* ================= INSERTAR ================= */
+
+        public async Task<bool> Insertar(
+            Personal model,
+            List<int> rolesIds,
+            List<int> artistasIds)
         {
             using var trx = await _dbcontext.Database.BeginTransactionAsync();
 
@@ -22,30 +61,25 @@ namespace SistemaLevels.DAL.Repository
                 _dbcontext.Personals.Add(model);
                 await _dbcontext.SaveChangesAsync();
 
-                // roles
-                rolesIds ??= new List<int>();
                 foreach (var idRol in rolesIds.Distinct())
-                {
-                    _dbcontext.PersonalRolesAsignados.Add(new PersonalRolesAsignado
-                    {
-                        IdPersonal = model.Id,
-                        IdRol = idRol
-                    });
-                }
+                    _dbcontext.PersonalRolesAsignados.Add(
+                        new PersonalRolesAsignado
+                        {
+                            IdPersonal = model.Id,
+                            IdRol = idRol
+                        });
 
-                // artistas (solo si corresponde, el front lo manda si aplica)
-                artistasIds ??= new List<int>();
                 foreach (var idArtista in artistasIds.Distinct())
-                {
-                    _dbcontext.PersonalArtistasAsignados.Add(new PersonalArtistasAsignado
-                    {
-                        IdPersonal = model.Id,
-                        IdArtista = idArtista
-                    });
-                }
+                    _dbcontext.PersonalArtistasAsignados.Add(
+                        new PersonalArtistasAsignado
+                        {
+                            IdPersonal = model.Id,
+                            IdArtista = idArtista
+                        });
 
                 await _dbcontext.SaveChangesAsync();
                 await trx.CommitAsync();
+
                 return true;
             }
             catch
@@ -55,7 +89,12 @@ namespace SistemaLevels.DAL.Repository
             }
         }
 
-        public async Task<bool> Actualizar(Personal model, List<int> rolesIds, List<int> artistasIds)
+        /* ================= ACTUALIZAR ================= */
+
+        public async Task<bool> Actualizar(
+            Personal model,
+            List<int> rolesIds,
+            List<int> artistasIds)
         {
             using var trx = await _dbcontext.Database.BeginTransactionAsync();
 
@@ -68,67 +107,50 @@ namespace SistemaLevels.DAL.Repository
 
                 entity.Nombre = model.Nombre;
                 entity.Dni = model.Dni;
-                entity.IdPais = model.IdPais;
-                entity.IdTipoDocumento = model.IdTipoDocumento;
                 entity.NumeroDocumento = model.NumeroDocumento;
-                entity.Direccion = model.Direccion;
                 entity.Telefono = model.Telefono;
                 entity.Email = model.Email;
+                entity.Direccion = model.Direccion;
+                entity.IdPais = model.IdPais;
+                entity.IdTipoDocumento = model.IdTipoDocumento;
                 entity.IdCondicionIva = model.IdCondicionIva;
-
-                // ✅ FechaNacimiento safe
-                if (model.FechaNacimiento.HasValue && model.FechaNacimiento.Value >= new DateTime(1753, 1, 1))
-                    entity.FechaNacimiento = model.FechaNacimiento;
-                else
-                    entity.FechaNacimiento = null;
-
+                entity.FechaNacimiento = model.FechaNacimiento;
                 entity.IdUsuarioModifica = model.IdUsuarioModifica;
                 entity.FechaModifica = model.FechaModifica;
 
                 await _dbcontext.SaveChangesAsync();
-
-                // ====== Roles: reemplazo total (simple y sólido) ======
-                rolesIds ??= new List<int>();
-                rolesIds = rolesIds.Distinct().ToList();
 
                 var rolesActuales = await _dbcontext.PersonalRolesAsignados
                     .Where(x => x.IdPersonal == model.Id)
                     .ToListAsync();
 
                 _dbcontext.PersonalRolesAsignados.RemoveRange(rolesActuales);
-                await _dbcontext.SaveChangesAsync();
 
-                foreach (var idRol in rolesIds)
-                {
-                    _dbcontext.PersonalRolesAsignados.Add(new PersonalRolesAsignado
-                    {
-                        IdPersonal = model.Id,
-                        IdRol = idRol
-                    });
-                }
-
-                // ====== Artistas: reemplazo total ======
-                artistasIds ??= new List<int>();
-                artistasIds = artistasIds.Distinct().ToList();
+                foreach (var idRol in rolesIds.Distinct())
+                    _dbcontext.PersonalRolesAsignados.Add(
+                        new PersonalRolesAsignado
+                        {
+                            IdPersonal = model.Id,
+                            IdRol = idRol
+                        });
 
                 var artistasActuales = await _dbcontext.PersonalArtistasAsignados
                     .Where(x => x.IdPersonal == model.Id)
                     .ToListAsync();
 
                 _dbcontext.PersonalArtistasAsignados.RemoveRange(artistasActuales);
-                await _dbcontext.SaveChangesAsync();
 
-                foreach (var idArtista in artistasIds)
-                {
-                    _dbcontext.PersonalArtistasAsignados.Add(new PersonalArtistasAsignado
-                    {
-                        IdPersonal = model.Id,
-                        IdArtista = idArtista
-                    });
-                }
+                foreach (var idArtista in artistasIds.Distinct())
+                    _dbcontext.PersonalArtistasAsignados.Add(
+                        new PersonalArtistasAsignado
+                        {
+                            IdPersonal = model.Id,
+                            IdArtista = idArtista
+                        });
 
                 await _dbcontext.SaveChangesAsync();
                 await trx.CommitAsync();
+
                 return true;
             }
             catch
@@ -137,82 +159,57 @@ namespace SistemaLevels.DAL.Repository
                 return false;
             }
         }
+
+        /* ================= ELIMINAR ================= */
 
         public async Task<bool> Eliminar(int id)
         {
-            using var trx = await _dbcontext.Database.BeginTransactionAsync();
+            var personal = await _dbcontext.Personals.FindAsync(id);
+            if (personal == null) return false;
 
-            try
-            {
-                var personal = await _dbcontext.Personals.FindAsync(id);
-                if (personal == null) return false;
+            _dbcontext.Personals.Remove(personal);
+            await _dbcontext.SaveChangesAsync();
 
-                // borra joins primero (si no querés depender de cascade)
-                var roles = await _dbcontext.PersonalRolesAsignados.Where(x => x.IdPersonal == id).ToListAsync();
-                var artistas = await _dbcontext.PersonalArtistasAsignados.Where(x => x.IdPersonal == id).ToListAsync();
-
-                _dbcontext.PersonalRolesAsignados.RemoveRange(roles);
-                _dbcontext.PersonalArtistasAsignados.RemoveRange(artistas);
-                await _dbcontext.SaveChangesAsync();
-
-                _dbcontext.Personals.Remove(personal);
-                await _dbcontext.SaveChangesAsync();
-
-                await trx.CommitAsync();
-                return true;
-            }
-            catch
-            {
-                await trx.RollbackAsync();
-                return false;
-            }
+            return true;
         }
 
-        public async Task<Personal?> Obtener(int id)
-        {
-            try
-            {
-                return await _dbcontext.Personals
-                    .Include(x => x.IdPaisNavigation)
-                    .Include(x => x.IdTipoDocumentoNavigation)
-                    .Include(x => x.IdCondicionIvaNavigation)
-                    .Include(x => x.IdUsuarioRegistraNavigation)
-                    .Include(x => x.IdUsuarioModificaNavigation)
-                    .FirstOrDefaultAsync(x => x.Id == id);
-            }
-            catch
-            {
-                return null;
-            }
-        }
+        /* ================= RESTO ================= */
 
-        public async Task<IQueryable<Personal>> ObtenerTodos()
-        {
-            var query = _dbcontext.Personals
-                .Include(x => x.IdPaisNavigation)
-                .Include(x => x.IdTipoDocumentoNavigation)
-                .Include(x => x.IdCondicionIvaNavigation)
-                .Include(x => x.IdUsuarioRegistraNavigation)
-                .Include(x => x.IdUsuarioModificaNavigation)
-                .AsQueryable();
+        public Task<Personal?> Obtener(int id)
+            => _dbcontext.Personals.FirstOrDefaultAsync(x => x.Id == id);
 
-            return await Task.FromResult(query);
-        }
+        public Task<IQueryable<Personal>> ObtenerTodos()
+            => Task.FromResult(_dbcontext.Personals.AsQueryable());
 
-        public async Task<List<int>> ObtenerRolesIds(int idPersonal)
-        {
-            return await _dbcontext.PersonalRolesAsignados
+        public Task<List<int>> ObtenerRolesIds(int idPersonal)
+            => _dbcontext.PersonalRolesAsignados
                 .Where(x => x.IdPersonal == idPersonal)
                 .Select(x => x.IdRol)
                 .ToListAsync();
-        }
 
-        public async Task<List<int>> ObtenerArtistasIds(int idPersonal)
-        {
-            return await _dbcontext.PersonalArtistasAsignados
+        public Task<List<int>> ObtenerArtistasIds(int idPersonal)
+            => _dbcontext.PersonalArtistasAsignados
                 .Where(x => x.IdPersonal == idPersonal)
                 .Select(x => x.IdArtista)
                 .ToListAsync();
+
+        public Task<IQueryable<Personal>> ListarFiltrado(
+            string? nombre,
+            int? idPais,
+            int? idTipoDocumento,
+            int? idCondicionIva,
+            int? idRol,
+            int? idArtista)
+        {
+            var query = _dbcontext.Personals.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+                query = query.Where(x => x.Nombre.Contains(nombre));
+
+            if (idPais.HasValue)
+                query = query.Where(x => x.IdPais == idPais);
+
+            return Task.FromResult(query);
         }
     }
 }

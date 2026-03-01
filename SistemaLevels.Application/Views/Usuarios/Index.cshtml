@@ -85,7 +85,8 @@
 
 <!-- MODAL (lo dejo igual que lo tenías para no romper nada) -->
 <div class="modal fade" id="modalEdicion" tabindex="-1" role="dialog" aria-labelledby="modalEdicionLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-edicion" role="document">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
         <div class="modal-content">
             <div class="modal-header colorEncabezado">
                 <h5 class="modal-title fw-bold" id="modalEdicionLabel">Nuevo Proveedor</h5>
@@ -95,6 +96,15 @@
             <div class="modal-body">
                 <form id="formProveedor" class="row g-3">
                     <input type="text" class="input-nuevomodif" id="txtId" readonly hidden>
+
+                    <div class="col-12 mb-3">
+                        <button type="button"
+                                class="btn btn-outline-info rp-btn-soft"
+                                onclick="abrirSelectorPersonal()">
+                            <i class="fa fa-users me-2"></i>
+                            Usar Personal existente
+                        </button>
+                    </div>
 
                     <div class="col-md-4">
                         <label id="lblUsuario" for="txtUsuario" class="form-label">Usuario</label>
@@ -111,11 +121,13 @@
                     <div class="col-md-4">
                         <label id="lblApellido" for="txtApellido" class="form-label">Apellido</label>
                         <input type="text" class="form-control" id="txtApellido">
+                        <div class="invalid-feedback">Campo obligatorio</div>
                     </div>
 
                     <div class="col-md-4">
                         <label id="lblDni" for="txtDni" class="form-label">DNI</label>
                         <input type="text" class="form-control" id="txtDni">
+                        <div class="invalid-feedback">Campo obligatorio</div>
                     </div>
 
                     <div class="col-md-4">
@@ -133,6 +145,7 @@
                         <select id="Roles" name="select" class="form-control">
                             <option value="" selected>Rol</option>
                         </select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
                     </div>
 
                     <div class="col-md-4">
@@ -140,6 +153,7 @@
                         <select id="Estados" name="select" class="form-control">
                             <option value="" selected>Rol</option>
                         </select>
+                        <div class="invalid-feedback">Campo obligatorio</div>
                     </div>
 
                     <div class="col-md-4" id="divContrasena">
@@ -167,6 +181,49 @@
                     <i class="fa fa-check"></i> Registrar
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalSelectorPersonal">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content rp-modal-dark">
+
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fa fa-users"></i>
+                    Seleccionar Personal existente
+                </h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- buscador -->
+                <input id="buscarPersonalSelector"
+                       class="form-control mb-3"
+                       placeholder="Buscar por nombre o DNI..." />
+
+                <!-- listado -->
+                <div id="listaPersonalSelector"
+                     class="rp-personal-grid">
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary"
+                        data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+
+                <button class="btn btn-success"
+                        onclick="aplicarPersonalSeleccionado()">
+                    <i class="fa fa-check"></i>
+                    Aplicar datos
+                </button>
+            </div>
+
         </div>
     </div>
 </div>

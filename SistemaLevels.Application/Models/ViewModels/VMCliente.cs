@@ -17,8 +17,8 @@ namespace SistemaLevels.Application.Models.ViewModels
 
         public string? Email { get; set; }
 
-        public int IdPais { get; set; }
-        public int IdProvincia { get; set; }
+        public int? IdPais { get; set; }
+        public int? IdProvincia { get; set; }
 
         public string? Localidad { get; set; }
         public string? EntreCalles { get; set; }

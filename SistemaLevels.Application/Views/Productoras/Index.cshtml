@@ -66,6 +66,7 @@
                             <th></th>
                             <th>Nombre</th>
                             <th>País</th>
+                            <th>Dni</th>
                             <th>Tipo Doc</th>
                             <th>Nro Doc</th>
                             <th>Condición IVA</th>
@@ -83,8 +84,12 @@
 </div>
 
 <!-- MODAL -->
-<div class="modal fade" id="modalEdicion" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<div class="modal fade"
+     id="modalEdicion"
+     tabindex="-1"
+     data-bs-backdrop="static"
+     data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
 
             <div class="modal-header colorEncabezado">
@@ -96,6 +101,22 @@
             </div>
 
             <div class="modal-body">
+
+                <div id="errorCampos" class="rp-error-panel d-none mb-2">
+                    <div class="rp-error-icon">
+                        <i class="fa fa-exclamation-triangle"></i>
+                    </div>
+
+                    <div class="rp-error-content">
+                        <div class="rp-error-title">No se pudo guardar</div>
+                        <div class="rp-error-message"></div>
+                    </div>
+
+                    <button type="button" class="rp-error-close"
+                            onclick="cerrarErrorCampos()">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
 
                 <!-- NAV TABS -->
                 <ul class="nav rp-tabs-modern mb-3" id="productoraTabs">
@@ -127,67 +148,82 @@
 
                             <input type="text" id="txtId" hidden>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Nombre</label>
                                 <input id="txtNombre" class="form-control" required>
                                 <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">País</label>
                                 <select id="cmbPais" class="form-control"></select>
                                 <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Provincia</label>
                                 <select id="cmbProvincia" class="form-control"></select>
                                 <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <label class="form-label">Dni</label>
+                                <input id="txtDni" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
                                 <label class="form-label">Tipo Documento</label>
                                 <select id="cmbTipoDocumento" class="form-control"></select>
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Número Documento</label>
                                 <input id="txtNumeroDocumento" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Condición IVA</label>
                                 <select id="cmbCondicionIva" class="form-control"></select>
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Teléfono</label>
                                 <input id="txtTelefono" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Teléfono Alternativo</label>
                                 <input id="txtTelefonoAlternativo" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-12">
+                            <div class="col-md-4">
                                 <label class="form-label">Dirección</label>
                                 <input id="txtDireccion" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Localidad</label>
                                 <input id="txtLocalidad" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Código Postal</label>
                                 <input id="txtCodigoPostal" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-                            <div class="col-md-12">
+                            <div class="col-md-4">
                                 <label class="form-label">Email</label>
                                 <input id="txtEmail" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
                         
@@ -272,10 +308,29 @@
 <partial name="~/Views/Utils/Modals.cshtml" />
 
 @section Scripts {
+
+    <!-- 1️⃣ jQuery (SIEMPRE primero) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- 2️⃣ DataTables CORE -->
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <script src="~/js/Productoras.js?v=1.0"></script>
 
+    <!-- 3️⃣ DataTables Buttons (DESPUÉS del core) -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 
-    <!-- Select2 -->
+    <!-- 4️⃣ Dependencias exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <!-- 5️⃣ Botones HTML5 -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+    <!-- 6️⃣ Select2 -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- 7️⃣ TU SCRIPT (SIEMPRE ÚLTIMO) -->
+    <script src="~/js/Productoras.js?v=1.1"></script>
+
 }

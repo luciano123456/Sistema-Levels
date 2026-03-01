@@ -37,6 +37,7 @@ public class ProductorasController : Controller
             Telefono = p.Telefono,
             Email = p.Email,
             Direccion = p.Direccion,
+            Dni = p.Dni,
 
             Pais = p.IdpaisNavigation != null ? p.IdpaisNavigation.Nombre : "",
             TipoDocumento = p.IdTipoDocumentoNavigation != null ? p.IdTipoDocumentoNavigation.Nombre : "",
@@ -92,8 +93,15 @@ public class ProductorasController : Controller
             FechaRegistra = DateTime.Now
         };
 
-        bool respuesta = await _service.Insertar(prod, model.ClientesIds);
-        return Ok(new { valor = respuesta });
+        var result = await _service.Insertar(prod, model.ClientesIds);
+
+        return Ok(new
+        {
+            valor = result.Ok,
+            mensaje = result.Mensaje,
+            tipo = result.Tipo,
+            idReferencia = result.IdReferencia
+        });
     }
 
     /* ===============================
@@ -133,8 +141,15 @@ public class ProductorasController : Controller
             FechaModifica = DateTime.Now
         };
 
-        bool respuesta = await _service.Actualizar(prod, model.ClientesIds);
-        return Ok(new { valor = respuesta });
+        var result = await _service.Actualizar(prod, model.ClientesIds);
+
+        return Ok(new
+        {
+            valor = result.Ok,
+            mensaje = result.Mensaje,
+            tipo = result.Tipo,
+            idReferencia = result.IdReferencia
+        });
     }
 
     /* ===============================
@@ -144,8 +159,15 @@ public class ProductorasController : Controller
     [HttpDelete]
     public async Task<IActionResult> Eliminar(int id)
     {
-        bool respuesta = await _service.Eliminar(id);
-        return Ok(new { valor = respuesta });
+        var result = await _service.Eliminar(id);
+
+        return Ok(new
+        {
+            valor = result.Ok,
+            mensaje = result.Mensaje,
+            tipo = result.Tipo,
+            idReferencia = result.IdReferencia
+        });
     }
 
     /* ===============================

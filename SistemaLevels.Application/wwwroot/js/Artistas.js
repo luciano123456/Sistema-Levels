@@ -1,5 +1,7 @@
 ﻿let gridArtistas;
 
+let exportTipo = null;
+
 /**
  * Columnas:
  * 0 Acciones
@@ -35,13 +37,6 @@ const columnConfig = [
 
 $(document).ready(() => {
 
-    // FIX select2 dentro de modales Bootstrap 5
-    document.addEventListener('focusin', function (e) {
-        if (e.target.closest(".select2-container")) {
-            e.stopPropagation();
-        }
-    });
-
     listaArtistas();
 
     // Validación campo a campo (igual patrón)
@@ -64,8 +59,7 @@ $(document).ready(() => {
         await listaTiposDocumento(idPais);
         await listaCondicionesIva(idPais);
         await listaProvincias(idPais);
-        await listaMonedas(idPais);
-
+     
         if (tipoDocActual) {
             $("#cmbTipoDocumento").val(tipoDocActual);
             refreshSelect2("#cmbTipoDocumento");
@@ -81,10 +75,6 @@ $(document).ready(() => {
             refreshSelect2("#cmbProvincia");
         }
 
-        if (monedaActual) {
-            $("#cmbMoneda").val(monedaActual);
-            refreshSelect2("#cmbMoneda");
-        }
     });
 
 
@@ -200,26 +190,37 @@ function guardarArtista() {
     const method = id === "" ? "POST" : "PUT";
 
     fetch(url, {
-        method: method,
+        method,
         headers: {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json;charset=utf-8'
         },
         body: JSON.stringify(modelo)
     })
-        .then(r => {
-            if (!r.ok) throw new Error(r.statusText);
-            return r.json();
-        })
-        .then(_ => {
-            const mensaje = id === "" ? "Artista registrado correctamente" : "Artista modificado correctamente";
+        .then(r => r.json())
+        .then(data => {
+
+            if (!data.valor) {
+
+                mostrarErrorCampos(
+                    data.mensaje,
+                    data.idReferencia,
+                    data.tipo
+                );
+
+                return;
+            }
+
+            cerrarErrorCampos();
+
             $('#modalEdicion').modal('hide');
-            exitoModal(mensaje);
+
+            exitoModal(data.mensaje);
+
             listaArtistas();
         })
-        .catch(err => {
-            console.error('Error:', err);
-            errorModal("Ha ocurrido un error.");
+        .catch(() => {
+            mostrarErrorCampos("Error inesperado.");
         });
 }
 
@@ -231,13 +232,14 @@ function nuevaArtista() {
     Promise.all([
         listaProductoras(),
         listaRepresentantes(),
-        listaPaises()
+        listaPaises(),
+        listaMonedas()
     ])
         .then(() => {
             resetSelect("cmbProvincia", "Seleccionar");
             resetSelect("cmbTipoDocumento", "Seleccionar");
             resetSelect("cmbCondicionIva", "Seleccionar");
-            resetSelect("cmbMoneda", "Seleccionar");
+            
         });
 
     abrirModalEdicion();
@@ -290,7 +292,7 @@ async function mostrarModal(modelo) {
         await listaTiposDocumento(modelo.IdPais);
         await listaCondicionesIva(modelo.IdPais);
         await listaProvincias(modelo.IdPais);
-        await listaMonedas(modelo.IdPais);
+        await listaMonedas();
     } else {
         resetSelect("cmbTipoDocumento", "Seleccionar");
         resetSelect("cmbCondicionIva", "Seleccionar");
@@ -451,7 +453,7 @@ async function configurarDataTable(data) {
                     width: "1%",
                     render: function (data) {
                         return renderAccionesGrid(data, {
-                            ver: "verArtista",
+                            ver: "verFicha",
                             editar: "editarArtista",
                             eliminar: "eliminarArtista"
                         });
@@ -485,24 +487,17 @@ async function configurarDataTable(data) {
             dom: 'Bfrtip',
             buttons: [
                 {
-                    extend: 'excelHtml5',
                     text: 'Excel',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridArtistas, 'excel', 'Artistas')
                 },
                 {
-                    extend: 'pdfHtml5',
                     text: 'PDF',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridArtistas, 'pdf', 'Artistas')
                 },
                 {
-                    extend: 'print',
                     text: 'Imprimir',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
-                },
-                'pageLength'
+                    action: () => abrirModalExportacion(gridArtistas, 'print', 'Artistas')
+                }
             ],
 
             orderCellsTop: true,
@@ -638,15 +633,9 @@ async function listaRepresentantes() {
     
 }
 
-async function listaMonedas(idPaisSeleccionado = null) {
+async function listaMonedas() {
 
     resetSelect("cmbMoneda", "Seleccionar");
-
-    // si no hay país, no cargar monedas
-    if (!idPaisSeleccionado) {
-        
-        return;
-    }
 
     const response = await fetch(`/PaisesMoneda/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
@@ -655,14 +644,10 @@ async function listaMonedas(idPaisSeleccionado = null) {
     const data = await response.json();
     const select = document.getElementById("cmbMoneda");
 
-    (data || [])
-        .filter(x => String(x.IdPais) === String(idPaisSeleccionado))
-        .forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    
+    (data || []).forEach(x => {
+        select.append(new Option(x.Nombre, x.Id));
+    });
 }
-
-
 async function listaPaises() {
     const response = await fetch(`/Paises/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
@@ -893,33 +878,33 @@ function limpiarModal() {
 
 function validarCampoIndividual(el) {
 
-    if (document.querySelector("#modalEdicion")?.getAttribute("data-sololectura") === "1") {
-        return true; // en modo ver, no bloquea
-    }
-
-    const id = el.id;
+    // modo solo lectura
+    if (document.querySelector("#modalEdicion")
+        ?.getAttribute("data-sololectura") === "1")
+        return true;
 
     const camposObligatorios = [
         "txtNombre",
         "txtNombreArtistico",
-        "cmbProductora",
-        "cmbRepresentante",
-        "cmbPais",
-        "cmbProvincia",
-        "cmbMoneda",
-        "txtPrecioUnitario"
+        "txtNumeroDocumento",
+        "txtDni",
+        "cmbPais"
     ];
 
-    if (!camposObligatorios.includes(id)) return;
+    if (!camposObligatorios.includes(el.id))
+        return;
 
     const valor = (el.value ?? "").toString().trim();
-    const esValido = valor !== "" && valor !== null;
 
+    const esValido =
+        valor !== "" &&
+        valor !== null &&
+        valor !== "Seleccionar";
 
     setEstadoCampo(el, esValido);
+
     verificarErroresGenerales();
 }
-
 function verificarErroresGenerales() {
     const errorMsg = document.getElementById("errorCampos");
     if (!errorMsg) return;
@@ -930,37 +915,54 @@ function verificarErroresGenerales() {
 
 function validarCampos() {
 
-    if (document.querySelector("#modalEdicion")?.getAttribute("data-sololectura") === "1") {
-        return true; // en modo ver, no bloquea
-    }
+    // modo ver
+    if (document.querySelector("#modalEdicion")
+        ?.getAttribute("data-sololectura") === "1")
+        return true;
 
     const campos = [
-        "#txtNombre",
-        "#txtNombreArtistico",
-        "#cmbProductora",
-        "#cmbRepresentante",
-        "#cmbPais",
-        "#cmbProvincia",
-        "#cmbMoneda",
-        "#txtPrecioUnitario"
+        { selector: "#txtNombre", nombre: "Nombre completo" },
+        { selector: "#txtNombreArtistico", nombre: "Nombre artístico" },
+        { selector: "#cmbPais", nombre: "Pais" },
+        { selector: "#txtNumeroDocumento", nombre: "Número documento" },
+        { selector: "#txtDni", nombre: "DNI" }
     ];
 
-    let valido = true;
+    let errores = [];
 
-    campos.forEach(selector => {
-        const el = document.querySelector(selector);
-        const valor = (el?.value ?? "").toString().trim();
-        const esValido = !!el && valor !== "" && valor !== null;
+    campos.forEach(c => {
 
+        const el = document.querySelector(c.selector);
+        if (!el) return;
 
-        if (!esValido) valido = false;
-        if (el) setEstadoCampo(el, esValido);
+        const valor = (el.value ?? "").toString().trim();
+
+        const esValido =
+            valor !== "" &&
+            valor !== null &&
+            valor !== "Seleccionar";
+
+        setEstadoCampo(el, esValido);
+
+        if (!esValido)
+            errores.push(c.nombre);
     });
 
-    document.getElementById("errorCampos")?.classList.toggle("d-none", valido);
-    return valido;
-}
+    if (errores.length > 0) {
 
+        mostrarErrorCampos(
+            `Debes completar los campos requeridos:<br>
+             <strong>${errores.join(", ")}</strong>`,
+            null,
+            "validacion"
+        );
+
+        return false;
+    }
+
+    cerrarErrorCampos();
+    return true;
+}
 /* =========================
    KPI + helpers
 ========================= */
@@ -1016,7 +1018,7 @@ function refreshSelect2(id) {
 
 
 
-const verArtista = id => {
+const verFicha = id => {
 
     fetch("/Artistas/EditarInfo?id=" + id, {
         method: 'GET',
@@ -1025,19 +1027,30 @@ const verArtista = id => {
             'Content-Type': 'application/json'
         }
     })
-        .then(r => {
-            if (!r.ok) throw new Error("Ha ocurrido un error.");
-            return r.json();
-        })
+        .then(r => r.json())
         .then(async dataJson => {
-            if (!dataJson) throw new Error("Ha ocurrido un error.");
+
+            if (!dataJson) throw new Error();
 
             await mostrarModal(dataJson);
 
-            // Pasar a modo solo lectura
+            abrirModalEdicion();   // ✅ abrir UNA sola vez
+
             setModalSoloLectura(true);
 
             $("#modalEdicionLabel").text("Ver Artista");
         })
         .catch(_ => errorModal("Ha ocurrido un error."));
 };
+
+
+
+$('#modalEdicion').on('hidden.bs.modal', function () {
+
+    // eliminar backdrops huérfanos
+    $('.modal-backdrop').remove();
+
+    // restaurar scroll
+    $('body').removeClass('modal-open');
+    $('body').css('padding-right', '');
+});

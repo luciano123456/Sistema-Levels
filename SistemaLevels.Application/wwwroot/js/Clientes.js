@@ -30,12 +30,13 @@ const columnConfig = [
     { index: 1, filterType: 'text' },
     { index: 2, filterType: 'select', fetchDataFunc: listaProductorasFilter },
     { index: 3, filterType: 'select', fetchDataFunc: listaPaisesFilter },
-    { index: 4, filterType: 'select', fetchDataFunc: listaProvinciasFilter },
-    { index: 5, filterType: 'select', fetchDataFunc: listaTiposDocumentoFilter },
-    { index: 6, filterType: 'text' },
-    { index: 7, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter },
-    { index: 8, filterType: 'text' },
+    { index: 4, filterType: 'text' },
+    { index: 5, filterType: 'select', fetchDataFunc: listaProvinciasFilter },
+    { index: 6, filterType: 'select', fetchDataFunc: listaTiposDocumentoFilter },
+    { index: 7, filterType: 'text' },
+    { index: 8, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter },
     { index: 9, filterType: 'text' },
+    { index: 10, filterType: 'text' },
 ];
 
 $(document).ready(() => {
@@ -194,13 +195,34 @@ function guardarCliente() {
             if (!r.ok) throw new Error(r.statusText);
             return r.json();
         })
-        .then(_ => {
+        .then(data => {
+
+            // ===============================
+            // ERROR DE NEGOCIO (ServiceResult)
+            // ===============================
+            if (!data.valor) {
+
+                mostrarErrorCampos(
+                    data.mensaje,
+                    data.idReferencia,
+                    data.tipo
+                );
+
+                return;
+            }
+
+            // ===============================
+            // OK
+            // ===============================
+            cerrarErrorCampos();
+
             $('#modalEdicion').modal('hide');
 
             exitoModal(
-                id === ""
+                data.mensaje ||
+                (id === ""
                     ? "Cliente registrado correctamente"
-                    : "Cliente modificado correctamente"
+                    : "Cliente modificado correctamente")
             );
 
             listaClientes();
@@ -394,12 +416,19 @@ async function eliminarCliente(id) {
         if (!response.ok) throw new Error("Error al eliminar el Cliente.");
 
         const dataJson = await response.json();
-        if (dataJson.valor) {
-            listaClientes();
-            exitoModal("Cliente eliminado correctamente");
-        } else {
-            errorModal("No se pudo eliminar.");
+        if (!dataJson.valor) {
+
+            mostrarErrorCampos(
+                dataJson.mensaje,
+                dataJson.idReferencia,
+                dataJson.tipo
+            );
+
+            return;
         }
+
+        listaClientes();
+        exitoModal(dataJson.mensaje);
     } catch (e) {
         console.error("Ha ocurrido un error:", e);
         errorModal("Ha ocurrido un error.");
@@ -456,7 +485,7 @@ async function configurarDataTable(data) {
                     width: "1%",
                     render: function (data) {
                         return renderAccionesGrid(data, {
-                            ver: "verCliente",
+                            ver: "verFicha",
                             editar: "editarCliente",
                             eliminar: "eliminarCliente"
                         });
@@ -464,9 +493,11 @@ async function configurarDataTable(data) {
                     orderable: false,
                     searchable: false,
                 },
+               
                 { data: 'Nombre' },
                 { data: 'Productora' },
                 { data: 'Pais' },
+                { data: 'Dni' },
                 { data: 'Provincia' },
                 { data: 'TipoDocumento' },
                 { data: 'NumeroDocumento' },
@@ -478,24 +509,17 @@ async function configurarDataTable(data) {
             dom: 'Bfrtip',
             buttons: [
                 {
-                    extend: 'excelHtml5',
                     text: 'Excel',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridClientes, 'excel', 'Clientes')
                 },
                 {
-                    extend: 'pdfHtml5',
                     text: 'PDF',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
+                    action: () => abrirModalExportacion(gridClientes, 'pdf', 'Clientes')
                 },
                 {
-                    extend: 'print',
                     text: 'Imprimir',
-                    className: 'rp-dt-btn',
-                    exportOptions: { columns: ':visible:not(:first-child)' }
-                },
-                'pageLength'
+                    action: () => abrirModalExportacion(gridClientes, 'print', 'Clientes')
+                }
             ],
 
             orderCellsTop: true,
@@ -809,20 +833,30 @@ function limpiarModal() {
 }
 
 function validarCampoIndividual(el) {
-    const id = el.id;
+
+    // modo solo lectura
+    if (document.querySelector("#modalEdicion")
+        ?.getAttribute("data-sololectura") === "1")
+        return true;
 
     const camposObligatorios = [
         "txtNombre",
-        "cmbPais",
-        "cmbProvincia"
+        "txtDni",
+        "txtEmail"
     ];
 
-    if (!camposObligatorios.includes(id)) return;
+    if (!camposObligatorios.includes(el.id))
+        return;
 
     const valor = (el.value ?? "").toString().trim();
-    const esValido = valor !== "" && valor !== null;
+
+    const esValido =
+        valor !== "" &&
+        valor !== null &&
+        valor !== "Seleccionar";
 
     setEstadoCampo(el, esValido);
+
     verificarErroresGenerales();
 }
 
@@ -836,26 +870,57 @@ function verificarErroresGenerales() {
 
 function validarCampos() {
 
+    if (document.querySelector("#modalEdicion")
+        ?.getAttribute("data-sololectura") === "1")
+        return true;
+
     const campos = [
-        "#txtNombre",
-        "#cmbPais",
-        "#cmbProvincia"
+        { selector: "#txtNombre", nombre: "Nombre" },
+        { selector: "#txtDni", nombre: "DNI" },
+        { selector: "#txtEmail", nombre: "Correo electrónico" }
     ];
 
-    let valido = true;
+    let errores = [];
 
-    campos.forEach(selector => {
-        const el = document.querySelector(selector);
-        const valor = (el?.value ?? "").toString().trim();
-        const esValido = !!el && valor !== "";
+    campos.forEach(c => {
 
-        if (!esValido) valido = false;
-        if (el) setEstadoCampo(el, esValido);
+        const el = document.querySelector(c.selector);
+        if (!el) return;
+
+        const valor = (el.value ?? "").toString().trim();
+
+        const esValido = valor !== "";
+
+        setEstadoCampo(el, esValido);
+
+        if (!esValido)
+            errores.push(c.nombre);
     });
 
-    return valido;
-}
+    // ⭐ VALIDACIÓN PRODUCTORAS
+    const totalProductoras =
+        (productorasSeleccionadas?.length || 0) +
+        (productorasAutomaticas?.length || 0) +
+        (productorasDesdeProductora?.length || 0);
 
+    if (totalProductoras === 0)
+        errores.push("Productora");
+
+    if (errores.length > 0) {
+
+        mostrarErrorCampos(
+            `Debes completar los campos requeridos:<br>
+             <strong>${errores.join(", ")}</strong>`,
+            null,
+            "validacion"
+        );
+
+        return false;
+    }
+
+    cerrarErrorCampos();
+    return true;
+}
 /* =========================
    KPI + helpers
 ========================= */
@@ -1021,7 +1086,7 @@ function aplicarFiltroProductorasChecklist() {
         });
 }
 
-const verCliente = id => {
+const verFicha = id => {
 
     fetch("/Clientes/EditarInfo?id=" + id, {
         method: 'GET',

@@ -360,3 +360,230 @@ function renderAccionesGrid(id, acciones) {
         </div>
     `;
 }
+
+/* ======================================================
+EXPORTADOR GLOBAL DATATABLES
+(usar desde cualquier grid)
+====================================================== */
+
+window.ExportadorDT = {
+    grid: null,
+    tipo: null
+};
+
+/* =========================
+   ABRIR MODAL
+========================= */
+
+window.abrirModalExportacion = function (grid, tipo, nombreListado) {
+
+    if (!grid) return;
+
+    ExportadorDT.grid = grid;
+    ExportadorDT.tipo = tipo;
+    ExportadorDT.nombreListado = nombreListado || "Datos";
+
+    const container = $("#exportColumnsContainer");
+    container.empty();
+
+    const columns = grid.settings()[0].aoColumns;
+
+    columns.forEach((col, index) => {
+
+        if (index === 0) return;
+        if (!grid.column(index).visible()) return;
+
+        const nombre = col.sTitle || `Columna ${index}`;
+
+        container.append(`
+<label class="export-item">
+    <input type="checkbox"
+           class="export-col"
+           value="${index}"
+           checked>
+    <span class="export-pill">${nombre}</span>
+</label>
+`);
+    });
+
+    $("#modalExportar").modal("show");
+};
+
+/* =========================
+   CONFIRMAR EXPORT
+========================= */
+
+$(document).off("click.exportador")
+    .on("click.exportador", "#btnConfirmarExport", function () {
+
+        const columnas = [];
+
+        $(".export-col:checked").each(function () {
+            columnas.push(parseInt($(this).val()));
+        });
+
+        if (!columnas.length) {
+            alert("Seleccione al menos una columna");
+            return;
+        }
+
+        $("#modalExportar").modal("hide");
+
+        ejecutarExportacionGlobal(columnas);
+    });
+
+
+/* =========================
+   EXPORT REAL
+========================= */
+
+window.ejecutarExportacionGlobal = function (columnas) {
+
+    const grid = ExportadorDT.grid;
+    const tipo = ExportadorDT.tipo;
+
+    if (!grid) return;
+
+    const tituloExport = `Listado de ${ExportadorDT.nombreListado}`;
+
+    const configBase = {
+        title: tituloExport || "Exportación",
+        exportOptions: {
+            columns: columnas
+        }
+    };
+
+    let buttonConfig;
+
+    switch (tipo) {
+        case "excel":
+            buttonConfig = { extend: 'excelHtml5', ...configBase };
+            break;
+
+        case "pdf":
+            buttonConfig = {
+                extend: 'pdfHtml5',
+                orientation: 'landscape',
+                pageSize: 'A4',
+                ...configBase
+            };
+            break;
+
+        case "print":
+            buttonConfig = { extend: 'print', ...configBase };
+            break;
+
+        default:
+            return;
+    }
+
+    const temp = new $.fn.dataTable.Buttons(grid, {
+        buttons: [buttonConfig]
+    });
+
+    // ✅ EJECUCIÓN REAL
+    temp.container().find('button').trigger('click');
+};
+
+$(document).on("change", "#chkExportAll", function () {
+    $(".export-col").prop("checked", this.checked);
+});
+
+window.ExportadorDT = {
+    grid: null,
+    tipo: null,
+    nombreListado: null   // 👈 NUEVO
+};
+
+function cerrarErrorCampos() {
+    $("#errorCampos").addClass("d-none");
+}
+
+function mostrarErrorCampos(
+    mensaje,
+    idReferencia = null,
+    tipo = "validacion" // validacion | duplicado | relacion | error
+) {
+
+    const container = document.getElementById("errorCampos");
+    if (!container) return;
+
+    /* =========================
+       CONFIG SEGÚN TIPO
+    ========================= */
+
+    let titulo = "";
+    let icono = "fa-exclamation-triangle";
+
+    switch (tipo) {
+
+        case "duplicado":
+            titulo = "Registro duplicado detectado";
+            break;
+
+        case "relacion":
+            titulo = "No se puede eliminar";
+            icono = "fa-link";
+            break;
+
+        case "error":
+            titulo = "No se pudo guardar";
+            icono = "fa-times-circle";
+            break;
+
+        default:
+            titulo = "Campos requeridos";
+            icono = "fa-exclamation-circle";
+            break;
+    }
+
+    /* =========================
+       BOTON REFERENCIA
+    ========================= */
+
+    let botonReferencia = "";
+
+    if (idReferencia) {
+        botonReferencia = `
+            <button class="rp-btn-ref"
+                onclick="verFicha(${idReferencia})">
+                <i class="fa fa-eye me-1"></i>
+                Abrir ficha existente →
+            </button>`;
+    }
+
+    /* =========================
+       RENDER
+    ========================= */
+
+    container.innerHTML = `
+        <div class="rp-error-box">
+
+            <div class="rp-error-icon">
+                <i class="fa ${icono}"></i>
+            </div>
+
+            <div class="rp-error-content">
+                <div class="rp-error-title">
+                    ${titulo}
+                </div>
+
+                <div class="rp-error-text">
+                    ${mensaje}
+                </div>
+            </div>
+
+            ${botonReferencia}
+
+        </div>
+    `;
+
+    container.classList.remove("d-none");
+
+    container.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+}
+
+

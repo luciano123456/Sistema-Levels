@@ -207,5 +207,22 @@ namespace SistemaLevels.DAL.Repository
                 .Select(x => x.IdCliente)
                 .ToListAsync();
         }
+
+        public async Task<Productora?> BuscarDuplicado(
+    int? id,
+    string? nombre,
+    string? dni,
+    string? cuit)
+        {
+            return await _dbcontext.Productoras
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x =>
+                    (id == null || x.Id != id) &&
+                    (
+                        (!string.IsNullOrEmpty(nombre) && x.Nombre == nombre) ||
+                        (!string.IsNullOrEmpty(dni) && x.Dni == dni) ||
+                        (!string.IsNullOrEmpty(cuit) && x.NumeroDocumento == cuit)
+                    ));
+        }
     }
 }
