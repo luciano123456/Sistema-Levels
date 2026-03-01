@@ -5,11 +5,18 @@ namespace SistemaLevels.BLL.Service
 {
     public interface IArtistasService
     {
-        Task<ServiceResult> Insertar(Artista model);
-        Task<ServiceResult> Actualizar(Artista model);
+        Task<ServiceResult> Insertar(
+            Artista model,
+            List<int> personalIds);
+
+        Task<ServiceResult> Actualizar(
+            Artista model,
+            List<int> personalIds);
+
         Task<ServiceResult> Eliminar(int id);
 
         Task<Artista?> Obtener(int id);
+
         Task<IQueryable<Artista>> ObtenerTodos();
     }
 }

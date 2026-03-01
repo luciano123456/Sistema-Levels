@@ -8,6 +8,7 @@
     <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/fixedheader/3.2.2/css/fixedHeader.dataTables.min.css" rel="stylesheet" />
 
+    <!-- Select2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
 
     <!-- Icons -->
@@ -115,14 +116,14 @@
                                         class="rp-filter-select select2"></select>
                             </div>
 
-                            <!-- 🔥 NUEVO: Rol -->
+                            <!-- Rol -->
                             <div class="col-md-3">
                                 <div class="rp-filter-label">Rol asignado</div>
                                 <select id="fRol"
                                         class="rp-filter-select select2"></select>
                             </div>
 
-                            <!-- 🔥 NUEVO: Artista -->
+                            <!-- Artista -->
                             <div class="col-md-3">
                                 <div class="rp-filter-label">Artista asignado</div>
                                 <select id="fArtista"
@@ -151,6 +152,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="dt-dark-wrap">
                 <table class="dt-dark display nowrap compact"
                        id="grd_Personal" style="width:100%">
@@ -170,10 +172,10 @@
                     <tbody></tbody>
                 </table>
             </div>
+
         </div>
     </div>
 </div>
-
 
 <!-- MODAL -->
 <div class="modal fade"
@@ -229,6 +231,7 @@
                         </button>
                     </li>
 
+                    <!-- este botón lo mostrás/ocultás desde JS según rol -->
                     <li class="nav-item d-none" id="tabArtistasBtn">
                         <button class="nav-link"
                                 data-bs-toggle="tab"
@@ -261,13 +264,11 @@
                                 <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
 
-
                             <div class="col-md-6">
                                 <label class="form-label">Dni</label>
                                 <input id="txtDni" class="form-control">
                                 <div class="invalid-feedback">Campo obligatorio</div>
                             </div>
-
 
                             <div class="col-md-6">
                                 <label class="form-label">Tipo Documento</label>
@@ -345,6 +346,7 @@
 </div>
 
 <partial name="~/Views/Utils/Modals.cshtml" />
+
 @section Scripts {
 
     <!-- 1️⃣ jQuery (SIEMPRE primero) -->
@@ -370,5 +372,4 @@
 
     <!-- 7️⃣ TU SCRIPT (SIEMPRE ÚLTIMO) -->
     <script src="~/js/Personal.js?v=1.1"></script>
-
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SistemaLevels.BLL.Common;
+﻿using SistemaLevels.BLL.Common;
 using SistemaLevels.DAL.Repository;
 using SistemaLevels.Models;
 
@@ -26,12 +25,10 @@ namespace SistemaLevels.BLL.Service
                 model.NumeroDocumento);
 
             if (dup != null)
-            {
                 return ServiceResult.Error(
                     $"El registro coincide con '{dup.Nombre}'.",
                     "duplicado",
                     dup.Id);
-            }
 
             var ok = await _repo.Insertar(model, rolesIds, artistasIds);
 
@@ -45,20 +42,6 @@ namespace SistemaLevels.BLL.Service
             List<int> rolesIds,
             List<int> artistasIds)
         {
-            var dup = await _repo.BuscarDuplicado(
-                model.Id,
-                model.Nombre,
-                model.Dni,
-                model.NumeroDocumento);
-
-            if (dup != null)
-            {
-                return ServiceResult.Error(
-                    $"El registro coincide con '{dup.Nombre}'.",
-                    "duplicado",
-                    dup.Id);
-            }
-
             var ok = await _repo.Actualizar(model, rolesIds, artistasIds);
 
             return ok
@@ -68,26 +51,11 @@ namespace SistemaLevels.BLL.Service
 
         public async Task<ServiceResult> Eliminar(int id)
         {
-            try
-            {
-                var ok = await _repo.Eliminar(id);
+            var ok = await _repo.Eliminar(id);
 
-                if (!ok)
-                    return ServiceResult.Error("No se encontró el registro.");
-
-                return ServiceResult.Success("Personal eliminado correctamente");
-            }
-            catch (DbUpdateException)
-            {
-                return ServiceResult.Error(
-                    "No se puede eliminar porque posee registros relacionados.",
-                    "relacion",
-                    id);
-            }
-            catch
-            {
-                return ServiceResult.Error("Error inesperado al eliminar.");
-            }
+            return ok
+                ? ServiceResult.Success("Personal eliminado correctamente")
+                : ServiceResult.Error("No se encontró el registro.");
         }
 
         public Task<Personal?> Obtener(int id)
@@ -101,20 +69,5 @@ namespace SistemaLevels.BLL.Service
 
         public Task<List<int>> ObtenerArtistasIds(int idPersonal)
             => _repo.ObtenerArtistasIds(idPersonal);
-
-        public Task<IQueryable<Personal>> ListarFiltrado(
-            string? nombre,
-            int? idPais,
-            int? idTipoDocumento,
-            int? idCondicionIva,
-            int? idRol,
-            int? idArtista)
-            => _repo.ListarFiltrado(
-                nombre,
-                idPais,
-                idTipoDocumento,
-                idCondicionIva,
-                idRol,
-                idArtista);
     }
 }

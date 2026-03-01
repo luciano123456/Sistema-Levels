@@ -23,13 +23,13 @@ public partial class Artista
 
     public string? TelefonoAlternativo { get; set; }
 
-    public string? Dni { get; set; }
+    public string Dni { get; set; } = null!;
 
     public int IdPais { get; set; }
 
     public int? IdTipoDocumento { get; set; }
 
-    public string? NumeroDocumento { get; set; }
+    public string NumeroDocumento { get; set; } = null!;
 
     public string? Email { get; set; }
 
@@ -47,17 +47,15 @@ public partial class Artista
 
     public int? IdCondicionIva { get; set; }
 
-    public int? IdRepresentante { get; set; }
-
     public DateTime? FechaNacimiento { get; set; }
 
     public int? IdMoneda { get; set; }
 
-    public decimal PrecioUnitario { get; set; }
+    public decimal? PrecioUnitario { get; set; }
 
-    public decimal PrecioNegMax { get; set; }
+    public decimal? PrecioNegMax { get; set; }
 
-    public decimal PrecioNegMin { get; set; }
+    public decimal? PrecioNegMin { get; set; }
 
     public virtual ICollection<ArtistasCuentaCorriente> ArtistasCuentaCorrientes { get; set; } = new List<ArtistasCuentaCorriente>();
 
@@ -65,15 +63,14 @@ public partial class Artista
 
     public virtual PaisesCondicionesIva? IdCondicionIvaNavigation { get; set; }
 
-    public virtual PaisesMoneda IdMonedaNavigation { get; set; } = null!;
+    public virtual PaisesMoneda? IdMonedaNavigation { get; set; }
 
     public virtual Pais IdPaisNavigation { get; set; } = null!;
 
-    public virtual Productora IdProductoraNavigation { get; set; } = null!;
+    public virtual Productora? IdProductoraNavigation { get; set; }
 
-    public virtual PaisesProvincia IdProvinciaNavigation { get; set; } = null!;
+    public virtual PaisesProvincia? IdProvinciaNavigation { get; set; }
 
-    public virtual Representante IdRepresentanteNavigation { get; set; } = null!;
 
     public virtual PaisesTiposDocumento? IdTipoDocumentoNavigation { get; set; }
 
@@ -81,7 +78,7 @@ public partial class Artista
 
     public virtual User IdUsuarioRegistraNavigation { get; set; } = null!;
 
-    public virtual ICollection<PersonalArtistasAsignado> PersonalArtistasAsignados { get; set; } = new List<PersonalArtistasAsignado>();
+    public virtual ICollection<PersonalesArtista> PersonalesArtista { get; set; } = new List<PersonalesArtista>();
 
     public virtual ICollection<PresupuestosDetalle> PresupuestosDetalles { get; set; } = new List<PresupuestosDetalle>();
 

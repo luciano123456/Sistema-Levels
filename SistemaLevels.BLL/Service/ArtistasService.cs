@@ -16,12 +16,11 @@ namespace SistemaLevels.BLL.Service
 
         /* ================= INSERTAR ================= */
 
-        public async Task<ServiceResult> Insertar(Artista model)
+        public async Task<ServiceResult> Insertar(
+            Artista model,
+            List<int> personalIds)
         {
-            if (string.IsNullOrWhiteSpace(model.Nombre) ||
-                string.IsNullOrWhiteSpace(model.NombreArtistico) ||
-                string.IsNullOrWhiteSpace(model.NumeroDocumento) ||
-                string.IsNullOrWhiteSpace(model.Dni))
+            if (string.IsNullOrWhiteSpace(model.Nombre))
             {
                 return ServiceResult.Error(
                     "Debe completar los campos obligatorios.",
@@ -31,19 +30,18 @@ namespace SistemaLevels.BLL.Service
             var dup = await _repo.BuscarDuplicado(
                 null,
                 model.Nombre,
-                model.NombreArtistico,
                 model.NumeroDocumento,
                 model.Dni);
 
             if (dup != null)
             {
                 return ServiceResult.Error(
-                    $"Ya existe un artista: '{dup.NombreArtistico}'.",
+                    $"Ya existe un artista: '{dup.Nombre}'.",
                     "duplicado",
                     dup.Id);
             }
 
-            var ok = await _repo.Insertar(model);
+            var ok = await _repo.Insertar(model, personalIds);
 
             return ok
                 ? ServiceResult.Success("Artista registrado correctamente")
@@ -52,24 +50,25 @@ namespace SistemaLevels.BLL.Service
 
         /* ================= ACTUALIZAR ================= */
 
-        public async Task<ServiceResult> Actualizar(Artista model)
+        public async Task<ServiceResult> Actualizar(
+            Artista model,
+            List<int> personalIds)
         {
             var dup = await _repo.BuscarDuplicado(
                 model.Id,
                 model.Nombre,
-                model.NombreArtistico,
                 model.NumeroDocumento,
                 model.Dni);
 
             if (dup != null)
             {
                 return ServiceResult.Error(
-                    $"Ya existe un artista: '{dup.NombreArtistico}'.",
+                    $"Ya existe un artista: '{dup.Nombre}'.",
                     "duplicado",
                     dup.Id);
             }
 
-            var ok = await _repo.Actualizar(model);
+            var ok = await _repo.Actualizar(model, personalIds);
 
             return ok
                 ? ServiceResult.Success("Artista modificado correctamente")

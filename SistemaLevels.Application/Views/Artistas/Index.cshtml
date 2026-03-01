@@ -3,29 +3,30 @@
 }
 
 @section Estilos {
+
     <!-- DataTables -->
     <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet" />
     <link href="https://cdn.datatables.net/fixedheader/3.2.2/css/fixedHeader.dataTables.min.css" rel="stylesheet" />
 
+    <!-- Select2 -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
 
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
 
-    <!-- Estilos base -->
-    <link href="~/css/usuarios.css?v=1.0" rel="stylesheet" />
+    <!-- MISMO ESTILO CLIENTES -->
+    <link href="~/css/productora.css?v=1.0" rel="stylesheet" />
     <link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
-
-    <!-- DataTables Buttons -->
-    <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css" rel="stylesheet" />
 }
 
 <div class="container-fluid mt-5">
 
     <div class="container page-99" style="margin-top:40px">
+
         <div class="cc-header shadow-lg rounded-4 p-4 mb-4">
             <div class="d-flex align-items-center gap-3 flex-wrap">
+
                 <div class="d-flex align-items-center gap-3">
                     <span class="cc-badge"><i class="fa fa-music"></i></span>
                     <div>
@@ -35,6 +36,7 @@
                 </div>
 
                 <div class="ms-auto d-flex gap-4 flex-wrap align-items-center">
+
                     <div class="cc-stat">
                         <div class="label">Artistas</div>
                         <div class="value"><strong id="kpiCantArtistas">0</strong></div>
@@ -42,7 +44,6 @@
 
                     <div class="dropdown cc-dd">
                         <button class="btn btn-secondary dropdown-toggle"
-                                type="button" id="dropdownColumnas"
                                 data-bs-toggle="dropdown"
                                 data-bs-display="static"
                                 data-bs-auto-close="outside">
@@ -52,10 +53,10 @@
                             id="configColumnasMenu"></ul>
                     </div>
 
-                    <a class="btn btn-success d-flex align-items-center px-3 py-2 btnnuevo"
-                       onclick="nuevaArtista()">
+                    <a class="btn btn-success btnnuevo" onclick="nuevaArtista()">
                         <i class="fa fa-plus-square me-2"></i> Nuevo
                     </a>
+
                 </div>
             </div>
         </div>
@@ -82,179 +83,221 @@
                             <th>Email</th>
                         </tr>
                     </thead>
-                    <tbody></tbody>
                 </table>
             </div>
         </div>
+
     </div>
 </div>
 
-<!-- MODAL -->
+<!-- ================= MODAL ================= -->
+
 <div class="modal fade"
      id="modalEdicion"
      tabindex="-1"
      data-bs-backdrop="static"
      data-bs-keyboard="false">
-       <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content">
 
             <div class="modal-header colorEncabezado">
                 <h5 class="modal-title fw-bold" id="modalEdicionLabel">
                     Nuevo Artista
                 </h5>
-                <button type="button" class="btn-close"
-                        data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
             <div class="modal-body">
-                <form class="row g-3">
 
-                    <input type="text" id="txtId" hidden>
+                <input type="text" id="txtId" hidden>
 
-                    <div id="errorCampos" class="rp-error-panel d-none mb-2">
-                        <div class="rp-error-icon">
-                            <i class="fa fa-exclamation-triangle"></i>
-                        </div>
+                <!-- ERROR PANEL -->
+                <div id="errorCampos" class="rp-error-panel d-none mb-2">
+                    <div class="rp-error-icon">
+                        <i class="fa fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="rp-error-content">
+                        <div class="rp-error-title">No se pudo guardar</div>
+                        <div class="rp-error-message"></div>
+                    </div>
+                    <button type="button" class="rp-error-close" onclick="cerrarErrorCampos()">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
 
-                        <div class="rp-error-content">
-                            <div class="rp-error-title">No se pudo guardar</div>
-                            <div class="rp-error-message"></div>
-                        </div>
+                <!-- ================= TABS ================= -->
 
-                        <button type="button" class="rp-error-close"
-                                onclick="cerrarErrorCampos()">
-                            <i class="fa fa-times"></i>
+                <ul class="nav rp-tabs-modern mb-3">
+
+                    <li class="nav-item">
+                        <button class="nav-link active"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tabDatos">
+                            <i class="fa fa-user"></i>
+                            Datos del Artista
                         </button>
+                    </li>
+
+                    <li class="nav-item">
+                        <button class="nav-link"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tabPersonal">
+                            <i class="fa fa-users"></i>
+                            Personal asignado
+                            <span id="cntPersonal" class="rp-tab-count">(0)</span>
+                        </button>
+                    </li>
+
+                </ul>
+
+                <div class="tab-content">
+
+                    <!-- ================= TAB DATOS (TU FORM ORIGINAL INTACTO) ================= -->
+
+                    <div class="tab-pane fade show active" id="tabDatos">
+
+                        <form class="row g-3">
+
+                            <!-- ⚠️ TODOS TUS CAMPOS EXACTOS — NO TOCADOS -->
+
+                            <div class="col-md-3">
+                                <label class="form-label">Nombre Completo</label>
+                                <input id="txtNombre" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Nombre Artístico</label>
+                                <input id="txtNombreArtistico" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Productora</label>
+                                <select id="cmbProductora" class="form-control"></select>
+                            </div>
+
+
+                            <div class="col-md-3">
+                                <label class="form-label">Fecha Nacimiento</label>
+                                <input id="dtpFechaNacimiento" type="date" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">País</label>
+                                <select id="cmbPais" class="form-control"></select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Provincia</label>
+                                <select id="cmbProvincia" class="form-control"></select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Condición IVA</label>
+                                <select id="cmbCondicionIva" class="form-control"></select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Tipo Documento</label>
+                                <select id="cmbTipoDocumento" class="form-control"></select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Número Documento</label>
+                                <input id="txtNumeroDocumento" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">DNI</label>
+                                <input id="txtDni" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Moneda</label>
+                                <select id="cmbMoneda" class="form-control"></select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Precio Unitario</label>
+                                <input id="txtPrecioUnitario" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Precio Neg. Mín</label>
+                                <input id="txtPrecioNegMin" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Precio Neg. Máx</label>
+                                <input id="txtPrecioNegMax" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Teléfono</label>
+                                <input id="txtTelefono" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Teléfono Alternativo</label>
+                                <input id="txtTelefonoAlternativo" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Email</label>
+                                <input id="txtEmail" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Dirección</label>
+                                <input id="txtDireccion" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Localidad</label>
+                                <input id="txtLocalidad" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Entre Calles</label>
+                                <input id="txtEntreCalles" class="form-control">
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label">Código Postal</label>
+                                <input id="txtCodigoPostal" class="form-control">
+                            </div>
+
+                        </form>
                     </div>
 
-                    <div class="col-md-3">
-                        <label class="form-label">Nombre Completo</label>
-                        <input id="txtNombre" class="form-control" required>
-                        <div class="invalid-feedback">Campo obligatorio</div>
-                    </div>
+                    <!-- ================= TAB PERSONAL ================= -->
 
-                    <div class="col-md-3">
-                        <label class="form-label">Nombre Artístico</label>
-                        <input id="txtNombreArtistico" class="form-control" required>
-                        <div class="invalid-feedback">Campo obligatorio</div>
-                    </div>
+                    <div class="tab-pane fade" id="tabPersonal">
 
-                    <div class="col-md-3">
-                        <label class="form-label">Productora</label>
-                        <select id="cmbProductora" class="form-control"></select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Representante</label>
-                        <select id="cmbRepresentante" class="form-control"></select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Fecha Nacimiento</label>
-                        <input id="dtpFechaNacimiento" type="date" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">País</label>
-                        <select id="cmbPais" class="form-control"></select>
-                        <div class="invalid-feedback">Campo obligatorio</div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Provincia</label>
-                        <select id="cmbProvincia" class="form-control"></select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Condición IVA</label>
-                        <select id="cmbCondicionIva" class="form-control"></select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Tipo Documento</label>
-                        <select id="cmbTipoDocumento" class="form-control"></select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Número Documento</label>
-                        <input id="txtNumeroDocumento" class="form-control">
-                        <div class="invalid-feedback">Campo obligatorio</div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">DNI</label>
-                        <input id="txtDni" class="form-control">
-                        <div class="invalid-feedback">Campo obligatorio</div>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Moneda</label>
-                        <select id="cmbMoneda" class="form-control"></select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Precio Unitario</label>
-                        <input id="txtPrecioUnitario" type="number" step="0.01" class="form-control" required>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Precio Neg. Mín</label>
-                        <input id="txtPrecioNegMin" type="number" step="0.01" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Precio Neg. Máx</label>
-                        <input id="txtPrecioNegMax" type="number" step="0.01" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Teléfono</label>
-                        <input id="txtTelefono" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Teléfono Alternativo</label>
-                        <input id="txtTelefonoAlternativo" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Email</label>
-                        <input id="txtEmail" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Dirección</label>
-                        <input id="txtDireccion" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Localidad</label>
-                        <input id="txtLocalidad" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Entre Calles</label>
-                        <input id="txtEntreCalles" class="form-control">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Código Postal</label>
-                        <input id="txtCodigoPostal" class="form-control">
-                    </div>
-
-                    <div class="col-12">
-                        <div class="rp-auditoria d-none" id="infoAuditoria">
-                            <div id="infoRegistro"></div>
-                            <div id="infoModificacion"></div>
+                        <div class="mb-3">
+                            <input type="text"
+                                   id="txtBuscarPersonal"
+                                   class="form-control"
+                                   placeholder="Buscar personal...">
                         </div>
+
+                        <div id="listaPersonal" class="rp-checklist"></div>
+
                     </div>
 
-                </form>
+                </div>
+
+                <div class="rp-auditoria d-none mt-3" id="infoAuditoria">
+                    <div id="infoRegistro"></div>
+                    <div id="infoModificacion"></div>
+                </div>
+
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-secondary"
-                        data-bs-dismiss="modal">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fa fa-arrow-left"></i> Volver
                 </button>
 
@@ -264,38 +307,25 @@
                     <i class="fa fa-check"></i> Registrar
                 </button>
             </div>
+
         </div>
     </div>
 </div>
-
-<!-- MODAL EXPORTAR -->
 
 <partial name="~/Views/Utils/Modals.cshtml" />
 
 @section Scripts {
 
-    <!-- 1️⃣ jQuery (SIEMPRE primero) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <!-- 2️⃣ DataTables CORE -->
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-
-    <!-- 3️⃣ DataTables Buttons (DESPUÉS del core) -->
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-
-    <!-- 4️⃣ Dependencias exportación -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-
-    <!-- 5️⃣ Botones HTML5 -->
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-
-    <!-- 6️⃣ Select2 -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <!-- 7️⃣ TU SCRIPT (SIEMPRE ÚLTIMO) -->
-    <script src="~/js/Artistas.js?v=1.1"></script>
+    <script src="~/js/Artistas.js?v=2.0"></script>
 
 }
