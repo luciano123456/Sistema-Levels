@@ -3,17 +3,28 @@ let rolesCatalogo = [];
 
 let filtrosPersonalActivos = false;
 
+/* =========================================================
+   RELACION PERSONAL ⇄ ARTISTAS (igual que Artistas)
+========================================================= */
+
+let artistasCache = [];
+
+let artistasSeleccionado = [];       // manual (origen 1)
+let artistasDesdeArtista = [];       // viene desde Artista (origen 2) => bloqueado
+let artistasAutomatico = [];         // automático (origen 3) => bloqueado
+
 
 /**
  * Columnas:
  * 0 Acciones
  * 1 Nombre (TEXT)
  * 2 País (SELECT2 remoto)
- * 3 Tipo Doc (SELECT2 remoto)
- * 4 Nro Doc (TEXT)
- * 5 Condición IVA (SELECT2 remoto)
- * 6 Teléfono (TEXT)
- * 7 Email (TEXT)
+ * 3 Dni (TEXT)
+ * 4 Tipo Doc (SELECT2 remoto)
+ * 5 Nro Doc (TEXT)
+ * 6 Condición IVA (SELECT2 remoto)
+ * 7 Teléfono (TEXT)
+ * 8 Email (TEXT)
  */
 const columnConfig = [
     { index: 1, filterType: 'text' }, // Nombre
@@ -28,8 +39,6 @@ const columnConfig = [
 
 $(document).ready(() => {
 
-
-
     listaPersonal();
 
     // Validación campo a campo
@@ -43,8 +52,21 @@ $(document).ready(() => {
     // País -> depende tipo doc y condición IVA
     $("#cmbPais").on("change", async function () {
         const idPais = $(this).val();
+
+        const tipoDocActual = $("#cmbTipoDocumento").val();
+        const ivaActual = $("#cmbCondicionIva").val();
+
         await listaTiposDocumento(idPais);
         await listaCondicionesIva(idPais);
+
+        if (tipoDocActual) {
+            $("#cmbTipoDocumento").val(tipoDocActual);
+            refreshSelect2("#cmbTipoDocumento");
+        }
+        if (ivaActual) {
+            $("#cmbCondicionIva").val(ivaActual);
+            refreshSelect2("#cmbCondicionIva");
+        }
     });
 
     // Inicializa select2 modal (dropdownParent modal)
@@ -63,9 +85,9 @@ $(document).ready(() => {
 ========================= */
 
 function ensureSelect2($el, options) {
-
     if (!$el || !$el.length) return;
 
+    // en Personal vos estabas destruyendo siempre; lo dejo como lo tenías
     if ($el.data('select2')) {
         $el.select2('destroy');
     }
@@ -80,7 +102,9 @@ function ensureSelect2($el, options) {
 function inicializarSelect2Modal() {
     const opts = {
         width: '100%',
-        dropdownParent: $('#modalEdicion')
+        dropdownParent: $('#modalEdicion'),
+        allowClear: true,
+        placeholder: "Seleccionar"
     };
 
     ensureSelect2($("#cmbPais"), opts);
@@ -101,12 +125,9 @@ function inicializarSelect2Filtro($select) {
    CRUD
 ========================= */
 
-
 function guardarPersonal() {
 
-    // ===============================
     // VALIDACIÓN FRONT
-    // ===============================
     if (!validarCampos())
         return false;
 
@@ -117,13 +138,12 @@ function guardarPersonal() {
         fnRaw && fnRaw.trim() !== "" ? fnRaw : null;
 
     const rolesIds = getRolesSeleccionadosIds();
-    const artistasIds = getArtistasSeleccionadosIds();
 
-    // ===============================
-    // MODELO
-    // ===============================
+    // ⭐ IMPORTANTE: ahora manda SOLO los manuales, igual que Artistas.PersonalIds
+    const artistasIds = artistasSeleccionado || [];
+
     const modelo = {
-        Id: id !== "" ? parseInt(id) : 0,
+        Id: id !== "" ? parseInt(id, 10) : 0,
 
         Nombre: $("#txtNombre").val(),
         Dni: $("#txtDni").val(),
@@ -152,11 +172,8 @@ function guardarPersonal() {
 
     const method = esNuevo ? "POST" : "PUT";
 
-    // ===============================
-    // REQUEST
-    // ===============================
     fetch(url, {
-        method: method,
+        method,
         headers: {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json;charset=utf-8'
@@ -164,30 +181,19 @@ function guardarPersonal() {
         body: JSON.stringify(modelo)
     })
         .then(async r => {
-
-            if (!r.ok)
-                throw new Error("Error HTTP");
-
+            if (!r.ok) throw new Error("Error HTTP");
             return await r.json();
         })
         .then(data => {
 
-            // =====================================
-            // ERROR DE NEGOCIO (ServiceResult)
-            // =====================================
             if (!data.valor) {
 
-                // ⭐ AUTO-DETECCIÓN INTELIGENTE
                 let tipoError = data.tipo;
 
                 if (!tipoError) {
-
-                    if (data.idReferencia)
-                        tipoError = "duplicado";
-                    else if (data.mensaje?.toLowerCase().includes("no se puede"))
-                        tipoError = "relacion";
-                    else
-                        tipoError = "validacion";
+                    if (data.idReferencia) tipoError = "duplicado";
+                    else if (data.mensaje?.toLowerCase().includes("no se puede")) tipoError = "relacion";
+                    else tipoError = "validacion";
                 }
 
                 mostrarErrorCampos(
@@ -199,11 +205,7 @@ function guardarPersonal() {
                 return;
             }
 
-            // =====================================
-            // OK
-            // =====================================
             cerrarErrorCampos();
-
             $('#modalEdicion').modal('hide');
 
             exitoModal(
@@ -216,30 +218,40 @@ function guardarPersonal() {
             listaPersonal();
         })
         .catch(err => {
-
             console.error("Error:", err);
-
-            mostrarErrorCampos(
-                "Ha ocurrido un error inesperado al guardar."
-            );
+            mostrarErrorCampos("Ha ocurrido un error inesperado al guardar.");
         });
 }
-function nuevoPersonal() {
-    limpiarModal();
 
+function nuevoPersonal() {
+
+
+
+    limpiarModal();
     setModalSoloLectura(false);
+
+    // ⭐ reset relación artistas (igual que Artistas)
+    artistasSeleccionado = [];
+    artistasAutomatico = [];
+    artistasDesdeArtista = [];
 
     Promise.all([
         listaPaises(),
         listaRoles(),
-        listaArtistas()
+        cargarArtistasChecklist(true)   // ⭐ carga cache artistas
     ])
         .then(() => {
             evaluarPestaniaArtistas();
+
             resetSelect("cmbTipoDocumento", "Seleccionar");
             resetSelect("cmbCondicionIva", "Seleccionar");
 
             inicializarSelect2Modal();
+
+            // ⭐ render checklist artistas (aunque pestaña esté oculta, no molesta)
+            renderChecklistArtistas();
+            activarBuscadorArtistas();
+            actualizarContadoresTabs();
         });
 
     $('#modalEdicion').modal('show');
@@ -256,11 +268,13 @@ function nuevoPersonal() {
 }
 
 async function mostrarModal(modelo) {
-    limpiarModal();
 
+
+
+    limpiarModal();
     setModalSoloLectura(false);
 
-    // 🔹 SIEMPRE abrir en la pestaña de datos
+    // abrir en pestaña datos
     const tabDatos = document.querySelector('#personalTabs button[data-bs-target="#tabDatos"]');
     if (tabDatos) {
         const tab = new bootstrap.Tab(tabDatos);
@@ -272,7 +286,6 @@ async function mostrarModal(modelo) {
     $("#txtDni").val(modelo.Dni || "");
 
     $("#txtNumeroDocumento").val(modelo.NumeroDocumento || "");
-    $("#txtDni").val(modelo.Dni || "");
     $("#txtDireccion").val(modelo.Direccion || "");
     $("#txtTelefono").val(modelo.Telefono || "");
     $("#txtEmail").val(modelo.Email || "");
@@ -294,7 +307,7 @@ async function mostrarModal(modelo) {
     await Promise.all([
         listaPaises(),
         listaRoles(),
-        listaArtistas()
+        cargarArtistasChecklist(true)
     ]);
 
     if (modelo.IdPais != null) {
@@ -314,24 +327,22 @@ async function mostrarModal(modelo) {
     // roles
     if (modelo.RolesIds) {
         $("#listaRoles input[type=checkbox]").each(function () {
-            const id = parseInt($(this).val());
-            if (modelo.RolesIds.includes(id)) {
-                $(this).prop("checked", true);
-            }
+            const id = parseInt($(this).val(), 10);
+            $(this).prop("checked", modelo.RolesIds.includes(id));
         });
     }
+
+    // ⭐⭐⭐ RELACION ARTISTAS (IGUAL QUE ARTISTAS)
+    // Backend debe devolver estas 3 listas:
+    // ArtistasIds (manual), ArtistasDesdeArtistaIds (origen 2), ArtistasAutomaticosIds (origen 3)
+    artistasSeleccionado = modelo.ArtistasIds || [];
+    artistasDesdeArtista = modelo.ArtistasDesdeArtistaIds || [];
+    artistasAutomatico = modelo.ArtistasAutomaticosIds || [];
 
     evaluarBloqueArtistas();
-
-    // artistas
-    if (modelo.ArtistasIds) {
-        $("#listaArtistas input[type=checkbox]").each(function () {
-            const id = parseInt($(this).val());
-            if (modelo.ArtistasIds.includes(id)) {
-                $(this).prop("checked", true);
-            }
-        });
-    }
+    renderChecklistArtistas();
+    activarBuscadorArtistas();
+    actualizarContadoresTabs();
 
     // Auditoría
     let textoAuditoria = "";
@@ -359,6 +370,10 @@ async function mostrarModal(modelo) {
     if (textoAuditoria !== "") $("#infoAuditoria").removeClass("d-none");
     else $("#infoAuditoria").addClass("d-none");
 
+    $("#chkAsociacionAutomatica")
+        .prop("checked", true)
+        .prop("disabled", true);
+
     $('#modalEdicion').modal('show');
 
     $("#btnGuardar")
@@ -366,14 +381,9 @@ async function mostrarModal(modelo) {
         .html(`<i class="fa fa-check"></i> Guardar`);
 
     $("#modalEdicionLabel").text("Editar Personal");
-
-    actualizarContadoresTabs();
-
 }
 
 const editarPersonal = id => {
-    
-
     fetch("/Personal/EditarInfo?id=" + id, {
         method: 'GET',
         headers: {
@@ -394,14 +404,10 @@ const editarPersonal = id => {
 
 async function eliminarPersonal(id) {
 
-    const confirmado = await confirmarModal(
-        "¿Desea eliminar este registro de personal?"
-    );
-
+    const confirmado = await confirmarModal("¿Desea eliminar este registro de personal?");
     if (!confirmado) return;
 
     try {
-
         const response = await fetch("/Personal/Eliminar?id=" + id, {
             method: "DELETE",
             headers: {
@@ -410,31 +416,24 @@ async function eliminarPersonal(id) {
             }
         });
 
-        if (!response.ok)
-            throw new Error("Error HTTP");
+        if (!response.ok) throw new Error("Error HTTP");
 
         const data = await response.json();
 
         if (!data.valor) {
-
-            mostrarErrorCampos(
-                data.mensaje,
-                data.idReferencia
-            );
-
+            mostrarErrorCampos(data.mensaje, data.idReferencia);
             return;
         }
 
-        // ✅ OK
         listaPersonal();
         exitoModal(data.mensaje || "Personal eliminado correctamente");
 
-    }
-    catch (e) {
+    } catch (e) {
         console.error("Ha ocurrido un error:", e);
         errorModal("Ha ocurrido un error.");
     }
 }
+
 /* =========================
    LISTA + DATATABLE
 ========================= */
@@ -505,18 +504,10 @@ async function configurarDataTable(data) {
 
             dom: 'Bfrtip',
             buttons: [
-                {
-                    text: 'Excel',
-                    action: () => abrirModalExportacion(gridPersonal, 'excel', 'Personal')
-                },
-                {
-                    text: 'PDF',
-                    action: () => abrirModalExportacion(gridPersonal, 'pdf', 'Personal')
-                },
-                {
-                    text: 'Imprimir',
-                    action: () => abrirModalExportacion(gridPersonal, 'print', 'Personal')
-                }
+                { text: 'Excel', action: () => abrirModalExportacion(gridPersonal, 'excel', 'Personal') },
+                { text: 'PDF', action: () => abrirModalExportacion(gridPersonal, 'pdf', 'Personal') },
+                { text: 'Imprimir', action: () => abrirModalExportacion(gridPersonal, 'print', 'Personal') },
+                'pageLength'
             ],
 
             orderCellsTop: true,
@@ -530,7 +521,6 @@ async function configurarDataTable(data) {
                     const cell = $('.filters th').eq(config.index);
                     if (!cell.length) continue;
 
-                    // ✅ SIEMPRE vaciamos la celda del filtro
                     cell.empty();
 
                     if (config.filterType === 'select') {
@@ -546,17 +536,13 @@ async function configurarDataTable(data) {
                             $select.append(`<option value="${item.Id}">${item.Nombre}</option>`);
                         });
 
-                        // ✅ select2
                         inicializarSelect2Filtro($select);
 
-                        // ✅ al limpiar, borra filtro y redibuja bien
                         $select.on('select2:clear', function () {
                             api.column(config.index).search('').draw(false);
                         });
 
-                        // ✅ change: aplica exact match por texto visible
                         $select.on('change', function () {
-
                             const value = $(this).val();
 
                             if (!value) {
@@ -572,8 +558,7 @@ async function configurarDataTable(data) {
                         });
 
                     } else {
-                        // TEXT
-                        const $input = $(`<input class="rp-filter-input" type="text" placeholder="Buscar...">`)
+                        $(`<input class="rp-filter-input" type="text" placeholder="Buscar...">`)
                             .appendTo(cell)
                             .on('keyup change', function () {
                                 api.column(config.index).search(this.value).draw(false);
@@ -581,14 +566,13 @@ async function configurarDataTable(data) {
                     }
                 }
 
-                // Col 0 sin filtro
                 $('.filters th').eq(0).html('');
 
                 configurarOpcionesColumnas();
                 actualizarKpis(data);
 
-                // Fuerza que click en la selección abra el dropdown
-                $(document).on("click", ".select2-container--default .select2-selection--single", function (e) {
+                // fuerza click para abrir select2
+                $(document).on("click", ".select2-container--default .select2-selection--single", function () {
                     const $select = $(this).closest(".select2-container").prev("select");
                     if ($select.length) {
                         if ($select.data("select2") && $select.data("select2").isOpen()) return;
@@ -627,7 +611,6 @@ async function listaPaises() {
     const select = document.getElementById("cmbPais");
     (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
-    // select2
     inicializarSelect2Modal();
 }
 
@@ -670,24 +653,18 @@ async function listaCondicionesIva(idPaisSeleccionado = null) {
 ========================= */
 
 async function listaPaisesFilter() {
-    const response = await fetch(`/Paises/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const response = await fetch(`/Paises/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
     return await response.json();
 }
 
 async function listaTiposDocumentoFilter() {
-    const response = await fetch(`/PaisesTiposDocumentos/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const response = await fetch(`/PaisesTiposDocumentos/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
     const data = await response.json();
     return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 }
 
 async function listaCondicionesIvaFilter() {
-    const response = await fetch(`/PaisesCondicionesIVA/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const response = await fetch(`/PaisesCondicionesIVA/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
     const data = await response.json();
     return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 }
@@ -737,10 +714,6 @@ function configurarOpcionesColumnas() {
 }
 
 /* =========================
-   ACCIONES DROPDOWN
-========================= */
-
-/* =========================
    VALIDACIONES
 ========================= */
 
@@ -748,10 +721,7 @@ function getSelect2Selection(el) {
     const $el = $(el);
     const s2 = $el.data("select2");
     if (s2 && s2.$selection && s2.$container) {
-        return {
-            $selection: s2.$selection,
-            $container: s2.$container
-        };
+        return { $selection: s2.$selection, $container: s2.$container };
     }
 
     const $cont = $el.nextAll(".select2-container").first();
@@ -779,9 +749,7 @@ function setEstadoCampo(el, esValido) {
     const $wrap = $el.closest(".mb-3, .form-group, .col, .col-md-6, .rp-field, .rp-form-group");
     const $msg = $wrap.find(".invalid-feedback, .rp-invalid-msg, .campo-obligatorio, small.text-danger").first();
 
-    if ($msg.length) {
-        $msg.toggleClass("d-none", esValido);
-    }
+    if ($msg.length) $msg.toggleClass("d-none", esValido);
 }
 
 function limpiarModal() {
@@ -794,7 +762,6 @@ function limpiarModal() {
 
         el.classList.remove("is-invalid", "is-valid");
 
-        // limpiar select2 visible
         if (el.tagName === "SELECT" && $(el).data("select2")) {
             const { $selection, $container } = getSelect2Selection(el);
             $selection.removeClass("is-invalid is-valid");
@@ -804,8 +771,8 @@ function limpiarModal() {
 
     $("#errorCampos").addClass("d-none");
 }
-function validarCampoIndividual(el) {
 
+function validarCampoIndividual(el) {
     const camposObligatorios = [
         "txtNombre",
         "cmbPais",
@@ -823,20 +790,18 @@ function validarCampoIndividual(el) {
         valor !== null;
 
     setEstadoCampo(el, esValido);
-
     verificarErroresGenerales();
 }
 
 function verificarErroresGenerales() {
     const errorMsg = document.getElementById("errorCampos");
-    const hayInvalidos = document.querySelectorAll("#modalEdicion .is-invalid").length > 0;
     if (!errorMsg) return;
 
+    const hayInvalidos = document.querySelectorAll("#modalEdicion .is-invalid").length > 0;
     if (!hayInvalidos) errorMsg.classList.add("d-none");
 }
 
 function validarCampos() {
-
     const campos = [
         { selector: "#txtNombre", nombre: "Nombre" },
         { selector: "#cmbPais", nombre: "País" },
@@ -847,7 +812,6 @@ function validarCampos() {
     let errores = [];
 
     campos.forEach(c => {
-
         const el = document.querySelector(c.selector);
         if (!el) return;
 
@@ -856,25 +820,23 @@ function validarCampos() {
 
         setEstadoCampo(el, esValido);
 
-        if (!esValido)
-            errores.push(c.nombre);
+        if (!esValido) errores.push(c.nombre);
     });
 
     if (errores.length > 0) {
-
         mostrarErrorCampos(
             `Debes completar los campos requeridos:<br>
              <strong>${errores.join(", ")}</strong>`,
             null,
             "validacion"
         );
-
         return false;
     }
 
     cerrarErrorCampos();
     return true;
 }
+
 /* =========================
    KPI + helpers
 ========================= */
@@ -897,59 +859,14 @@ function formatearFecha(fecha) {
     }
 }
 
+function refreshSelect2(id) {
+    const $el = $(id);
+    if ($el.data('select2')) $el.trigger('change.select2');
+}
 
 /* =========================
-ROLES Y ARTISTAS
+ROLES
 ========================= */
-
-
-async function listaArtistas() {
-    const response = await fetch(`/Artistas/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-
-    const container = $("#listaArtistas");
-    container.empty();
-
-    // buscador
-    container.append(`
-        <div class="rp-search-box mb-2">
-            <input type="text" 
-                   id="buscarArtista"
-                   class="form-control"
-                   placeholder="Buscar artista...">
-        </div>
-    `);
-
-    const lista = $('<div class="rp-checklist-items"></div>');
-    container.append(lista);
-
-    (data || []).forEach(x => {
-        lista.append(`
-            <label class="rp-check-item" data-nombre="${x.NombreArtistico.toLowerCase()}">
-                <input type="checkbox" value="${x.Id}">
-                <span>${x.NombreArtistico}</span>
-            </label>
-        `);
-    });
-
-    // filtro
-    $("#buscarArtista").on("keyup", function () {
-        const texto = $(this).val().toLowerCase();
-
-        $("#listaArtistas .rp-check-item").each(function () {
-            const nombre = $(this).data("nombre");
-            $(this).toggle(nombre.includes(texto));
-        });
-    });
-
-    // contador
-    $("#listaArtistas input").on("change", actualizarContadoresTabs);
-
-    actualizarContadoresTabs();
-}
 
 async function listaRoles() {
     const response = await fetch(`/PersonalRol/Lista`, {
@@ -971,7 +888,6 @@ async function listaRoles() {
         `);
     });
 
-    // eventos
     $("#listaRoles input").on("change", function () {
         evaluarBloqueArtistas();
         actualizarContadoresTabs();
@@ -980,85 +896,264 @@ async function listaRoles() {
     actualizarContadoresTabs();
 }
 
-
-function evaluarPestaniaArtistas() {
-
-    const rolesIds = getRolesSeleccionadosIds();
-
-    const rolRepresentante = rolesCatalogo.find(r =>
-        r.Nombre.toLowerCase() === "representante"
-    );
-
-    if (!rolRepresentante) return;
-
-    const tieneRol = rolesIds.includes(rolRepresentante.Id);
-
-    if (tieneRol) {
-        $("#tabArtistasBtn").removeClass("d-none");
-    } else {
-        $("#tabArtistasBtn").addClass("d-none");
-
-        // desmarcar artistas
-        document
-            .querySelectorAll("#listaArtistas input[type=checkbox]")
-            .forEach(chk => chk.checked = false);
-    }
-}
-
 function getRolesSeleccionadosIds() {
     const ids = [];
     document
         .querySelectorAll("#listaRoles input[type=checkbox]:checked")
-        .forEach(chk => ids.push(parseInt(chk.value)));
-
+        .forEach(chk => ids.push(parseInt(chk.value, 10)));
     return ids;
 }
 
+function evaluarPestaniaArtistas() {
+    const rolesIds = getRolesSeleccionadosIds();
 
-function getArtistasSeleccionadosIds() {
-    const ids = [];
-    document
-        .querySelectorAll("#listaArtistas input[type=checkbox]:checked")
-        .forEach(chk => ids.push(parseInt(chk.value)));
+    //const rolRepresentante = rolesCatalogo.find(r =>
+    //    (r.Nombre || "").toLowerCase() === "representante"
+    //);
 
-    return ids;
-}
+    //if (!rolRepresentante) return;
 
+    //const tieneRol = rolesIds.includes(rolRepresentante.Id);
 
-function evaluarBloqueArtistas() {
+    const tieneRol = true; //SE LO HABILITAMOS A TODOSP POR AHORA
 
-    const rolesSeleccionados = [];
-
-    $("#listaRoles input:checked").each(function () {
-        rolesSeleccionados.push(parseInt($(this).val()));
-    });
-
-    const rolRepresentante = rolesCatalogo.find(r => r.Nombre.toLowerCase() === "representante");
-    if (!rolRepresentante) return;
-
-    const tieneRolRepresentante = rolesSeleccionados.includes(rolRepresentante.Id);
-
-    if (tieneRolRepresentante) {
+    if (rolesIds.length > 0 && tieneRol) {
         $("#tabArtistasBtn").removeClass("d-none");
     } else {
         $("#tabArtistasBtn").addClass("d-none");
-        $("#listaArtistas input").prop("checked", false);
+
+        // limpia manuales (y deja intactos los bloqueados si existieran)
+        artistasSeleccionado = [];
+        renderChecklistArtistas();
+        actualizarContadoresTabs();
     }
 }
 
+function evaluarBloqueArtistas() {
+    evaluarPestaniaArtistas();
+}
+
+/* =========================
+   ARTISTAS CHECKLIST (IGUAL QUE ARTISTAS → PERSONAL)
+========================= */
+
+async function cargarArtistasChecklist(force = false) {
+
+    if (!force && artistasCache.length > 0)
+        return;
+
+    const res = await fetch("/Artistas/Lista", {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    if (!res.ok) {
+        console.error("No se pudo cargar Artistas");
+        artistasCache = [];
+        return;
+    }
+
+    artistasCache = await res.json() || [];
+}
+
+function renderChecklistArtistas() {
+
+    const cont = document.getElementById("listaArtistas");
+    if (!cont) return;
+
+    cont.innerHTML = "";
+
+    /* ===============================
+       BUSCADOR + CONTENEDOR
+    =============================== */
+
+    cont.insertAdjacentHTML("beforeend", `
+        <div class="mb-3">
+            <input type="text"
+                   id="txtBuscarArtista"
+                   class="form-control"
+                   placeholder="Buscar artista...">
+        </div>
+
+        <div class="rp-checklist-box">
+            <div id="listaArtistasItems" class="rp-checklist"></div>
+        </div>
+    `);
+
+    const items = document.getElementById("listaArtistasItems");
+    if (!items) return;
+
+    /* ===============================
+       CLASIFICAR
+    =============================== */
+
+    const asignados = [];
+    const disponibles = [];
+
+    (artistasCache || []).forEach(a => {
+
+        const id = parseInt(a.Id, 10);
+
+        const estaAsignado =
+            (artistasSeleccionado || []).includes(id) ||
+            (artistasAutomatico || []).includes(id) ||
+            (artistasDesdeArtista || []).includes(id);
+
+        if (estaAsignado)
+            asignados.push(a);
+        else
+            disponibles.push(a);
+    });
+
+    /* ===============================
+       ORDEN ALFABETICO
+    =============================== */
+
+    const getNombre = a =>
+        (a.NombreArtistico || a.Nombre || "").toString();
+
+    const ordenar = (a, b) =>
+        getNombre(a).localeCompare(getNombre(b));
+
+    asignados.sort(ordenar);
+    disponibles.sort(ordenar);
+
+    /* ===============================
+       RENDER GRUPOS
+    =============================== */
+
+    const renderGrupo = (titulo, lista, claseGrupo) => {
+
+        if (!lista.length) return;
+
+        items.insertAdjacentHTML("beforeend", `
+            <div class="rp-check-group ${claseGrupo}">
+                <div class="rp-check-group-title">
+                    ${titulo}
+                    <span class="rp-check-count">(${lista.length})</span>
+                </div>
+            </div>
+        `);
+
+        lista.forEach(a => {
+
+            const id = parseInt(a.Id, 10);
+
+            const esManual = (artistasSeleccionado || []).includes(id);
+            const esAuto = (artistasAutomatico || []).includes(id);
+            const esDesde = (artistasDesdeArtista || []).includes(id);
+
+            let checked = "";
+            let disabled = "";
+            let badge = "";
+            let claseExtra = "";
+
+            if (esManual) {
+                checked = "checked";
+                badge = `<span class="rp-badge manual">Manual</span>`;
+                claseExtra = "manual";
+            }
+            else if (esAuto) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge auto">Automático</span>`;
+                claseExtra = "auto";
+            }
+            else if (esDesde) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge cli">Automático</span>`;
+                claseExtra = "cli";
+            }
+
+            const nombre = getNombre(a);
+
+            items.insertAdjacentHTML("beforeend", `
+                <label class="rp-check-item ${claseExtra}"
+                       data-nombre="${nombre.toLowerCase()}">
+
+                    <input type="checkbox"
+                           value="${id}"
+                           ${checked}
+                           ${disabled}
+                           onchange="toggleArtista(${id})">
+
+                    <span class="rp-check-text">
+                        ${nombre}
+                        ${badge}
+                    </span>
+                </label>
+            `);
+        });
+    };
+
+    /* ===============================
+       RENDER FINAL
+    =============================== */
+
+    renderGrupo(
+        `<i class="fa fa-check-circle"></i> Asignados`,
+        asignados,
+        "grupo-asignados"
+    );
+
+    renderGrupo(
+        `<i class="fa fa-list"></i> Disponibles`,
+        disponibles,
+        "grupo-disponibles"
+    );
+
+    activarBuscadorArtistas();
+    actualizarContadoresTabs();
+}
+function toggleArtista(id) {
+
+    id = parseInt(id, 10);
+
+    // bloqueados
+    if ((artistasAutomatico || []).includes(id)) return;
+    if ((artistasDesdeArtista || []).includes(id)) return;
+
+    if ((artistasSeleccionado || []).includes(id))
+        artistasSeleccionado = artistasSeleccionado.filter(x => x !== id);
+    else
+        artistasSeleccionado.push(id);
+
+    renderChecklistArtistas();
+}
+
+function activarBuscadorArtistas() {
+
+    const input = document.getElementById("txtBuscarArtista");
+    if (!input) return;
+
+    input.oninput = function () {
+        const texto = (this.value || "").toLowerCase();
+
+        document.querySelectorAll("#listaArtistasItems .rp-check-item")
+            .forEach(el => {
+                const nombre = (el.getAttribute("data-nombre") || "").toLowerCase();
+                el.style.display = nombre.includes(texto) ? "" : "none";
+            });
+    };
+}
 
 function actualizarContadoresTabs() {
-
     const cantRoles = $("#listaRoles input:checked").length;
-    const cantArtistas = $("#listaArtistas input:checked").length;
+
+    const cantArtistas =
+        (artistasSeleccionado?.length || 0) +
+        (artistasDesdeArtista?.length || 0) +
+        (artistasAutomatico?.length || 0);
 
     $("#contadorRoles").text(`(${cantRoles})`);
     $("#contadorArtistas").text(`(${cantArtistas})`);
 }
 
+/* =========================
+   VER FICHA
+========================= */
 
 const verFicha = id => {
-
     fetch("/Personal/EditarInfo?id=" + id, {
         method: 'GET',
         headers: {
@@ -1076,13 +1171,16 @@ const verFicha = id => {
 
             await mostrarModal(dataJson);
 
-            // ⭐ reutiliza función global del site.js
             setModalSoloLectura(true);
 
             $("#modalEdicionLabel").text("Ver Personal");
         })
         .catch(_ => errorModal("Ha ocurrido un error."));
 };
+
+/* =========================================================
+   FILTROS PERSONAL (server side)
+========================================================= */
 
 async function inicializarFiltrosPersonal() {
 
@@ -1102,11 +1200,7 @@ async function inicializarFiltrosPersonal() {
 }
 
 async function cargarFiltroPaises() {
-
-    const r = await fetch(`/Paises/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
+    const r = await fetch(`/Paises/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
     const data = await r.json();
 
     const $sel = $("#fPais");
@@ -1118,11 +1212,7 @@ async function cargarFiltroPaises() {
 }
 
 async function cargarFiltroTiposDocumento() {
-
-    const r = await fetch(`/PaisesTiposDocumentos/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
+    const r = await fetch(`/PaisesTiposDocumentos/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
     const data = await r.json();
 
     const $sel = $("#fTipoDocumento");
@@ -1134,11 +1224,7 @@ async function cargarFiltroTiposDocumento() {
 }
 
 async function cargarFiltroCondicionesIva() {
-
-    const r = await fetch(`/PaisesCondicionesIVA/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
+    const r = await fetch(`/PaisesCondicionesIVA/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
     const data = await r.json();
 
     const $sel = $("#fCondicionIva");
@@ -1150,11 +1236,7 @@ async function cargarFiltroCondicionesIva() {
 }
 
 async function cargarFiltroRoles() {
-
-    const r = await fetch(`/PersonalRol/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
+    const r = await fetch(`/PersonalRol/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
     const data = await r.json();
 
     const $sel = $("#fRol");
@@ -1166,11 +1248,7 @@ async function cargarFiltroRoles() {
 }
 
 async function cargarFiltroArtistas() {
-
-    const r = await fetch(`/Artistas/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
+    const r = await fetch(`/Artistas/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
     const data = await r.json();
 
     const $sel = $("#fArtista");
@@ -1180,10 +1258,6 @@ async function cargarFiltroArtistas() {
         $sel.append(`<option value="${x.Id}">${x.NombreArtistico}</option>`)
     );
 }
-
-/* =========================
-APLICAR FILTROS
-========================= */
 
 async function aplicarFiltrosPersonal() {
 
@@ -1236,10 +1310,6 @@ function limpiarFiltrosPersonal() {
 }
 
 function actualizarEstadoFiltrosPersonal() {
-
-    const txt = filtrosPersonalActivos
-        ? "Filtros activos"
-        : "";
-
+    const txt = filtrosPersonalActivos ? "Filtros activos" : "";
     $("#txtFiltrosEstadoPersonal").text(txt);
 }

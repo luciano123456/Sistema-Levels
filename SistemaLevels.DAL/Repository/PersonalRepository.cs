@@ -13,7 +13,9 @@ namespace SistemaLevels.DAL.Repository
             _db = context;
         }
 
-        /* ================= SINCRONIZADOR ================= */
+        /* =====================================================
+           SINCRONIZAR ARTISTAS
+        ===================================================== */
 
         private async Task SincronizarArtistas(
             int idPersonal,
@@ -47,7 +49,9 @@ namespace SistemaLevels.DAL.Repository
             }
         }
 
-        /* ================= INSERTAR ================= */
+        /* =====================================================
+           INSERTAR
+        ===================================================== */
 
         public async Task<bool> Insertar(
             Personal model,
@@ -63,12 +67,11 @@ namespace SistemaLevels.DAL.Repository
 
                 foreach (var idRol in rolesIds.Distinct())
                 {
-                    _db.PersonalRolesAsignados.Add(
-                        new PersonalRolesAsignado
-                        {
-                            IdPersonal = model.Id,
-                            IdRol = idRol
-                        });
+                    _db.PersonalRolesAsignados.Add(new PersonalRolesAsignado
+                    {
+                        IdPersonal = model.Id,
+                        IdRol = idRol
+                    });
                 }
 
                 await SincronizarArtistas(model.Id, artistasIds);
@@ -84,7 +87,9 @@ namespace SistemaLevels.DAL.Repository
             }
         }
 
-        /* ================= ACTUALIZAR ================= */
+        /* =====================================================
+           ACTUALIZAR
+        ===================================================== */
 
         public async Task<bool> Actualizar(
             Personal model,
@@ -123,12 +128,11 @@ namespace SistemaLevels.DAL.Repository
 
                 foreach (var idRol in rolesIds.Distinct())
                 {
-                    _db.PersonalRolesAsignados.Add(
-                        new PersonalRolesAsignado
-                        {
-                            IdPersonal = model.Id,
-                            IdRol = idRol
-                        });
+                    _db.PersonalRolesAsignados.Add(new PersonalRolesAsignado
+                    {
+                        IdPersonal = model.Id,
+                        IdRol = idRol
+                    });
                 }
 
                 await SincronizarArtistas(model.Id, artistasIds);
@@ -145,7 +149,9 @@ namespace SistemaLevels.DAL.Repository
             }
         }
 
-        /* ================= ELIMINAR ================= */
+        /* =====================================================
+           ELIMINAR
+        ===================================================== */
 
         public async Task<bool> Eliminar(int id)
         {
@@ -164,25 +170,42 @@ namespace SistemaLevels.DAL.Repository
             return true;
         }
 
-        /* ================= OBTENER ================= */
+        /* =====================================================
+           OBTENER
+        ===================================================== */
 
-        public Task<Personal?> Obtener(int id)
-            => _db.Personals.FirstOrDefaultAsync(x => x.Id == id);
+        public async Task<Personal?> Obtener(int id)
+        {
+            return await _db.Personals
+                .AsNoTracking()
+                .Include(x => x.PersonalesArtista)
+                    .ThenInclude(pa => pa.IdArtistaNavigation)
+                .Include(x => x.IdPaisNavigation)
+                .Include(x => x.IdTipoDocumentoNavigation)
+                .Include(x => x.IdCondicionIvaNavigation)
+                .Include(x => x.IdUsuarioRegistraNavigation)
+                .Include(x => x.IdUsuarioModificaNavigation)
+                .FirstOrDefaultAsync(x => x.Id == id);
+        }
 
-        public Task<IQueryable<Personal>> ObtenerTodos()
-            => Task.FromResult(_db.Personals.AsQueryable());
+        public async Task<IQueryable<Personal>> ObtenerTodos()
+        {
+            var query = _db.Personals
+                .AsNoTracking()
+                .Include(x => x.PersonalesArtista)
+                    .ThenInclude(pa => pa.IdArtistaNavigation)
+                .Include(x => x.IdPaisNavigation)
+                .Include(x => x.IdTipoDocumentoNavigation)
+                .Include(x => x.IdCondicionIvaNavigation)
+                .Include(x => x.IdUsuarioRegistraNavigation)
+                .Include(x => x.IdUsuarioModificaNavigation);
 
-        public Task<List<int>> ObtenerRolesIds(int idPersonal)
-            => _db.PersonalRolesAsignados
-                .Where(x => x.IdPersonal == idPersonal)
-                .Select(x => x.IdRol)
-                .ToListAsync();
+            return await Task.FromResult(query);
+        }
 
-        public Task<List<int>> ObtenerArtistasIds(int idPersonal)
-            => _db.PersonalesArtistas
-                .Where(x => x.IdPersonal == idPersonal)
-                .Select(x => x.IdArtista)
-                .ToListAsync();
+        /* =====================================================
+           ⭐ LISTAR FILTRADO (FALTANTE)
+        ===================================================== */
 
         public Task<IQueryable<Personal>> ListarFiltrado(
             string? nombre,
@@ -192,13 +215,37 @@ namespace SistemaLevels.DAL.Repository
             int? idRol,
             int? idArtista)
         {
-            var query = _db.Personals.AsQueryable();
+            var query = _db.Personals
+                .Include(x => x.PersonalRolesAsignados)
+                .Include(x => x.PersonalesArtista)
+                .AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(nombre))
                 query = query.Where(x => x.Nombre.Contains(nombre));
 
+            if (idPais.HasValue)
+                query = query.Where(x => x.IdPais == idPais);
+
+            if (idTipoDocumento.HasValue)
+                query = query.Where(x => x.IdTipoDocumento == idTipoDocumento);
+
+            if (idCondicionIva.HasValue)
+                query = query.Where(x => x.IdCondicionIva == idCondicionIva);
+
+            if (idRol.HasValue)
+                query = query.Where(x =>
+                    x.PersonalRolesAsignados.Any(r => r.IdRol == idRol));
+
+            if (idArtista.HasValue)
+                query = query.Where(x =>
+                    x.PersonalesArtista.Any(a => a.IdArtista == idArtista));
+
             return Task.FromResult(query);
         }
+
+        /* =====================================================
+           DUPLICADOS
+        ===================================================== */
 
         public Task<Personal?> BuscarDuplicado(
             int? idExcluir,
@@ -216,5 +263,17 @@ namespace SistemaLevels.DAL.Repository
                 x.Dni == dni ||
                 x.NumeroDocumento == numeroDocumento);
         }
+
+        public Task<List<int>> ObtenerRolesIds(int idPersonal)
+            => _db.PersonalRolesAsignados
+                .Where(x => x.IdPersonal == idPersonal)
+                .Select(x => x.IdRol)
+                .ToListAsync();
+
+        public Task<List<int>> ObtenerArtistasIds(int idPersonal)
+            => _db.PersonalesArtistas
+                .Where(x => x.IdPersonal == idPersonal)
+                .Select(x => x.IdArtista)
+                .ToListAsync();
     }
 }

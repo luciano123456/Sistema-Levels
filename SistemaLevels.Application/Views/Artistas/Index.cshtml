@@ -283,7 +283,37 @@
                                    placeholder="Buscar personal...">
                         </div>
 
-                        <div id="listaPersonal" class="rp-checklist"></div>
+                        <div class="rp-checklist-box">
+                            <div id="listaPersonal" class="rp-checklist"></div>
+                        </div>
+
+                        <div class="rp-auto-card mt-3">
+
+                            <div class="rp-auto-left">
+
+                                <div class="rp-auto-icon">
+                                    <i class="fa fa-link"></i>
+                                </div>
+
+                                <div class="rp-auto-text">
+                                    <div class="rp-auto-title">
+                                        Asociación automática de productoras
+                                    </div>
+
+                                    <div class="rp-auto-desc">
+                                        Las productoras principales se asignarán automáticamente al cliente.
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <label class="rp-switch">
+                                <input type="checkbox" id="chkAsociacionAutomatica" checked>
+                                <span class="rp-slider"></span>
+                            </label>
+
+                        </div>
+
 
                     </div>
 
@@ -326,6 +356,6 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <script src="~/js/Artistas.js?v=2.0"></script>
+    <script src="~/js/Artistas.js?v=2.1"></script>
 
 }

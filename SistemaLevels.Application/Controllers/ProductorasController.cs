@@ -38,6 +38,7 @@ public class ProductorasController : Controller
             Email = p.Email,
             Direccion = p.Direccion,
             Dni = p.Dni,
+            NumeroDocumento = p.NumeroDocumento,
 
             Pais = p.IdpaisNavigation != null ? p.IdpaisNavigation.Nombre : "",
             TipoDocumento = p.IdTipoDocumentoNavigation != null ? p.IdTipoDocumentoNavigation.Nombre : "",

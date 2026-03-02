@@ -1,25 +1,28 @@
 ﻿using SistemaLevels.BLL.Common;
 using SistemaLevels.Models;
 
-public interface IPersonalService
+namespace SistemaLevels.BLL.Service
 {
-    Task<ServiceResult> Insertar(
-        Personal model,
-        List<int> rolesIds,
-        List<int> artistasIds);
+    public interface IPersonalService
+    {
+        Task<ServiceResult> Insertar(
+            Personal model,
+            List<int> rolesIds,
+            List<int> artistasIds);
 
-    Task<ServiceResult> Actualizar(
-        Personal model,
-        List<int> rolesIds,
-        List<int> artistasIds);
+        Task<ServiceResult> Actualizar(
+            Personal model,
+            List<int> rolesIds,
+            List<int> artistasIds);
 
-    Task<ServiceResult> Eliminar(int id);
+        Task<ServiceResult> Eliminar(int id);
 
-    Task<Personal?> Obtener(int id);
+        Task<Personal?> Obtener(int id);
 
-    Task<IQueryable<Personal>> ObtenerTodos();
+        Task<IQueryable<Personal>> ObtenerTodos();
 
-    Task<List<int>> ObtenerRolesIds(int idPersonal);
+        Task<List<int>> ObtenerRolesIds(int idPersonal);
 
-    Task<List<int>> ObtenerArtistasIds(int idPersonal);
+        Task<List<int>> ObtenerArtistasIds(int idPersonal);
+    }
 }

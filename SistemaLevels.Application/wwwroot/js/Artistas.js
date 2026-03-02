@@ -276,6 +276,11 @@ async function nuevaArtista() {
     $("#infoAuditoria").addClass("d-none");
     $("#infoRegistro").html("");
     $("#infoModificacion").html("");
+
+
+    $("#chkAsociacionAutomatica")
+        .prop("checked", true)
+        .prop("disabled", true);
 }
 
 
@@ -306,6 +311,11 @@ async function mostrarModal(modelo) {
     $("#txtPrecioUnitario").val(modelo.PrecioUnitario ?? "");
     $("#txtPrecioNegMax").val(modelo.PrecioNegMax ?? "");
     $("#txtPrecioNegMin").val(modelo.PrecioNegMin ?? "");
+
+
+    $("#chkAsociacionAutomatica")
+        .prop("checked", true)
+        .prop("disabled", true);
 
     await listaProductoras();
     await listaPaises();
@@ -531,7 +541,8 @@ async function configurarDataTable(data) {
                 {
                     text: 'Imprimir',
                     action: () => abrirModalExportacion(gridArtistas, 'print', 'Artistas')
-                }
+                },
+                'pageLength'
             ],
 
             orderCellsTop: true,
@@ -1065,15 +1076,27 @@ const verFicha = id => {
 };
 
 
+$(document).on('hidden.bs.modal', '.modal', function () {
 
-$('#modalEdicion').on('hidden.bs.modal', function () {
+    // esperar un tick para que bootstrap termine
+    setTimeout(() => {
 
-    // eliminar backdrops huérfanos
-    $('.modal-backdrop').remove();
+        const modalesAbiertos = $('.modal.show').length;
 
-    // restaurar scroll
-    $('body').removeClass('modal-open');
-    $('body').css('padding-right', '');
+        if (modalesAbiertos === 0) {
+
+            // no queda ningún modal → restaurar scroll real
+            $('body')
+                .removeClass('modal-open')
+                .css({
+                    overflow: '',
+                    paddingRight: ''
+                });
+
+            $('.modal-backdrop').remove();
+        }
+
+    }, 150);
 });
 
 /* =========================================================
@@ -1103,52 +1126,118 @@ function renderChecklistPersonal() {
 
     cont.innerHTML = "";
 
-    personalCache.forEach(p => {
+    /* ==========================================
+       CLASIFICAR
+    ========================================== */
+
+    const asignados = [];
+    const disponibles = [];
+
+    (personalCache || []).forEach(p => {
 
         const id = parseInt(p.Id);
 
-        const esManual = personalSeleccionado.includes(id);
-        const esAuto = personalAutomatico.includes(id);
-        const esDesde = personalDesdePersonal.includes(id);
+        const estaAsignado =
+            (personalSeleccionado || []).includes(id) ||
+            (personalAutomatico || []).includes(id) ||
+            (personalDesdePersonal || []).includes(id);
 
-        let checked = "";
-        let disabled = "";
-        let badge = "";
-        let claseExtra = "";
+        if (estaAsignado)
+            asignados.push(p);
+        else
+            disponibles.push(p);
+    });
 
-        if (esManual) {
-            checked = "checked";
-            badge = `<span class="rp-badge manual">Manual</span>`;
-            claseExtra = "manual";
-        }
-        else if (esAuto) {
-            checked = "checked";
-            disabled = "disabled";
-            badge = `<span class="rp-badge auto">Automático</span>`;
-            claseExtra = "auto";
-        }
-        else if (esDesde) {
-            checked = "checked";
-            disabled = "disabled";
-            badge = `<span class="rp-badge per">Automático</span>`;
-            claseExtra = "per";
-        }
+    /* ==========================================
+       ORDEN ALFABETICO
+    ========================================== */
+
+    const ordenar = (a, b) =>
+        (a.Nombre || "").localeCompare(b.Nombre || "");
+
+    asignados.sort(ordenar);
+    disponibles.sort(ordenar);
+
+    /* ==========================================
+       RENDER GRUPOS
+    ========================================== */
+
+    const renderGrupo = (titulo, lista, claseGrupo) => {
+
+        if (!lista.length) return;
 
         cont.insertAdjacentHTML("beforeend", `
-            <label class="rp-check-item ${claseExtra}">
-                <input type="checkbox"
-                       value="${id}"
-                       ${checked}
-                       ${disabled}
-                       onchange="togglePersonal(${id})">
-
-                <span class="rp-check-text">
-                    ${p.Nombre}
-                    ${badge}
-                </span>
-            </label>
+            <div class="rp-check-group ${claseGrupo}">
+                <div class="rp-check-group-title">
+                    ${titulo}
+                    <span class="rp-check-count">(${lista.length})</span>
+                </div>
+            </div>
         `);
-    });
+
+        lista.forEach(p => {
+
+            const id = parseInt(p.Id);
+
+            const esManual = (personalSeleccionado || []).includes(id);
+            const esAuto = (personalAutomatico || []).includes(id);
+            const esDesde = (personalDesdePersonal || []).includes(id);
+
+            let checked = "";
+            let disabled = "";
+            let badge = "";
+            let claseExtra = "";
+
+            if (esManual) {
+                checked = "checked";
+                badge = `<span class="rp-badge manual">Manual</span>`;
+                claseExtra = "manual";
+            }
+            else if (esAuto) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge auto">Automático</span>`;
+                claseExtra = "auto";
+            }
+            else if (esDesde) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge cli">Automático</span>`;
+                claseExtra = "cli";
+            }
+
+            cont.insertAdjacentHTML("beforeend", `
+                <label class="rp-check-item ${claseExtra}">
+                    <input type="checkbox"
+                           value="${id}"
+                           ${checked}
+                           ${disabled}
+                           onchange="togglePersonal(${id})">
+
+                    <span class="rp-check-text">
+                        ${p.Nombre}
+                        ${badge}
+                    </span>
+                </label>
+            `);
+        });
+    };
+
+    /* ==========================================
+       RENDER FINAL
+    ========================================== */
+
+    renderGrupo(
+        `<i class="fa fa-check-circle"></i> Asignados`,
+        asignados,
+        "grupo-asignados"
+    );
+
+    renderGrupo(
+        `<i class="fa fa-list"></i> Disponibles`,
+        disponibles,
+        "grupo-disponibles"
+    );
 
     actualizarContadorPersonal();
 }
@@ -1165,7 +1254,7 @@ function togglePersonal(id) {
     else
         personalSeleccionado.push(id);
 
-    actualizarContadorPersonal();
+    renderChecklistPersonal();
 }
 
 function actualizarContadorPersonal() {
