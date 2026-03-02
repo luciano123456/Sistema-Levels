@@ -6,6 +6,7 @@
 
         public string Nombre { get; set; } = "";
         public string? Dni { get; set; }
+        public string? Artista { get; set; }
 
         public int IdPais { get; set; }
         public int? IdTipoDocumento { get; set; }

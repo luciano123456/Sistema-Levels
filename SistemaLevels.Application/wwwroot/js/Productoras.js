@@ -418,7 +418,8 @@ async function configurarDataTable(data) {
                 {
                     text: 'Imprimir',
                     action: () => abrirModalExportacion(gridProductoras, 'print', 'Productoras')
-                }
+                },
+                'pageLength'
             ],
 
 
@@ -906,58 +907,125 @@ async function cargarClientesChecklist(force = false) {
 function renderChecklistClientes() {
 
     const cont = document.getElementById("listaClientes");
+    if (!cont) return;
+
     cont.innerHTML = "";
+
+    /* ==========================================
+       CLASIFICAR
+    ========================================== */
+
+    const asignados = [];
+    const disponibles = [];
 
     clientesCache.forEach(c => {
 
         const id = parseInt(c.Id);
 
-        const esManual = clientesSeleccionados.includes(id);
-        const esAuto = clientesAutomaticos.includes(id);
-        const esDesdeCliente = clientesDesdeCliente.includes(id);
+        const estaAsignado =
+            clientesSeleccionados.includes(id) ||
+            clientesAutomaticos.includes(id) ||
+            clientesDesdeCliente.includes(id);
 
-        let checked = "";
-        let disabled = "";
-        let badge = "";
-        let claseExtra = "";
+        if (estaAsignado)
+            asignados.push(c);
+        else
+            disponibles.push(c);
+    });
 
-        if (esManual) {
-            checked = "checked";
-            badge = `<span class="rp-badge manual">Manual</span>`;
-            claseExtra = "manual";
-        }
-        else if (esAuto) {
-            checked = "checked";
-            disabled = "disabled";
-            badge = `<span class="rp-badge auto">Automático</span>`;
-            claseExtra = "auto";
-        }
-        else if (esDesdeCliente) {
-            checked = "checked";
-            disabled = "disabled";
-            badge = `<span class="rp-badge cli">Automático</span>`;
-            claseExtra = "cli";
-        }
+    /* ==========================================
+       ORDEN ALFABETICO
+    ========================================== */
+
+    const ordenar = (a, b) =>
+        (a.Nombre || "").localeCompare(b.Nombre || "");
+
+    asignados.sort(ordenar);
+    disponibles.sort(ordenar);
+
+    /* ==========================================
+       RENDER GRUPOS
+    ========================================== */
+
+    const renderGrupo = (titulo, lista, claseGrupo) => {
+
+        if (!lista.length) return;
 
         cont.insertAdjacentHTML("beforeend", `
-            <label class="rp-check-item ${claseExtra}">
-                <input type="checkbox"
-                       value="${id}"
-                       ${checked}
-                       ${disabled}
-                       onchange="toggleCliente(${id})">
-
-                <span class="rp-check-text">
-                    ${c.Nombre}
-                    ${badge}
-                </span>
-            </label>
+            <div class="rp-check-group ${claseGrupo}">
+                <div class="rp-check-group-title">
+                    ${titulo}
+                    <span class="rp-check-count">(${lista.length})</span>
+                </div>
+            </div>
         `);
-    });
+
+        lista.forEach(c => {
+
+            const id = parseInt(c.Id);
+
+            const esManual = clientesSeleccionados.includes(id);
+            const esAuto = clientesAutomaticos.includes(id);
+            const esDesdeCliente = clientesDesdeCliente.includes(id);
+
+            let checked = "";
+            let disabled = "";
+            let badge = "";
+            let claseExtra = "";
+
+            if (esManual) {
+                checked = "checked";
+                badge = `<span class="rp-badge manual">Manual</span>`;
+                claseExtra = "manual";
+            }
+            else if (esAuto) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge auto">Automático</span>`;
+                claseExtra = "auto";
+            }
+            else if (esDesdeCliente) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge cli">Automático</span>`;
+                claseExtra = "cli";
+            }
+
+            cont.insertAdjacentHTML("beforeend", `
+                <label class="rp-check-item ${claseExtra}">
+                    <input type="checkbox"
+                           value="${id}"
+                           ${checked}
+                           ${disabled}
+                           onchange="toggleCliente(${id})">
+
+                    <span class="rp-check-text">
+                        ${c.Nombre}
+                        ${badge}
+                    </span>
+                </label>
+            `);
+        });
+    };
+
+    /* ==========================================
+       RENDER FINAL
+    ========================================== */
+
+    renderGrupo(
+        `<i class="fa fa-check-circle"></i> Asignados`,
+        asignados,
+        "grupo-asignados"
+    );
+
+    renderGrupo(
+        `<i class="fa fa-list"></i> Disponibles`,
+        disponibles,
+        "grupo-disponibles"
+    );
 
     actualizarContadorClientes();
 }
-
 function toggleCliente(id) {
 
     id = parseInt(id);
@@ -971,7 +1039,8 @@ function toggleCliente(id) {
     else
         clientesSeleccionados.push(id);
 
-    actualizarContadorClientes();
+    // ⭐ CLAVE — reconstruir estado real
+    renderChecklistClientes();
 }
 
 function actualizarContadorClientes() {
@@ -994,13 +1063,25 @@ $("#chkAsociacionAutomatica").on("change", function () {
 });
 
 
+$(document).on('hidden.bs.modal', '.modal', function () {
 
-$('#modalEdicion').on('hidden.bs.modal', function () {
+    // esperar un tick para que bootstrap termine
+    setTimeout(() => {
 
-    // eliminar backdrops huérfanos
-    $('.modal-backdrop').remove();
+        const modalesAbiertos = $('.modal.show').length;
 
-    // restaurar scroll
-    $('body').removeClass('modal-open');
-    $('body').css('padding-right', '');
+        if (modalesAbiertos === 0) {
+
+            // no queda ningún modal → restaurar scroll real
+            $('body')
+                .removeClass('modal-open')
+                .css({
+                    overflow: '',
+                    paddingRight: ''
+                });
+
+            $('.modal-backdrop').remove();
+        }
+
+    }, 150);
 });

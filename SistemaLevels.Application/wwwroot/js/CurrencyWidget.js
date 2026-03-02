@@ -86,6 +86,8 @@ window.CurrencyWidget = {
         renderWidget();
     },
 
+
+
     // cuando PaisesMoneda.js ya tiene la lista, puede pasársela para no re-fetch
     setMonedas: (lista) => {
         if (Array.isArray(lista)) {
@@ -127,30 +129,29 @@ window.CurrencyWidget = {
 ============================== */
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // carga base
 
     nextUpdateTimestamp = obtenerProximoUpdate() || 0;
 
-    await cargarMonedasGlobal();
+    // ✅ 1) primero pins
     cargarPins();
+
+    // ✅ 2) después monedas
+    await cargarMonedasGlobal();
+
+    // ✅ 3) ahora sí: si había pins de monedas borradas, los limpia
+    limpiarPinsInexistentes();
+
+    // ✅ 4) timestamps en base a pins ya limpios
     cargarUltimasActualizaciones();
 
     // render inicial
     renderWidget();
 
-    // enganchar UI de refresh si existe (select + countdown)
     bindRefreshUI();
-
-    // chequeo al cargar (si corresponde por tiempo)
     await verificarSiDebeActualizar();
-
-    // loop de chequeo (cada 1 min)
     iniciarAutoCheck();
-
-    // countdown visual (cada 1s)
     iniciarCountdown();
 });
-
 /* ==============================
    CONFIG REFRESH MINUTES
 ============================== */
@@ -177,6 +178,7 @@ function guardarRefreshConfig(minutos) {
 async function cargarMonedasGlobal() {
 
     try {
+
         const resp = await fetch("/PaisesMoneda/Lista", {
             headers: { "Authorization": "Bearer " + token }
         });
@@ -187,16 +189,62 @@ async function cargarMonedasGlobal() {
 
         if (Array.isArray(data)) {
 
+            // =============================
+            // CARGA GLOBAL DESDE BACKEND
+            // =============================
             monedasGlobal = data;
 
-            // ✅ INDEX O(1)
+            // INDEX O(1)
             monedasIndex = {};
-            for (const m of data)
-                monedasIndex[m.Id] = m;
+            for (const m of data) {
+                monedasIndex[Number(m.Id)] = m;
+            }
+
+            // =============================
+            // ⭐ LIMPIA PINS QUE YA NO EXISTEN
+            // =============================
+            limpiarPinsInexistentes();
         }
 
     } catch (e) {
         console.warn("CurrencyWidget cargarMonedasGlobal", e);
+    }
+}
+function limpiarPinsInexistentes() {
+
+    if (!Array.isArray(monedasPin) || !monedasPin.length)
+        return;
+
+    // ids reales del backend
+    const idsValidos = new Set(
+        monedasGlobal.map(m => Number(m.Id))
+    );
+
+    const cantidadAntes = monedasPin.length;
+
+    // deja solo los que existen
+    monedasPin = monedasPin.filter(id =>
+        idsValidos.has(Number(id))
+    );
+
+    // si cambió algo → persistimos
+    if (monedasPin.length !== cantidadAntes) {
+
+        guardarPins();
+
+        // limpiar timestamps huérfanos
+        Object.keys(ultimaActualizacion).forEach(id => {
+            if (!idsValidos.has(Number(id))) {
+                delete ultimaActualizacion[id];
+            }
+        });
+
+        localStorage.setItem(
+            CW_KEYS.UPDATES,
+            JSON.stringify(ultimaActualizacion)
+        );
+
+        console.log("CurrencyWidget → pins inexistentes eliminados");
     }
 }
 /* ==============================

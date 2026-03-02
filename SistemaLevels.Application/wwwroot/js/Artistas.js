@@ -1,5 +1,15 @@
 ﻿let gridArtistas;
 
+// ===============================
+// RELACION PERSONAL
+// ===============================
+
+let personalCache = [];
+
+let personalSeleccionado = [];
+let personalAutomatico = [];
+let personalDesdePersonal = [];
+
 let exportTipo = null;
 
 /**
@@ -157,7 +167,7 @@ function guardarArtista() {
         NombreArtistico: $("#txtNombreArtistico").val(),
 
         IdProductora: $("#cmbProductora").val() ? parseInt($("#cmbProductora").val(), 10) : null,
-        IdRepresentante: $("#cmbRepresentante").val() ? parseInt($("#cmbRepresentante").val(), 10) : null,
+
 
         IdPais: $("#cmbPais").val() ? parseInt($("#cmbPais").val(), 10) : null,
         IdProvincia: $("#cmbProvincia").val() ? parseInt($("#cmbProvincia").val(), 10) : null,
@@ -184,6 +194,8 @@ function guardarArtista() {
         PrecioUnitario: toDecimal($("#txtPrecioUnitario").val()),
         PrecioNegMax: toDecimal($("#txtPrecioNegMax").val()),
         PrecioNegMin: toDecimal($("#txtPrecioNegMin").val()),
+
+        PersonalIds: personalSeleccionado,
     };
 
     const url = id === "" ? "/Artistas/Insertar" : "/Artistas/Actualizar";
@@ -200,23 +212,32 @@ function guardarArtista() {
         .then(r => r.json())
         .then(data => {
 
+            if (!data || data.valor === undefined) {
+                mostrarErrorCampos("Respuesta inválida del servidor.");
+                return;
+            }
+
             if (!data.valor) {
 
+                const msg =
+                    (data.mensaje && String(data.mensaje).trim() !== "")
+                        ? data.mensaje
+                        : (data.tipo === "validacion"
+                            ? "Debes completar los campos requeridos."
+                            : "No se pudo guardar.");
+
                 mostrarErrorCampos(
-                    data.mensaje,
-                    data.idReferencia,
-                    data.tipo
+                    msg,
+                    data.idReferencia ?? null,
+                    data.tipo ?? null
                 );
 
                 return;
             }
 
             cerrarErrorCampos();
-
             $('#modalEdicion').modal('hide');
-
-            exitoModal(data.mensaje);
-
+            exitoModal(data.mensaje || "Guardado correctamente");
             listaArtistas();
         })
         .catch(() => {
@@ -224,23 +245,28 @@ function guardarArtista() {
         });
 }
 
-function nuevaArtista() {
+async function nuevaArtista() {
+
     limpiarModal();
+    setModalSoloLectura(false);
 
-    setModalSoloLectura(false); 
+    personalSeleccionado = [];
+    personalAutomatico = [];
+    personalDesdePersonal = [];
 
-    Promise.all([
+    await Promise.all([
         listaProductoras(),
-        listaRepresentantes(),
         listaPaises(),
-        listaMonedas()
-    ])
-        .then(() => {
-            resetSelect("cmbProvincia", "Seleccionar");
-            resetSelect("cmbTipoDocumento", "Seleccionar");
-            resetSelect("cmbCondicionIva", "Seleccionar");
-            
-        });
+        listaMonedas(),
+        cargarPersonalChecklist(true)
+    ]);
+
+    resetSelect("cmbProvincia", "Seleccionar");
+    resetSelect("cmbTipoDocumento", "Seleccionar");
+    resetSelect("cmbCondicionIva", "Seleccionar");
+
+    renderChecklistPersonal();
+    activarBuscadorPersonal();
 
     abrirModalEdicion();
 
@@ -250,12 +276,17 @@ function nuevaArtista() {
     $("#infoAuditoria").addClass("d-none");
     $("#infoRegistro").html("");
     $("#infoModificacion").html("");
+
+
+    $("#chkAsociacionAutomatica")
+        .prop("checked", true)
+        .prop("disabled", true);
 }
 
 
 async function mostrarModal(modelo) {
-    limpiarModal();
 
+    limpiarModal();
     setModalSoloLectura(false);
 
     $("#txtId").val(modelo.Id || "");
@@ -281,47 +312,58 @@ async function mostrarModal(modelo) {
     $("#txtPrecioNegMax").val(modelo.PrecioNegMax ?? "");
     $("#txtPrecioNegMin").val(modelo.PrecioNegMin ?? "");
 
+
+    $("#chkAsociacionAutomatica")
+        .prop("checked", true)
+        .prop("disabled", true);
+
     await listaProductoras();
-    await listaRepresentantes();
     await listaPaises();
 
-    // primero setear país
     if (modelo.IdPais != null) {
+
         $("#cmbPais").val(modelo.IdPais).trigger("change.select2");
 
         await listaTiposDocumento(modelo.IdPais);
         await listaCondicionesIva(modelo.IdPais);
         await listaProvincias(modelo.IdPais);
         await listaMonedas();
-    } else {
-        resetSelect("cmbTipoDocumento", "Seleccionar");
-        resetSelect("cmbCondicionIva", "Seleccionar");
-        resetSelect("cmbProvincia", "Seleccionar");
-        resetSelect("cmbMoneda", "Seleccionar");
     }
 
+    if (modelo.IdProductora != null)
+        $("#cmbProductora").val(modelo.IdProductora).trigger("change.select2");
 
-    // Set combos
-    if (modelo.IdProductora != null) $("#cmbProductora").val(modelo.IdProductora).trigger("change.select2");
-    if (modelo.IdRepresentante != null) $("#cmbRepresentante").val(modelo.IdRepresentante).trigger("change.select2");
 
-    if (modelo.IdPais != null) {
-        $("#cmbPais").val(modelo.IdPais).trigger("change.select2");
-        await listaTiposDocumento(modelo.IdPais);
-        await listaCondicionesIva(modelo.IdPais);
-    } else {
-        resetSelect("cmbTipoDocumento", "Seleccionar");
-        resetSelect("cmbCondicionIva", "Seleccionar");
-    }
+    if (modelo.IdTipoDocumento != null)
+        $("#cmbTipoDocumento").val(modelo.IdTipoDocumento).trigger("change.select2");
 
-    if (modelo.IdTipoDocumento != null) $("#cmbTipoDocumento").val(modelo.IdTipoDocumento).trigger("change.select2");
-    if (modelo.IdCondicionIva != null) $("#cmbCondicionIva").val(modelo.IdCondicionIva).trigger("change.select2");
-    if (modelo.IdProvincia != null) $("#cmbProvincia").val(modelo.IdProvincia).trigger("change.select2");
-    if (modelo.IdMoneda != null) $("#cmbMoneda").val(modelo.IdMoneda).trigger("change.select2");
+    if (modelo.IdCondicionIva != null)
+        $("#cmbCondicionIva").val(modelo.IdCondicionIva).trigger("change.select2");
 
-    
+    if (modelo.IdProvincia != null)
+        $("#cmbProvincia").val(modelo.IdProvincia).trigger("change.select2");
 
-    // Auditoría
+    if (modelo.IdMoneda != null)
+        $("#cmbMoneda").val(modelo.IdMoneda).trigger("change.select2");
+
+    /* =============================
+       ⭐ RELACION PERSONAL (FIX REAL)
+    ============================= */
+
+    personalSeleccionado = modelo.PersonalIds || [];
+    personalAutomatico = modelo.PersonalAutomaticosIds || [];
+    personalDesdePersonal = modelo.PersonalDesdePersonalIds || [];
+
+    // 🔥 IGUAL QUE CLIENTES
+    await cargarPersonalChecklist(true);
+
+    renderChecklistPersonal();
+    activarBuscadorPersonal();
+
+    /* =============================
+       AUDITORIA
+    ============================= */
+
     let textoAuditoria = "";
 
     if (modelo.UsuarioModifica && modelo.FechaModifica) {
@@ -333,7 +375,8 @@ async function mostrarModal(modelo) {
         `;
         $("#infoModificacion").html(textoAuditoria);
         $("#infoRegistro").html("");
-    } else if (modelo.UsuarioRegistra && modelo.FechaRegistra) {
+    }
+    else if (modelo.UsuarioRegistra && modelo.FechaRegistra) {
         textoAuditoria = `
             <i class="fa fa-user"></i>
             Registrado por 
@@ -344,11 +387,12 @@ async function mostrarModal(modelo) {
         $("#infoModificacion").html("");
     }
 
-    if (textoAuditoria !== "") $("#infoAuditoria").removeClass("d-none");
-    else $("#infoAuditoria").addClass("d-none");
+    if (textoAuditoria !== "")
+        $("#infoAuditoria").removeClass("d-none");
+    else
+        $("#infoAuditoria").addClass("d-none");
 
     abrirModalEdicion();
-
 
     $("#btnGuardar").html(`<i class="fa fa-check"></i> Guardar`);
     $("#modalEdicionLabel").text("Editar Artista");
@@ -497,7 +541,8 @@ async function configurarDataTable(data) {
                 {
                     text: 'Imprimir',
                     action: () => abrirModalExportacion(gridArtistas, 'print', 'Artistas')
-                }
+                },
+                'pageLength'
             ],
 
             orderCellsTop: true,
@@ -619,19 +664,6 @@ async function listaProductoras() {
     
 }
 
-async function listaRepresentantes() {
-    const response = await fetch(`/Representantes/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-
-    resetSelect("cmbRepresentante", "Seleccionar");
-    const select = document.getElementById("cmbRepresentante");
-    (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    
-}
 
 async function listaMonedas() {
 
@@ -731,7 +763,7 @@ async function listaProductorasFilter() {
 }
 
 async function listaRepresentantesFilter() {
-    const response = await fetch(`/Representantes/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
+    const response = await fetch(`/Personal/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
     const data = await response.json();
     return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 }
@@ -1044,13 +1076,209 @@ const verFicha = id => {
 };
 
 
+$(document).on('hidden.bs.modal', '.modal', function () {
 
-$('#modalEdicion').on('hidden.bs.modal', function () {
+    // esperar un tick para que bootstrap termine
+    setTimeout(() => {
 
-    // eliminar backdrops huérfanos
-    $('.modal-backdrop').remove();
+        const modalesAbiertos = $('.modal.show').length;
 
-    // restaurar scroll
-    $('body').removeClass('modal-open');
-    $('body').css('padding-right', '');
+        if (modalesAbiertos === 0) {
+
+            // no queda ningún modal → restaurar scroll real
+            $('body')
+                .removeClass('modal-open')
+                .css({
+                    overflow: '',
+                    paddingRight: ''
+                });
+
+            $('.modal-backdrop').remove();
+        }
+
+    }, 150);
 });
+
+/* =========================================================
+PERSONAL CHECKLIST (ARTISTA ⇄ PERSONAL)
+========================================================= */
+async function cargarPersonalChecklist(force = false) {
+
+    if (!force && personalCache.length > 0)
+        return;
+
+    const res = await fetch("/Personal/Lista", {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
+
+    if (!res.ok) {
+        console.error("No se pudo cargar Personal");
+        personalCache = [];
+        return;
+    }
+
+    personalCache = await res.json() || [];
+}
+function renderChecklistPersonal() {
+
+    const cont = document.getElementById("listaPersonal");
+    if (!cont) return;
+
+    cont.innerHTML = "";
+
+    /* ==========================================
+       CLASIFICAR
+    ========================================== */
+
+    const asignados = [];
+    const disponibles = [];
+
+    (personalCache || []).forEach(p => {
+
+        const id = parseInt(p.Id);
+
+        const estaAsignado =
+            (personalSeleccionado || []).includes(id) ||
+            (personalAutomatico || []).includes(id) ||
+            (personalDesdePersonal || []).includes(id);
+
+        if (estaAsignado)
+            asignados.push(p);
+        else
+            disponibles.push(p);
+    });
+
+    /* ==========================================
+       ORDEN ALFABETICO
+    ========================================== */
+
+    const ordenar = (a, b) =>
+        (a.Nombre || "").localeCompare(b.Nombre || "");
+
+    asignados.sort(ordenar);
+    disponibles.sort(ordenar);
+
+    /* ==========================================
+       RENDER GRUPOS
+    ========================================== */
+
+    const renderGrupo = (titulo, lista, claseGrupo) => {
+
+        if (!lista.length) return;
+
+        cont.insertAdjacentHTML("beforeend", `
+            <div class="rp-check-group ${claseGrupo}">
+                <div class="rp-check-group-title">
+                    ${titulo}
+                    <span class="rp-check-count">(${lista.length})</span>
+                </div>
+            </div>
+        `);
+
+        lista.forEach(p => {
+
+            const id = parseInt(p.Id);
+
+            const esManual = (personalSeleccionado || []).includes(id);
+            const esAuto = (personalAutomatico || []).includes(id);
+            const esDesde = (personalDesdePersonal || []).includes(id);
+
+            let checked = "";
+            let disabled = "";
+            let badge = "";
+            let claseExtra = "";
+
+            if (esManual) {
+                checked = "checked";
+                badge = `<span class="rp-badge manual">Manual</span>`;
+                claseExtra = "manual";
+            }
+            else if (esAuto) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge auto">Automático</span>`;
+                claseExtra = "auto";
+            }
+            else if (esDesde) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge cli">Automático</span>`;
+                claseExtra = "cli";
+            }
+
+            cont.insertAdjacentHTML("beforeend", `
+                <label class="rp-check-item ${claseExtra}">
+                    <input type="checkbox"
+                           value="${id}"
+                           ${checked}
+                           ${disabled}
+                           onchange="togglePersonal(${id})">
+
+                    <span class="rp-check-text">
+                        ${p.Nombre}
+                        ${badge}
+                    </span>
+                </label>
+            `);
+        });
+    };
+
+    /* ==========================================
+       RENDER FINAL
+    ========================================== */
+
+    renderGrupo(
+        `<i class="fa fa-check-circle"></i> Asignados`,
+        asignados,
+        "grupo-asignados"
+    );
+
+    renderGrupo(
+        `<i class="fa fa-list"></i> Disponibles`,
+        disponibles,
+        "grupo-disponibles"
+    );
+
+    actualizarContadorPersonal();
+}
+function togglePersonal(id) {
+
+    id = parseInt(id);
+
+    if (personalAutomatico.includes(id)) return;
+    if (personalDesdePersonal.includes(id)) return;
+
+    if (personalSeleccionado.includes(id))
+        personalSeleccionado =
+            personalSeleccionado.filter(x => x !== id);
+    else
+        personalSeleccionado.push(id);
+
+    renderChecklistPersonal();
+}
+
+function actualizarContadorPersonal() {
+
+    $("#cntPersonal").text(
+        `(${personalSeleccionado.length +
+        personalAutomatico.length +
+        personalDesdePersonal.length})`
+    );
+}
+
+function activarBuscadorPersonal() {
+
+    const input = document.getElementById("txtBuscarPersonal");
+    if (!input) return;
+
+    input.oninput = function () {
+
+        const texto = this.value.toLowerCase();
+
+        document.querySelectorAll("#listaPersonal .rp-check-item")
+            .forEach(el => {
+                const nombre = el.innerText.toLowerCase();
+                el.style.display = nombre.includes(texto) ? "" : "none";
+            });
+    };
+}

@@ -367,7 +367,8 @@ async function configurarDataTable(data) {
                 {
                     text: 'Imprimir',
                     action: () => abrirModalExportacion(gridTareas, 'print', 'Tareas')
-                }
+                },
+                'pageLength'
             ],
 
 

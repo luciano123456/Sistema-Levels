@@ -66,8 +66,6 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<Personal> Personals { get; set; }
 
-    public virtual DbSet<PersonalArtistasAsignado> PersonalArtistasAsignados { get; set; }
-
     public virtual DbSet<PersonalCargo> PersonalCargos { get; set; }
 
     public virtual DbSet<PersonalCuentaCorriente> PersonalCuentaCorrientes { get; set; }
@@ -81,6 +79,8 @@ public partial class SistemaLevelsContext : DbContext
     public virtual DbSet<PersonalSueldo> PersonalSueldos { get; set; }
 
     public virtual DbSet<PersonalSueldosPago> PersonalSueldosPagos { get; set; }
+
+    public virtual DbSet<PersonalesArtista> PersonalesArtistas { get; set; }
 
     public virtual DbSet<Presupuesto> Presupuestos { get; set; }
 
@@ -120,7 +120,6 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<VentasPersonal> VentasPersonals { get; set; }
 
- 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Artista>(entity =>
@@ -171,7 +170,6 @@ public partial class SistemaLevelsContext : DbContext
 
             entity.HasOne(d => d.IdMonedaNavigation).WithMany(p => p.Artista)
                 .HasForeignKey(d => d.IdMoneda)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Artistas_Paises_Monedas");
 
             entity.HasOne(d => d.IdPaisNavigation).WithMany(p => p.Artista)
@@ -181,16 +179,12 @@ public partial class SistemaLevelsContext : DbContext
 
             entity.HasOne(d => d.IdProductoraNavigation).WithMany(p => p.Artista)
                 .HasForeignKey(d => d.IdProductora)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("FK_Artistas_Productoras");
 
             entity.HasOne(d => d.IdProvinciaNavigation).WithMany(p => p.Artista)
                 .HasForeignKey(d => d.IdProvincia)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Artistas_Paises_Provincias");
-
-            entity.HasOne(d => d.IdRepresentanteNavigation).WithMany(p => p.Artista)
-                .HasForeignKey(d => d.IdRepresentante)
-                .HasConstraintName("FK_Artistas_Representantes");
 
             entity.HasOne(d => d.IdTipoDocumentoNavigation).WithMany(p => p.Artista)
                 .HasForeignKey(d => d.IdTipoDocumento)
@@ -407,12 +401,10 @@ public partial class SistemaLevelsContext : DbContext
 
             entity.HasOne(d => d.IdPaisNavigation).WithMany(p => p.Clientes)
                 .HasForeignKey(d => d.IdPais)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Clientes_Paises");
 
             entity.HasOne(d => d.IdProvinciaNavigation).WithMany(p => p.Clientes)
                 .HasForeignKey(d => d.IdProvincia)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Clientes_Paises_Provincias");
 
             entity.HasOne(d => d.IdTipoDocumentoNavigation).WithMany(p => p.Clientes)
@@ -467,7 +459,7 @@ public partial class SistemaLevelsContext : DbContext
 
         modelBuilder.Entity<ClientesProductora>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Clientes__3214EC079F60F017");
+            entity.HasKey(e => e.Id).HasName("PK__Clientes__3214EC0707780067");
 
             entity.HasIndex(e => new { e.IdCliente, e.IdProductora }, "UX_Cliente_Productora").IsUnique();
 
@@ -669,25 +661,6 @@ public partial class SistemaLevelsContext : DbContext
                 .HasConstraintName("FK_Personal_UsuariosRegistra");
         });
 
-        modelBuilder.Entity<PersonalArtistasAsignado>(entity =>
-        {
-            entity.HasKey(e => e.Id).HasName("PK__Personal__3214EC073A426D9C");
-
-            entity.ToTable("Personal_Artistas_Asignados");
-
-            entity.HasIndex(e => new { e.IdPersonal, e.IdArtista }, "UQ_Personal_Artista").IsUnique();
-
-            entity.HasOne(d => d.IdArtistaNavigation).WithMany(p => p.PersonalArtistasAsignados)
-                .HasForeignKey(d => d.IdArtista)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_PersonalArtistas_Artista");
-
-            entity.HasOne(d => d.IdPersonalNavigation).WithMany(p => p.PersonalArtistasAsignados)
-                .HasForeignKey(d => d.IdPersonal)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_PersonalArtistas_Personal");
-        });
-
         modelBuilder.Entity<PersonalCargo>(entity =>
         {
             entity.ToTable("Personal_Cargos");
@@ -782,7 +755,7 @@ public partial class SistemaLevelsContext : DbContext
 
         modelBuilder.Entity<PersonalRol>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Personal__3214EC0792E105B6");
+            entity.HasKey(e => e.Id).HasName("PK__Personal__3214EC070B5F8F0F");
 
             entity.ToTable("Personal_Roles");
 
@@ -793,7 +766,7 @@ public partial class SistemaLevelsContext : DbContext
 
         modelBuilder.Entity<PersonalRolesAsignado>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Personal__3214EC07ACC4FE44");
+            entity.HasKey(e => e.Id).HasName("PK__Personal__3214EC07334E05D5");
 
             entity.ToTable("Personal_Roles_Asignados");
 
@@ -884,6 +857,24 @@ public partial class SistemaLevelsContext : DbContext
                 .HasForeignKey(d => d.IdUsuarioRegistra)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Personal_Sueldos_Pagos_UsuariosRegistra");
+        });
+
+        modelBuilder.Entity<PersonalesArtista>(entity =>
+        {
+            entity.ToTable("Personales_Artistas");
+
+            entity.Property(e => e.FechaRegistro)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.OrigenAsignacion).HasDefaultValueSql("((1))");
+
+            entity.HasOne(d => d.IdArtistaNavigation).WithMany(p => p.PersonalesArtista)
+                .HasForeignKey(d => d.IdArtista)
+                .HasConstraintName("FK_PA_Artista");
+
+            entity.HasOne(d => d.IdPersonalNavigation).WithMany(p => p.PersonalesArtista)
+                .HasForeignKey(d => d.IdPersonal)
+                .HasConstraintName("FK_PA_Personal");
         });
 
         modelBuilder.Entity<Presupuesto>(entity =>

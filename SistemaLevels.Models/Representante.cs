@@ -31,7 +31,7 @@ public partial class Representante
 
     public string? Dni { get; set; }
 
-    public virtual ICollection<Artista> Artista { get; set; } = new List<Artista>();
+
 
     public virtual Pais IdPaisNavigation { get; set; } = null!;
 

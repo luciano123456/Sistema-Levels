@@ -34,42 +34,104 @@ namespace SistemaLevels.Controllers
         [HttpGet]
         public async Task<IActionResult> Lista()
         {
-            var listaBase = await _service.ObtenerTodos();
+            var personals = await _service.ObtenerTodos();
 
-            var lista = listaBase.Select(c => new VMPersonal
+            var lista = personals.Select(p => new VMPersonal
             {
-                Id = c.Id,
-                Nombre = c.Nombre,
-                Dni = c.Dni,
-                Telefono = c.Telefono,
-                Email = c.Email,
-                Direccion = c.Direccion,
-                NumeroDocumento = c.NumeroDocumento,
-                FechaNacimiento = c.FechaNacimiento,
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Dni = p.Dni,
+                Telefono = p.Telefono,
+                Email = p.Email,
+                Direccion = p.Direccion,
+                NumeroDocumento = p.NumeroDocumento,
+                FechaNacimiento = p.FechaNacimiento,
 
-                Pais = c.IdPaisNavigation.Nombre,
-                TipoDocumento = c.IdTipoDocumentoNavigation != null
-                    ? c.IdTipoDocumentoNavigation.Nombre
+                Pais = p.IdPaisNavigation != null
+                    ? p.IdPaisNavigation.Nombre : "",
+
+                TipoDocumento = p.IdTipoDocumentoNavigation != null
+                    ? p.IdTipoDocumentoNavigation.Nombre : "",
+
+                CondicionIva = p.IdCondicionIvaNavigation != null
+                    ? p.IdCondicionIvaNavigation.Nombre : "",
+
+                // ⭐ MISMA LOGICA QUE CLIENTES / ARTISTAS
+                Artista = (p.PersonalesArtista != null &&
+                            p.PersonalesArtista.Count > 0)
+                    ? (p.PersonalesArtista.Count == 1
+                        ? (p.PersonalesArtista.First().IdArtistaNavigation != null
+                            ? p.PersonalesArtista.First().IdArtistaNavigation.Nombre
+                            : "1 asignado")
+                        : $"{p.PersonalesArtista.Count} asignados")
                     : "",
 
-                CondicionIva = c.IdCondicionIvaNavigation != null
-                    ? c.IdCondicionIvaNavigation.Nombre
-                    : "",
+                IdUsuarioRegistra = p.IdUsuarioRegistra,
+                FechaRegistra = p.FechaRegistra,
+                UsuarioRegistra = p.IdUsuarioRegistraNavigation.Usuario ?? "",
 
-                IdUsuarioRegistra = c.IdUsuarioRegistra,
-                FechaRegistra = c.FechaRegistra,
-                UsuarioRegistra = c.IdUsuarioRegistraNavigation.Usuario,
-
-                IdUsuarioModifica = c.IdUsuarioModifica,
-                FechaModifica = c.FechaModifica,
-                UsuarioModifica = c.IdUsuarioModificaNavigation != null
-                    ? c.IdUsuarioModificaNavigation.Usuario
-                    : ""
+                IdUsuarioModifica = p.IdUsuarioModifica,
+                FechaModifica = p.FechaModifica,
+                UsuarioModifica = p.IdUsuarioModificaNavigation.Usuario ?? ""
             }).ToList();
 
             return Ok(lista);
         }
 
+        /* =====================================================
+           EDITAR INFO
+        ===================================================== */
+
+        [HttpGet]
+        public async Task<IActionResult> EditarInfo(int id)
+        {
+            var p = await _service.Obtener(id);
+            if (p == null) return NotFound();
+
+            var manual = p.PersonalesArtista
+                .Where(x => x.OrigenAsignacion == 1)
+                .Select(x => x.IdArtista)
+                .ToList();
+
+            var automaticos = p.PersonalesArtista
+                .Where(x => x.OrigenAsignacion == 3)
+                .Select(x => x.IdArtista)
+                .ToList();
+
+            var desdeArtista = p.PersonalesArtista
+                .Where(x => x.OrigenAsignacion == 2)
+                .Select(x => x.IdArtista)
+                .ToList();
+
+            var rolesIds = await _service.ObtenerRolesIds(id);
+
+            return Ok(new
+            {
+                p.Id,
+                p.Nombre,
+                p.Dni,
+                p.Telefono,
+                p.Email,
+                p.Direccion,
+                p.IdPais,
+                p.IdTipoDocumento,
+                p.NumeroDocumento,
+                p.IdCondicionIva,
+                p.FechaNacimiento,
+
+                RolesIds = rolesIds,
+
+                // ⭐ EXACTO ESPEJO ARTISTAS
+                ArtistasIds = manual,
+                ArtistasAutomaticosIds = automaticos,
+                ArtistasDesdeArtistaIds = desdeArtista,
+
+                p.FechaRegistra,
+                UsuarioRegistra = p.IdUsuarioRegistraNavigation?.Usuario,
+                p.FechaModifica,
+                UsuarioModifica = p.IdUsuarioModificaNavigation?.Usuario
+            });
+        }
         /* =====================================================
            INSERTAR
         ===================================================== */
@@ -91,16 +153,14 @@ namespace SistemaLevels.Controllers
                 NumeroDocumento = model.NumeroDocumento,
                 IdCondicionIva = model.IdCondicionIva,
                 FechaNacimiento = model.FechaNacimiento,
-
                 IdUsuarioRegistra = idUsuario,
                 FechaRegistra = DateTime.Now
             };
 
-            ServiceResult result = await _service.Insertar(
+            var result = await _service.Insertar(
                 personal,
-                model.RolesIds ?? new List<int>(),
-                model.ArtistasIds ?? new List<int>()
-            );
+                model.RolesIds ?? new(),
+                model.ArtistasIds ?? new());
 
             return Ok(new
             {
@@ -133,16 +193,14 @@ namespace SistemaLevels.Controllers
                 NumeroDocumento = model.NumeroDocumento,
                 IdCondicionIva = model.IdCondicionIva,
                 FechaNacimiento = model.FechaNacimiento,
-
                 IdUsuarioModifica = idUsuario,
                 FechaModifica = DateTime.Now
             };
 
-            ServiceResult result = await _service.Actualizar(
+            var result = await _service.Actualizar(
                 personal,
-                model.RolesIds ?? new List<int>(),
-                model.ArtistasIds ?? new List<int>()
-            );
+                model.RolesIds ?? new(),
+                model.ArtistasIds ?? new());
 
             return Ok(new
             {
@@ -160,7 +218,7 @@ namespace SistemaLevels.Controllers
         [HttpDelete]
         public async Task<IActionResult> Eliminar(int id)
         {
-            ServiceResult result = await _service.Eliminar(id);
+            var result = await _service.Eliminar(id);
 
             return Ok(new
             {
@@ -169,46 +227,6 @@ namespace SistemaLevels.Controllers
                 tipo = result.Tipo,
                 idReferencia = result.IdReferencia
             });
-        }
-
-        /* =====================================================
-           EDITAR INFO
-        ===================================================== */
-
-        [HttpGet]
-        public async Task<IActionResult> EditarInfo(int id)
-        {
-            var p = await _service.Obtener(id);
-            if (p == null) return NotFound();
-
-            var rolesIds = await _service.ObtenerRolesIds(id);
-            var artistasIds = await _service.ObtenerArtistasIds(id);
-
-            var vm = new VMPersonal
-            {
-                Id = p.Id,
-                Nombre = p.Nombre,
-                Dni = p.Dni,
-                Telefono = p.Telefono,
-                Email = p.Email,
-                Direccion = p.Direccion,
-                IdPais = p.IdPais,
-                IdTipoDocumento = p.IdTipoDocumento,
-                NumeroDocumento = p.NumeroDocumento,
-                IdCondicionIva = p.IdCondicionIva,
-                FechaNacimiento = p.FechaNacimiento,
-
-                FechaRegistra = p.FechaRegistra,
-                UsuarioRegistra = p.IdUsuarioRegistraNavigation?.Usuario ?? "",
-
-                FechaModifica = p.FechaModifica,
-                UsuarioModifica = p.IdUsuarioModificaNavigation?.Usuario ?? "",
-
-                RolesIds = rolesIds,
-                ArtistasIds = artistasIds
-            };
-
-            return Ok(vm);
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SistemaLevels.BLL.Common;
+﻿using SistemaLevels.BLL.Common;
 using SistemaLevels.DAL.Repository;
 using SistemaLevels.Models;
 
@@ -14,11 +13,22 @@ namespace SistemaLevels.BLL.Service
             _repo = repo;
         }
 
+        /* =====================================================
+           INSERTAR
+        ===================================================== */
+
         public async Task<ServiceResult> Insertar(
             Personal model,
             List<int> rolesIds,
             List<int> artistasIds)
         {
+            if (string.IsNullOrWhiteSpace(model.Nombre))
+            {
+                return ServiceResult.Error(
+                    "Debe completar los campos obligatorios.",
+                    "validacion");
+            }
+
             var dup = await _repo.BuscarDuplicado(
                 null,
                 model.Nombre,
@@ -33,12 +43,19 @@ namespace SistemaLevels.BLL.Service
                     dup.Id);
             }
 
-            var ok = await _repo.Insertar(model, rolesIds, artistasIds);
+            var ok = await _repo.Insertar(
+                model,
+                rolesIds,
+                artistasIds);
 
             return ok
                 ? ServiceResult.Success("Personal registrado correctamente")
                 : ServiceResult.Error("No se pudo guardar");
         }
+
+        /* =====================================================
+           ACTUALIZAR
+        ===================================================== */
 
         public async Task<ServiceResult> Actualizar(
             Personal model,
@@ -59,35 +76,27 @@ namespace SistemaLevels.BLL.Service
                     dup.Id);
             }
 
-            var ok = await _repo.Actualizar(model, rolesIds, artistasIds);
+            var ok = await _repo.Actualizar(
+                model,
+                rolesIds,
+                artistasIds);
 
             return ok
                 ? ServiceResult.Success("Personal modificado correctamente")
                 : ServiceResult.Error("No se pudo guardar");
         }
 
+        /* =====================================================
+           ELIMINAR
+        ===================================================== */
+
         public async Task<ServiceResult> Eliminar(int id)
         {
-            try
-            {
-                var ok = await _repo.Eliminar(id);
+            var ok = await _repo.Eliminar(id);
 
-                if (!ok)
-                    return ServiceResult.Error("No se encontró el registro.");
-
-                return ServiceResult.Success("Personal eliminado correctamente");
-            }
-            catch (DbUpdateException)
-            {
-                return ServiceResult.Error(
-                    "No se puede eliminar porque posee registros relacionados.",
-                    "relacion",
-                    id);
-            }
-            catch
-            {
-                return ServiceResult.Error("Error inesperado al eliminar.");
-            }
+            return ok
+                ? ServiceResult.Success("Personal eliminado correctamente")
+                : ServiceResult.Error("No se encontró el registro.");
         }
 
         public Task<Personal?> Obtener(int id)
@@ -101,20 +110,5 @@ namespace SistemaLevels.BLL.Service
 
         public Task<List<int>> ObtenerArtistasIds(int idPersonal)
             => _repo.ObtenerArtistasIds(idPersonal);
-
-        public Task<IQueryable<Personal>> ListarFiltrado(
-            string? nombre,
-            int? idPais,
-            int? idTipoDocumento,
-            int? idCondicionIva,
-            int? idRol,
-            int? idArtista)
-            => _repo.ListarFiltrado(
-                nombre,
-                idPais,
-                idTipoDocumento,
-                idCondicionIva,
-                idRol,
-                idArtista);
     }
 }

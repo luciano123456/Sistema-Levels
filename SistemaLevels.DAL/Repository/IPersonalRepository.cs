@@ -4,17 +4,17 @@ namespace SistemaLevels.DAL.Repository
 {
     public interface IPersonalRepository
     {
-        Task<bool> Eliminar(int id);
+        Task<bool> Insertar(
+            Personal model,
+            List<int> rolesIds,
+            List<int> artistasIds);
 
         Task<bool> Actualizar(
             Personal model,
             List<int> rolesIds,
             List<int> artistasIds);
 
-        Task<bool> Insertar(
-            Personal model,
-            List<int> rolesIds,
-            List<int> artistasIds);
+        Task<bool> Eliminar(int id);
 
         Task<Personal?> Obtener(int id);
 

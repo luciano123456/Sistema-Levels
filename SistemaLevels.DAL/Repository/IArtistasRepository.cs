@@ -2,20 +2,24 @@
 
 namespace SistemaLevels.DAL.Repository
 {
-    public interface IArtistasRepository<TEntityModel> where TEntityModel : class
+    public interface IArtistasRepository<T> where T : class
     {
+        Task<bool> Insertar(T model, List<int> personalIds);
+
+        Task<bool> Actualizar(T model, List<int> personalIds);
+
         Task<bool> Eliminar(int id);
-        Task<bool> Actualizar(Artista model);
-        Task<bool> Insertar(Artista model);
 
-        Task<Artista?> Obtener(int id);
-        Task<IQueryable<Artista>> ObtenerTodos();
+        Task<T?> Obtener(int id);
 
-        Task<Artista?> BuscarDuplicado(
-    int? idExcluir,
-    string? nombre,
-    string? nombreArtistico,
-    string? numeroDocumento,
-    string? dni);
+        Task<IQueryable<T>> ObtenerTodos();
+
+        /* ================= DUPLICADOS ================= */
+
+        Task<T?> BuscarDuplicado(
+            int? idExcluir,
+            string? nombre,
+            string? numeroDocumento,
+            string? dni);
     }
 }

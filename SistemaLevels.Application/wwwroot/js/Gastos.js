@@ -428,7 +428,8 @@ async function configurarDataTable(data) {
                 {
                     text: 'Imprimir',
                     action: () => abrirModalExportacion(gridGastos, 'print', 'Gastos')
-                }
+                },
+                'pageLength'
             ],
 
 

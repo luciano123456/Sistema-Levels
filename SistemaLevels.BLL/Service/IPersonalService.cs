@@ -24,13 +24,5 @@ namespace SistemaLevels.BLL.Service
         Task<List<int>> ObtenerRolesIds(int idPersonal);
 
         Task<List<int>> ObtenerArtistasIds(int idPersonal);
-
-        Task<IQueryable<Personal>> ListarFiltrado(
-            string? nombre,
-            int? idPais,
-            int? idTipoDocumento,
-            int? idCondicionIva,
-            int? idRol,
-            int? idArtista);
     }
 }

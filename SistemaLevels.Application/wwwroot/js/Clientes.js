@@ -519,7 +519,8 @@ async function configurarDataTable(data) {
                 {
                     text: 'Imprimir',
                     action: () => abrirModalExportacion(gridClientes, 'print', 'Clientes')
-                }
+                },
+                'pageLength'
             ],
 
             orderCellsTop: true,
@@ -981,59 +982,126 @@ async function cargarProductorasChecklist() {
 function renderChecklistProductoras() {
 
     const cont = document.getElementById("listaProductoras");
+    if (!cont) return;
+
     cont.innerHTML = "";
+
+    /* ==========================================
+       CLASIFICAR
+    ========================================== */
+
+    const asignadas = [];
+    const disponibles = [];
 
     productorasCache.forEach(p => {
 
         const id = parseInt(p.Id);
 
-        const esManual =
-            productorasSeleccionadas.includes(id);
-
-        const esAuto =
-            productorasAutomaticas.includes(id);
-
-        const esDesdeProd =
+        const estaAsignada =
+            productorasSeleccionadas.includes(id) ||
+            productorasAutomaticas.includes(id) ||
             productorasDesdeProductora.includes(id);
 
-        let checked = "";
-        let disabled = "";
-        let badge = "";
-        let claseExtra = "";
+        if (estaAsignada)
+            asignadas.push(p);
+        else
+            disponibles.push(p);
+    });
 
-        if (esManual) {
-            checked = "checked";
-            badge = `<span class="rp-badge manual">Manual</span>`;
-            claseExtra = "manual";
-        }
-        else if (esAuto) {
-            checked = "checked";
-            disabled = "disabled";
-            badge = `<span class="rp-badge auto">Automático</span>`;
-            claseExtra = "auto";
-        }
-        else if (esDesdeProd) {
-            checked = "checked";
-            disabled = "disabled";
-            badge = `<span class="rp-badge prod">Automático</span>`;
-            claseExtra = "prod";
-        }
+    // orden alfabético
+    asignadas.sort((a, b) =>
+        (a.Nombre || "").localeCompare(b.Nombre || "")
+    );
+
+    disponibles.sort((a, b) =>
+        (a.Nombre || "").localeCompare(b.Nombre || "")
+    );
+
+    /* ==========================================
+       RENDER HELPERS
+    ========================================== */
+
+    const renderGrupo = (titulo, lista, claseGrupo) => {
+
+        if (!lista.length) return;
 
         cont.insertAdjacentHTML("beforeend", `
-            <label class="rp-check-item ${claseExtra}">
-                <input type="checkbox"
-                       value="${id}"
-                       ${checked}
-                       ${disabled}
-                       onchange="toggleProductora(${id})">
-
-                <span class="rp-check-text">
-                    ${p.Nombre}
-                    ${badge}
-                </span>
-            </label>
+            <div class="rp-check-group ${claseGrupo}">
+                <div class="rp-check-group-title">
+                    ${titulo}
+                    <span class="rp-check-count">(${lista.length})</span>
+                </div>
+            </div>
         `);
-    });
+
+        lista.forEach(p => {
+
+            const id = parseInt(p.Id);
+
+            const esManual =
+                productorasSeleccionadas.includes(id);
+
+            const esAuto =
+                productorasAutomaticas.includes(id);
+
+            const esDesdeProd =
+                productorasDesdeProductora.includes(id);
+
+            let checked = "";
+            let disabled = "";
+            let badge = "";
+            let claseExtra = "";
+
+            if (esManual) {
+                checked = "checked";
+                badge = `<span class="rp-badge manual">Manual</span>`;
+                claseExtra = "manual";
+            }
+            else if (esAuto) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge auto">Automático</span>`;
+                claseExtra = "auto";
+            }
+            else if (esDesdeProd) {
+                checked = "checked";
+                disabled = "disabled";
+                badge = `<span class="rp-badge prod">Automático</span>`;
+                claseExtra = "prod";
+            }
+
+            cont.insertAdjacentHTML("beforeend", `
+                <label class="rp-check-item ${claseExtra}">
+                    <input type="checkbox"
+                           value="${id}"
+                           ${checked}
+                           ${disabled}
+                           onchange="toggleProductora(${id})">
+
+                    <span class="rp-check-text">
+                        ${p.Nombre}
+                        ${badge}
+                    </span>
+                </label>
+            `);
+        });
+    };
+
+    /* ==========================================
+       RENDER FINAL
+    ========================================== */
+
+    renderGrupo(
+        `<i class="fa fa-check-circle"></i> Asignadas`,
+        asignadas,
+        "grupo-asignadas"
+    );
+
+    renderGrupo(
+        `<i class="fa fa-list"></i> Disponibles`,
+        disponibles,
+        "grupo-disponibles"
+    );
 
     actualizarContadorProductoras();
 }
@@ -1042,17 +1110,18 @@ function toggleProductora(id) {
 
     id = parseInt(id);
 
-    // seguridad extra
     if (productorasAutomaticas.includes(id)) return;
     if (productorasDesdeProductora.includes(id)) return;
 
-    if (productorasSeleccionadas.includes(id))
+    if (productorasSeleccionadas.includes(id)) {
         productorasSeleccionadas =
             productorasSeleccionadas.filter(x => x !== id);
-    else
+    } else {
         productorasSeleccionadas.push(id);
+    }
 
-    actualizarContadorProductoras();
+    // ⭐ CLAVE — reconstruir estado real
+    renderChecklistProductoras();
 }
 
 $("#chkAsociacionAutomatica").on("change", function () {
@@ -1112,3 +1181,18 @@ const verFicha = id => {
         })
         .catch(_ => errorModal("Ha ocurrido un error."));
 };
+
+$(document).on("paste", "input[type=text], textarea", function (e) {
+
+    e.preventDefault();
+
+    let texto = (e.originalEvent || e).clipboardData.getData('text');
+
+    texto = texto
+        .replace(/[“”]/g, '"')
+        .replace(/[‘’]/g, "'")
+        .replace(/\u00A0/g, ' ')
+        .trim();
+
+    document.execCommand("insertText", false, texto);
+});
