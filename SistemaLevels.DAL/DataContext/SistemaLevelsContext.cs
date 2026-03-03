@@ -96,7 +96,7 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<TareasEstado> TareasEstados { get; set; }
 
-    public virtual DbSet<TiposComisione> TiposComisiones { get; set; }
+    public virtual DbSet<TiposComision> TiposComisiones { get; set; }
 
     public virtual DbSet<TiposContrato> TiposContratos { get; set; }
 
@@ -1110,7 +1110,7 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
         });
 
-        modelBuilder.Entity<TiposComisione>(entity =>
+        modelBuilder.Entity<TiposComision>(entity =>
         {
             entity.ToTable("Tipos_Comisiones");
 
