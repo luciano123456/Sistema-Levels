@@ -48,7 +48,7 @@ const API = {
     ubicaciones: "/Ubicaciones/Lista",
     monedas: "/PaisesMoneda/Lista",          // si tu endpoint es otro: cambiá
     estadosVenta: "/VentasEstados/Lista",    // idem
-    tiposContrato: "/TiposContrato/Lista",
+    tiposContrato: "/TiposContratos/Lista",
     opcionesBinarias: "/OpcionesBinarias/Lista",
 
     artistas: "/Artistas/Lista",

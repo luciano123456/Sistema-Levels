@@ -104,6 +104,9 @@ builder.Services.AddScoped<ITiposContratosService, TiposContratosService>();
 builder.Services.AddScoped<ITiposComisionesRepository<TiposComision>, TiposComisionesRepository>();
 builder.Services.AddScoped<ITiposComisionesService, TiposComisionesService>();
 
+builder.Services.AddScoped<IOpcionesBinariasRepository<OpcionesBinaria>, OpcionesBinariasRepository>();
+builder.Services.AddScoped<IOpcionesBinariasService, OpcionesBinariasService>();
+
 
 
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
