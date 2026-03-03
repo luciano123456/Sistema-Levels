@@ -1,0 +1,216 @@
+﻿@{
+    ViewData["Title"] = "Ubicaciones";
+}
+
+@section Estilos {
+    <!-- DataTables -->
+    <link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css" rel="stylesheet" />
+    <link href="https://cdn.datatables.net/fixedheader/3.2.2/css/fixedHeader.dataTables.min.css" rel="stylesheet" />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- Estilos base (MISMO QUE USUARIOS) -->
+    <link href="~/css/productora.css?v=1.0" rel="stylesheet" />
+    <link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
+}
+
+<div class="container-fluid mt-5">
+
+    <div class="container page-99" style="margin-top:40px">
+
+        <!-- Header KPI estilo “glass” -->
+        <div class="cc-header shadow-lg rounded-4 p-4 mb-4">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+
+                <div class="d-flex align-items-center gap-3">
+                    <span class="cc-badge"><i class="fa fa-map-marker"></i></span>
+                    <div>
+                        <h2 class="m-0 fw-800">Ubicaciones</h2>
+                        <small class="text-muted-cc">Gestión y listado de ubicaciones</small>
+                    </div>
+                </div>
+
+                <div class="ms-auto d-flex gap-4 flex-wrap align-items-center">
+
+                    <!-- KPI Cantidad -->
+                    <div class="cc-stat">
+                        <div class="label">Ubicaciones</div>
+                        <div class="value"><strong id="kpiCantUbicaciones">0</strong></div>
+                    </div>
+
+                    <!-- Config columnas -->
+                    <div class="dropdown cc-dd">
+                        <button class="btn btn-secondary dropdown-toggle d-flex align-items-center"
+                                type="button"
+                                id="dropdownColumnas"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                data-bs-display="static"
+                                data-bs-auto-close="outside">
+                            <i class="fa fa-cog me-2"></i> Config. Columnas
+                        </button>
+                        <ul class="dropdown-menu cc-dropdown-menu"
+                            aria-labelledby="dropdownColumnas"
+                            id="configColumnasMenu"></ul>
+                    </div>
+
+                    <!-- Nuevo -->
+                    <a class="btn btn-success d-flex align-items-center px-3 py-2 btnnuevo"
+                       onclick="nuevoUbicacion()">
+                        <i class="fa fa-plus-square me-2"></i> Nuevo
+                    </a>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Tarjeta / Tabla estilo “glass” -->
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="card-glass p-3">
+                    <div class="tabla-wrap position-relative">
+                        <div class="dt-dark-wrap">
+                            <table class="dt-dark display nowrap compact"
+                                   id="grd_Ubicaciones"
+                                   style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th></th>
+                                        <th>Descripción</th>
+                                        <th>Espacio</th>
+                                        <th>Dirección</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div><!-- /tabla-wrap -->
+                </div><!-- /card-glass -->
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ================= MODAL EDICION ================= -->
+<div class="modal fade"
+     id="modalEdicion"
+     tabindex="-1"
+     data-bs-backdrop="static"
+     data-bs-keyboard="false">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <div class="modal-header colorEncabezado">
+                <h5 class="modal-title fw-bold" id="modalEdicionLabel">
+                    Nueva Ubicación
+                </h5>
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"
+                        aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <input type="text" id="txtId" readonly hidden>
+
+                <!-- Panel error PRO (igual que Clientes) -->
+                <div id="errorCampos" class="rp-error-panel d-none mb-2">
+                    <div class="rp-error-icon">
+                        <i class="fa fa-exclamation-triangle"></i>
+                    </div>
+
+                    <div class="rp-error-content">
+                        <div class="rp-error-title">No se pudo guardar</div>
+                        <div class="rp-error-message"></div>
+                    </div>
+
+                    <button type="button"
+                            class="rp-error-close"
+                            onclick="cerrarErrorCampos()">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Form -->
+                <form class="row g-3" id="formUbicacion">
+
+                    <div class="col-md-4">
+                        <label class="form-label">Descripción</label>
+                        <input id="txtDescripcion" class="form-control" />
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Espacio</label>
+                        <input id="txtEspacio" class="form-control" />
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label">Dirección</label>
+                        <input id="txtDireccion" class="form-control" />
+                        <div class="invalid-feedback">Campo obligatorio</div>
+                    </div>
+
+                </form>
+
+                <!-- Auditoría (por si mañana lo agregás, no molesta) -->
+                <div class="rp-auditoria d-none mt-3" id="infoAuditoria">
+                    <div id="infoRegistro"></div>
+                    <div id="infoModificacion"></div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fa fa-arrow-left"></i> Volver
+                </button>
+
+                <button id="btnGuardar"
+                        class="btn btn-primary"
+                        onclick="guardarUbicacion()">
+                    <i class="fa fa-check"></i> Registrar
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<partial name="~/Views/Utils/Modals.cshtml" />
+
+@section Scripts {
+
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+    <!-- SCRIPTS DE BOTONES -->
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+
+    <!-- Site (helpers globales: exitoModal, errorModal, confirmarModal, renderAccionesGrid, setModalSoloLectura, mostrarErrorCampos, cerrarErrorCampos, etc.) -->
+    <script src="~/js/site.js"></script>
+
+    <!-- excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+
+    <!-- pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+
+    <!-- imprimir -->
+    <script src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.print.min.js"></script>
+
+    <!-- fixed header -->
+    <script src="https://cdn.datatables.net/fixedheader/3.2.2/js/dataTables.fixedHeader.min.js"></script>
+
+    <!-- Tu JS de la pantalla -->
+    <script src="~/js/Ubicaciones.js?v=1.0"></script>
+}

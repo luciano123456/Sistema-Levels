@@ -87,6 +87,10 @@ builder.Services.AddScoped<IMonedasCuentaService, MonedasCuentaService>();
 builder.Services.AddScoped<IPersonalRolRepository<PersonalRol>, PersonalRolRepository>();
 builder.Services.AddScoped<IPersonalRolService, PersonalRolService>();
 
+
+builder.Services.AddScoped<IUbicacionesRepository<Ubicacion>, UbicacionesRepository>();
+builder.Services.AddScoped<IUbicacionesService, UbicacionesService>();
+
 builder.Services.AddScoped<IVentasService, VentasService>();
 builder.Services.AddScoped<IVentasRepository<Venta>, VentasRepository>();
 
