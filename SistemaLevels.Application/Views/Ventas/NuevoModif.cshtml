@@ -1,0 +1,452 @@
+﻿@{
+    ViewData["Title"] = "Ventas - Nuevo / Modificar";
+    var id = (int)(ViewBag.Id ?? 0);
+    var idCliente = (int)(ViewBag.IdCliente ?? 0);
+}
+
+@section Estilos {
+
+    <!-- Bootstrap 5 (si ya lo tenés global, podés omitir) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Select2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <!-- TU THEME BASE -->
+    <link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
+
+    <!-- NUEVO CSS -->
+    <link href="~/css/VentasNuevoModif.css?v=1.0" rel="stylesheet" />
+}
+
+<div class="container-fluid mt-4 ventanew">
+
+    <div class="vn-topbar cc-header shadow-lg rounded-4 p-3 mb-3">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="d-flex align-items-center gap-3">
+                <span class="cc-badge"><i class="fa fa-ticket"></i></span>
+                <div>
+                    <h2 class="m-0 fw-800">Ventas</h2>
+                    <small class="text-muted-cc">Nuevo / Modificar • Maestro-Detalle Pro</small>
+                </div>
+            </div>
+
+            <div class="ms-auto d-flex gap-2 flex-wrap">
+                <button class="btn btn-outline-light vn-btn" id="btnNuevo">
+                    <i class="fa fa-plus me-2"></i> Nueva venta
+                </button>
+
+                <button class="btn btn-outline-info vn-btn" id="btnDraftRestore">
+                    <i class="fa fa-history me-2"></i> Restaurar borrador
+                </button>
+
+                <button class="btn btn-outline-warning vn-btn" id="btnDraftClear">
+                    <i class="fa fa-trash me-2"></i> Limpiar borrador
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="vn-grid">
+
+        <!-- ======================
+             PANEL IZQUIERDA: CLIENTES
+        ======================= -->
+        <div class="vn-card vn-left">
+            <div class="vn-card-head">
+                <div class="t">
+                    <i class="fa fa-users"></i>
+                    Clientes
+                </div>
+                <div class="vn-kpi">
+                    <span class="lbl">Total</span>
+                    <span class="val" id="kpiClientes">0</span>
+                </div>
+            </div>
+
+            <div class="vn-card-body">
+                <div class="vn-search mb-2">
+                    <i class="fa fa-search"></i>
+                    <input id="txtBuscarCliente" class="form-control vn-input" placeholder="Buscar cliente..." />
+                </div>
+
+                <div id="clientesList" class="vn-list"></div>
+            </div>
+        </div>
+
+        <!-- ======================
+             PANEL CENTRO: VENTAS DEL CLIENTE
+        ======================= -->
+        <div class="vn-card vn-mid">
+            <div class="vn-card-head">
+                <div class="t">
+                    <i class="fa fa-folder-open"></i>
+                    Ventas del cliente
+                </div>
+
+                <div class="vn-mid-actions">
+                    <div class="vn-pill" id="pillClienteSel">
+                        <i class="fa fa-user"></i>
+                        <span>Seleccioná un cliente</span>
+                    </div>
+
+                    <button class="btn btn-success vn-btn" id="btnNuevaVentaCliente" disabled>
+                        <i class="fa fa-plus-square me-2"></i> Crear venta
+                    </button>
+                </div>
+            </div>
+
+            <div class="vn-card-body">
+                <div class="vn-mid-kpis">
+                    <div class="vn-kpiCard">
+                        <div class="lbl">Ventas</div>
+                        <div class="val" id="kpiVentas">0</div>
+                    </div>
+                    <div class="vn-kpiCard">
+                        <div class="lbl">Total</div>
+                        <div class="val" id="kpiTotal">$ 0</div>
+                    </div>
+                    <div class="vn-kpiCard">
+                        <div class="lbl">Abonado</div>
+                        <div class="val" id="kpiAbonado">$ 0</div>
+                    </div>
+                    <div class="vn-kpiCard">
+                        <div class="lbl">Saldo</div>
+                        <div class="val" id="kpiSaldo">$ 0</div>
+                    </div>
+                </div>
+
+                <div class="vn-salesList" id="ventasList">
+                    <div class="vn-empty">
+                        <i class="fa fa-hand-pointer-o"></i>
+                        Elegí un cliente para ver sus ventas.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================
+             PANEL DERECHA: EDITOR VENTA
+        ======================= -->
+        <div class="vn-card vn-right">
+            <div class="vn-card-head">
+                <div class="t">
+                    <i class="fa fa-pencil"></i>
+                    Editor de venta
+                </div>
+
+                <div class="vn-editor-actions">
+                    <span class="vn-chip" id="chipModo">Modo: —</span>
+
+                    <button class="btn btn-outline-light vn-btn" id="btnVerCliente" disabled>
+                        <i class="fa fa-user me-2"></i> Cliente
+                    </button>
+
+                    <button class="btn btn-primary vn-btn" id="btnGuardar" disabled>
+                        <i class="fa fa-check me-2"></i> Guardar
+                    </button>
+                </div>
+            </div>
+
+            <div class="vn-card-body vn-editor">
+
+                <input type="hidden" id="Venta_Id" value="@id" />
+                <input type="hidden" id="Venta_IdCliente" value="@idCliente" />
+
+                <!-- Tabs -->
+                <ul class="nav vn-tabs mb-3" id="ventaTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabDatos">
+                            <i class="fa fa-info-circle"></i> Datos
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabArtistas">
+                            <i class="fa fa-music"></i> Artistas
+                            <span class="vn-tab-count" id="cntArtistas">(0)</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabPersonal">
+                            <i class="fa fa-id-badge"></i> Personal
+                            <span class="vn-tab-count" id="cntPersonal">(0)</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabCobros">
+                            <i class="fa fa-money"></i> Cobros
+                            <span class="vn-tab-count" id="cntCobros">(0)</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabNotas">
+                            <i class="fa fa-sticky-note"></i> Notas
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabAuditoria">
+                            <i class="fa fa-shield"></i> Auditoría
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+
+                    <!-- TAB DATOS -->
+                    <div class="tab-pane fade show active" id="tabDatos">
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Fecha</label>
+                                <input type="datetime-local" id="Fecha" class="form-control vn-input" />
+                                <div class="invalid-feedback">Obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Nombre evento</label>
+                                <input id="NombreEvento" class="form-control vn-input" placeholder="Ej: Show en Teatro..." />
+                                <div class="invalid-feedback">Obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Duración</label>
+                                <input type="datetime-local" id="Duracion" class="form-control vn-input" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Ubicación</label>
+                                <select id="IdUbicacion" class="form-select vn-input"></select>
+                                <div class="invalid-feedback">Obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Productora</label>
+                                <select id="IdProductora" class="form-select vn-input"></select>
+                                <div class="invalid-feedback">Obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Moneda</label>
+                                <select id="IdMoneda" class="form-select vn-input"></select>
+                                <div class="invalid-feedback">Obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Estado</label>
+                                <select id="IdEstado" class="form-select vn-input"></select>
+                                <div class="invalid-feedback">Obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Tipo contrato</label>
+                                <select id="IdTipoContrato" class="form-select vn-input"></select>
+                                <div class="invalid-feedback">Obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Exclusividad</label>
+                                <select id="IdOpExclusividad" class="form-select vn-input"></select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Días previos</label>
+                                <input type="number" min="0" id="DiasPrevios" class="form-control vn-input" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Fecha hasta</label>
+                                <input type="datetime-local" id="FechaHasta" class="form-control vn-input" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Importe total</label>
+                                <input type="text" id="ImporteTotal" class="form-control vn-input vn-money" placeholder="$ 0" />
+                                <div class="invalid-feedback">Obligatorio</div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="vn-totals">
+                                    <div class="vn-total">
+                                        <div class="lbl">Abonado</div>
+                                        <div class="val" id="lblAbonado">$ 0</div>
+                                    </div>
+                                    <div class="vn-total">
+                                        <div class="lbl">Saldo</div>
+                                        <div class="val" id="lblSaldo">$ 0</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- TAB ARTISTAS -->
+                    <div class="tab-pane fade" id="tabArtistas">
+                        <div class="vn-subhead">
+                            <div class="t"><i class="fa fa-music"></i> Artistas</div>
+                            <div class="actions">
+                                <button class="btn btn-outline-light vn-btn" id="btnAddArtista">
+                                    <i class="fa fa-plus"></i> Agregar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="vn-gridtable">
+                            <table class="table vn-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:30%">Artista</th>
+                                        <th style="width:30%">Representante</th>
+                                        <th style="width:10%">%</th>
+                                        <th style="width:20%">Total comisión</th>
+                                        <th style="width:10%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbArtistas"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB PERSONAL -->
+                    <div class="tab-pane fade" id="tabPersonal">
+                        <div class="vn-subhead">
+                            <div class="t"><i class="fa fa-id-badge"></i> Personal</div>
+                            <div class="actions">
+                                <button class="btn btn-outline-light vn-btn" id="btnAddPersonal">
+                                    <i class="fa fa-plus"></i> Agregar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="vn-gridtable">
+                            <table class="table vn-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:26%">Personal</th>
+                                        <th style="width:22%">Cargo</th>
+                                        <th style="width:22%">Tipo comisión</th>
+                                        <th style="width:10%">%</th>
+                                        <th style="width:20%">Total comisión</th>
+                                        <th style="width:10%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbPersonal"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB COBROS -->
+                    <div class="tab-pane fade" id="tabCobros">
+                        <div class="vn-subhead">
+                            <div class="t"><i class="fa fa-money"></i> Cobros</div>
+                            <div class="actions">
+                                <button class="btn btn-outline-light vn-btn" id="btnAddCobro">
+                                    <i class="fa fa-plus"></i> Agregar cobro
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="vn-gridtable">
+                            <table class="table vn-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width:16%">Fecha</th>
+                                        <th style="width:18%">Moneda</th>
+                                        <th style="width:22%">Cuenta</th>
+                                        <th style="width:14%">Importe</th>
+                                        <th style="width:12%">Cotiz.</th>
+                                        <th style="width:14%">Conv.</th>
+                                        <th style="width:4%"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbCobros"></tbody>
+                            </table>
+                        </div>
+
+                        <div class="vn-notegrid mt-3">
+                            <div class="vn-note">
+                                <div class="lbl">Importe abonado</div>
+                                <div class="val" id="lblAbonado2">$ 0</div>
+                            </div>
+                            <div class="vn-note">
+                                <div class="lbl">Saldo</div>
+                                <div class="val" id="lblSaldo2">$ 0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB NOTAS -->
+                    <div class="tab-pane fade" id="tabNotas">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label vn-label">Nota interna</label>
+                                <textarea id="NotaInterna" class="form-control vn-input" rows="4"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label vn-label">Nota cliente</label>
+                                <textarea id="NotaCliente" class="form-control vn-input" rows="4"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB AUDITORÍA -->
+                    <div class="tab-pane fade" id="tabAuditoria">
+                        <div class="vn-aud">
+                            <div class="it" id="audReg"></div>
+                            <div class="it" id="audMod"></div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="vn-bottombar mt-3">
+                    <div class="vn-status" id="lblEstadoGuardado">
+                        <i class="fa fa-circle-o-notch fa-spin d-none" id="spinSaving"></i>
+                        <span id="txtEstadoGuardado">Listo</span>
+                    </div>
+
+                    <div class="vn-bottom-actions">
+                        <button class="btn btn-outline-light vn-btn" id="btnGuardarDraft" disabled>
+                            <i class="fa fa-floppy-o me-2"></i> Guardar borrador
+                        </button>
+
+                        <button class="btn btn-primary vn-btn" id="btnGuardar2" disabled>
+                            <i class="fa fa-check me-2"></i> Guardar venta
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<partial name="~/Views/Utils/Modals.cshtml" />
+
+@section Scripts {
+
+    <!-- Bootstrap (si ya lo tenés global, omití) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- jQuery (por Select2) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- TU JS -->
+    <script>
+        // server -> js
+        window.VN_INIT = {
+            id: @id,
+            idCliente: @idCliente
+        };
+    </script>
+
+    <script src="~/js/VentasNuevoModif.js?v=1.0"></script>
+}

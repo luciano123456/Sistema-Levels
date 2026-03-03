@@ -24,10 +24,14 @@
     <Content Remove="wwwroot\js\Usuarios.js" />
     <Content Remove="wwwroot\js\UsuariosConfiguracion.js" />
     <Content Remove="wwwroot\js\Utils\moment.js" />
+    <Content Remove="wwwroot\js\Ventas.js" />
+    <Content Remove="wwwroot\js\VentasNuevoModif.js" />
   </ItemGroup>
 
   <ItemGroup>
     <None Include="wwwroot\Imagenes\Clientes.png" />
+    <None Include="wwwroot\js\VentasNuevoModif.js" />
+    <None Include="wwwroot\js\Ventas.js" />
     <None Include="wwwroot\js\Login.js" />
     <None Include="wwwroot\js\Clientes.js" />
     <None Include="wwwroot\js\CurrencyWidget.js" />
