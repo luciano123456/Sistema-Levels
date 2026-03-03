@@ -87,10 +87,13 @@ builder.Services.AddScoped<IMonedasCuentaService, MonedasCuentaService>();
 builder.Services.AddScoped<IPersonalRolRepository<PersonalRol>, PersonalRolRepository>();
 builder.Services.AddScoped<IPersonalRolService, PersonalRolService>();
 
-
+builder.Services.AddScoped<IVentasService, VentasService>();
+builder.Services.AddScoped<IVentasRepository<Venta>, VentasRepository>();
 
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();
+
+
 
 
 

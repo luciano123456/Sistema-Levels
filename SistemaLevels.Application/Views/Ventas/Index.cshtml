@@ -1,0 +1,157 @@
+﻿@{
+    ViewData["Title"] = "Ventas";
+}
+
+@section Estilos {
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+
+    <link href="~/css/disenopantallas.css" rel="stylesheet" />
+    <link href="~/css/Ventas.css?v=1.0" rel="stylesheet" />
+}
+
+<div class="container-fluid mt-4 ventas-index">
+
+    <!-- HEADER -->
+    <div class="vi-header cc-header shadow-lg rounded-4 p-3 mb-3">
+
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+
+            <span class="cc-badge">
+                <i class="fa fa-ticket"></i>
+            </span>
+
+            <div>
+                <h2 class="m-0 fw-800">Ventas</h2>
+                <small class="text-muted-cc">
+                    Gestión general • Clientes y Ventas
+                </small>
+            </div>
+
+            <div class="ms-auto d-flex gap-2">
+
+                <button id="btnNuevaVenta" class="btn btn-success vi-btn">
+                    <i class="fa fa-plus me-2"></i> Nueva venta
+                </button>
+
+                <button id="btnRefresh" class="btn btn-outline-light vi-btn">
+                    <i class="fa fa-refresh me-2"></i> Actualizar
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- GRID -->
+    <div class="vi-grid">
+
+        <!-- =====================
+             CLIENTES
+        ====================== -->
+        <div class="vi-card vi-left">
+
+            <div class="vi-card-head">
+                <div class="t">
+                    <i class="fa fa-users"></i>
+                    Clientes
+                </div>
+
+                <div class="vi-kpi">
+                    <span id="kpiClientes">0</span>
+                </div>
+            </div>
+
+            <div class="vi-card-body">
+
+                <div class="vi-search mb-2">
+                    <i class="fa fa-search"></i>
+                    <input id="txtBuscarCliente"
+                           class="form-control vi-input"
+                           placeholder="Buscar cliente..." />
+                </div>
+
+                <div id="clientesList" class="vi-list"></div>
+
+            </div>
+        </div>
+
+
+        <!-- =====================
+             VENTAS
+        ====================== -->
+        <div class="vi-card vi-right">
+
+            <div class="vi-card-head">
+
+                <div class="t">
+                    <i class="fa fa-folder-open"></i>
+                    Ventas
+                </div>
+
+                <div class="vi-filters">
+
+                    <div id="lblFiltroCliente" class="vi-pill">
+                        Todos los clientes
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="vi-card-body">
+
+                <!-- KPIs -->
+                <div class="vi-kpis">
+
+                    <div class="vi-kpiCard">
+                        <div class="lbl">Ventas</div>
+                        <div id="kpiVentas" class="val">0</div>
+                    </div>
+
+                    <div class="vi-kpiCard">
+                        <div class="lbl">Total</div>
+                        <div id="kpiTotal" class="val">$0</div>
+                    </div>
+
+                    <div class="vi-kpiCard">
+                        <div class="lbl">Abonado</div>
+                        <div id="kpiAbonado" class="val">$0</div>
+                    </div>
+
+                    <div class="vi-kpiCard">
+                        <div class="lbl">Saldo</div>
+                        <div id="kpiSaldo" class="val">$0</div>
+                    </div>
+
+                </div>
+
+                <!-- BUSCADOR -->
+                <div class="vi-search mb-2">
+                    <i class="fa fa-search"></i>
+                    <input id="txtBuscarVenta"
+                           class="form-control vi-input"
+                           placeholder="Buscar venta..." />
+                </div>
+
+                <!-- LISTA -->
+                <div id="ventasList" class="vi-salesList"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script src="~/js/Ventas.js?v=1.0"></script>
+
+}
