@@ -94,6 +94,11 @@ builder.Services.AddScoped<IUbicacionesService, UbicacionesService>();
 builder.Services.AddScoped<IVentasService, VentasService>();
 builder.Services.AddScoped<IVentasRepository<Venta>, VentasRepository>();
 
+
+builder.Services.AddScoped<IVentasEstadosRepository<VentasEstado>, VentasEstadosRepository>();
+builder.Services.AddScoped<IVentasEstadosService, VentasEstadosService>();
+
+
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 
