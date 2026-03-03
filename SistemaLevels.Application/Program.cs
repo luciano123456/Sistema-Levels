@@ -101,6 +101,9 @@ builder.Services.AddScoped<IVentasEstadosService, VentasEstadosService>();
 builder.Services.AddScoped<ITiposContratosRepository<TiposContrato>, TiposContratosRepository>();
 builder.Services.AddScoped<ITiposContratosService, TiposContratosService>();
 
+builder.Services.AddScoped<ITiposComisionesRepository<TiposComision>, TiposComisionesRepository>();
+builder.Services.AddScoped<ITiposComisionesService, TiposComisionesService>();
+
 
 
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();

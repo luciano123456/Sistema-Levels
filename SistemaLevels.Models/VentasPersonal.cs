@@ -31,7 +31,7 @@ public partial class VentasPersonal
 
     public virtual Personal IdPersonalNavigation { get; set; } = null!;
 
-    public virtual TiposComisione IdTipoComisionNavigation { get; set; } = null!;
+    public virtual TiposComision IdTipoComisionNavigation { get; set; } = null!;
 
     public virtual User? IdUsuarioModificaNavigation { get; set; }
 
