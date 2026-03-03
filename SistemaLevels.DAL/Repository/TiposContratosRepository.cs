@@ -1,0 +1,60 @@
+﻿using Microsoft.EntityFrameworkCore;
+using SistemaLevels.DAL.DataContext;
+using SistemaLevels.Models;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.Contracts;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+
+namespace SistemaLevels.DAL.Repository
+{
+    public class TiposContratosRepository : ITiposContratosRepository<TiposContrato>
+    {
+
+        private readonly SistemaLevelsContext _dbcontext;
+
+        public TiposContratosRepository(SistemaLevelsContext context)
+        {
+            _dbcontext = context;
+        }
+        public async Task<bool> Actualizar(TiposContrato model)
+        {
+            _dbcontext.TiposContratos.Update(model);
+            await _dbcontext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> Eliminar(int id)
+        {
+            TiposContrato model = _dbcontext.TiposContratos.First(c => c.Id == id);
+            _dbcontext.TiposContratos.Remove(model);
+            await _dbcontext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> Insertar(TiposContrato model)
+        {
+            _dbcontext.TiposContratos.Add(model);
+            await _dbcontext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<TiposContrato> Obtener(int id)
+        {
+            TiposContrato model = await _dbcontext.TiposContratos.FindAsync(id);
+            return model;
+        }
+        public async Task<IQueryable<TiposContrato>> ObtenerTodos()
+        {
+            IQueryable<TiposContrato> query = _dbcontext.TiposContratos;
+            return await Task.FromResult(query);
+        }
+
+
+
+
+    }
+}
