@@ -88,6 +88,9 @@ builder.Services.AddScoped<IPersonalRolRepository<PersonalRol>, PersonalRolRepos
 builder.Services.AddScoped<IPersonalRolService, PersonalRolService>();
 
 
+builder.Services.AddScoped<IUbicacionesRepository<Ubicacion>, UbicacionesRepository>();
+builder.Services.AddScoped<IUbicacionesService, UbicacionesService>();
+
 
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();

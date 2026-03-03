@@ -20,6 +20,7 @@
     <Content Remove="wwwroot\js\Productoras.js" />
     <Content Remove="wwwroot\js\Representantes.js" />
     <Content Remove="wwwroot\js\Tareas.js" />
+    <Content Remove="wwwroot\js\Ubicaciones.js" />
     <Content Remove="wwwroot\js\Usuarios.js" />
     <Content Remove="wwwroot\js\UsuariosConfiguracion.js" />
     <Content Remove="wwwroot\js\Utils\moment.js" />
@@ -30,6 +31,7 @@
     <None Include="wwwroot\js\Login.js" />
     <None Include="wwwroot\js\Clientes.js" />
     <None Include="wwwroot\js\CurrencyWidget.js" />
+    <None Include="wwwroot\js\Ubicaciones.js" />
     <None Include="wwwroot\js\Personal.js" />
     <None Include="wwwroot\js\PaisesMonedas.js" />
     <None Include="wwwroot\js\Gastos.js" />
