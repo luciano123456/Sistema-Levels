@@ -717,41 +717,6 @@ function configurarOpcionesColumnas() {
    VALIDACIONES
 ========================= */
 
-function getSelect2Selection(el) {
-    const $el = $(el);
-    const s2 = $el.data("select2");
-    if (s2 && s2.$selection && s2.$container) {
-        return { $selection: s2.$selection, $container: s2.$container };
-    }
-
-    const $cont = $el.nextAll(".select2-container").first();
-    return {
-        $selection: $cont.find(".select2-selection").first(),
-        $container: $cont
-    };
-}
-
-function setEstadoCampo(el, esValido) {
-    const $el = $(el);
-    const esSelect = el.tagName === "SELECT";
-
-    el.classList.toggle("is-invalid", !esValido);
-    el.classList.toggle("is-valid", esValido);
-
-    if (esSelect && $el.data("select2")) {
-        const { $selection, $container } = getSelect2Selection(el);
-        $selection.toggleClass("is-invalid", !esValido);
-        $selection.toggleClass("is-valid", esValido);
-        $container.toggleClass("is-invalid", !esValido);
-        $container.toggleClass("is-valid", esValido);
-    }
-
-    const $wrap = $el.closest(".mb-3, .form-group, .col, .col-md-6, .rp-field, .rp-form-group");
-    const $msg = $wrap.find(".invalid-feedback, .rp-invalid-msg, .campo-obligatorio, small.text-danger").first();
-
-    if ($msg.length) $msg.toggleClass("d-none", esValido);
-}
-
 function limpiarModal() {
     const formulario = document.querySelector("#modalEdicion");
     if (!formulario) return;

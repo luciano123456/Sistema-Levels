@@ -10,4 +10,6 @@ public partial class PersonalRol
     public string Nombre { get; set; } = null!;
 
     public virtual ICollection<PersonalRolesAsignado> PersonalRolesAsignados { get; set; } = new List<PersonalRolesAsignado>();
+
+    public virtual ICollection<VentasPersonal> VentasPersonals { get; set; } = new List<VentasPersonal>();
 }

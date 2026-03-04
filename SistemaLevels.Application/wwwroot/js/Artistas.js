@@ -845,54 +845,6 @@ function configurarOpcionesColumnas() {
    VALIDACIONES
 ========================= */
 
-function getSelect2Selection(el) {
-    const $el = $(el);
-    const s2 = $el.data("select2");
-    if (s2 && s2.$selection && s2.$container) {
-        return {
-            $selection: s2.$selection,
-            $container: s2.$container
-        };
-    }
-
-    const $cont = $el.nextAll(".select2-container").first();
-    return {
-        $selection: $cont.find(".select2-selection").first(),
-        $container: $cont
-    };
-}
-
-function setEstadoCampo(el, esValido) {
-    const $el = $(el);
-    const esSelect = el.tagName === "SELECT";
-    const valor = ($el.val() ?? "").toString().trim();
-
-    // 1) clases en el elemento real
-    el.classList.toggle("is-invalid", !esValido);
-    el.classList.toggle("is-valid", esValido);
-
-    // 2) clases en select2 (lo visible)
-    if (esSelect && $el.data("select2")) {
-        const { $selection, $container } = getSelect2Selection(el);
-        $selection.toggleClass("is-invalid", !esValido);
-        $selection.toggleClass("is-valid", esValido);
-
-        // por si tu CSS apunta al container
-        $container.toggleClass("is-invalid", !esValido);
-        $container.toggleClass("is-valid", esValido);
-    }
-
-    // 3) mensaje "Campo obligatorio" (tu caso)
-    // Busca feedback cerca del control (adaptable a tu HTML)
-    const $wrap = $el.closest(".mb-3, .form-group, .col, .col-md-6, .rp-field, .rp-form-group");
-    const $msg = $wrap.find(".invalid-feedback, .rp-invalid-msg, .campo-obligatorio, small.text-danger").first();
-
-    if ($msg.length) {
-        // Si es bootstrap invalid-feedback: lo controlamos con display
-        // Si es tu <small class="text-danger">Campo obligatorio</small>, también.
-        $msg.toggleClass("d-none", esValido);
-    }
-}
 
 function limpiarModal() {
     const formulario = document.querySelector("#modalEdicion");
