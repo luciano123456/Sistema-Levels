@@ -27,7 +27,7 @@ public partial class VentasPersonal
 
     public decimal TotalComision { get; set; }
 
-    public virtual PersonalCargo IdCargoNavigation { get; set; } = null!;
+    public virtual PersonalRol IdCargoNavigation { get; set; } = null!;
 
     public virtual Personal IdPersonalNavigation { get; set; } = null!;
 
