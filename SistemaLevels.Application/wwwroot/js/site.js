@@ -204,6 +204,22 @@ function formatearFechaParaVista(fecha) {
     return m.isValid() ? m.format('DD/MM/YYYY') : '';
 }
 
+
+function formatearMilesInput(input) {
+
+    // obtener solo números
+    let valor = input.value.replace(/\D/g, "");
+
+    if (!valor) {
+        input.value = "";
+        return;
+    }
+
+    // formatear miles
+    input.value = valor.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+}
+
 function formatearMiles(valor) {
     let num = String(valor).replace(/\D/g, '');
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
@@ -640,3 +656,21 @@ function setEstadoCampo(el, esValido) {
 }
 
 
+
+
+function aplicarFormatoMiles() {
+
+    document.querySelectorAll(".Inputmiles").forEach(inp => {
+
+        const num = inp.value;
+
+        if (!num) {
+            inp.value = "";
+            return;
+        }
+
+        inp.value = formatearMiles(num);
+
+    });
+
+}

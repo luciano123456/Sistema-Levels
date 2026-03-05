@@ -313,6 +313,19 @@
                         </div>
                     </button>
 
+                    <button class="rp-config-card"
+                            onclick="abrirContratosPlantillas()">
+                        <div class="rp-config-icon blue">
+                            <i class="fa fa-file-text-o"></i>
+                        </div>
+                        <div>
+                            <div class="rp-config-title">Contratos</div>
+                            <div class="rp-config-sub">
+                                Plantillas (.docx) por tipo de contrato
+                            </div>
+                        </div>
+                    </button>
+
 
                 </div>
             </div>
@@ -329,6 +342,48 @@
     </div>
 </div>
 
+
+<div class="modal fade rp-modal" id="modalContratosPlantillas" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rp-modal-content">
+
+            <div class="modal-header rp-modal-header">
+                <div>
+                    <div class="rp-modal-title">
+                        <i class="fa fa-file-text-o"></i>
+                        Plantillas de contratos
+                    </div>
+                    <div class="rp-modal-subtitle">
+                        Subí, reemplazá o descargá plantillas por tipo de contrato
+                    </div>
+                </div>
+
+                <button type="button"
+                        class="btn-close rp-btn-close"
+                        data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+
+                <div class="rp-list-container" id="contratosPlantillas-list">
+                    <!-- JS -->
+                </div>
+
+                <div class="rp-empty-label" id="lblContratosPlantillasVacio" hidden>
+                    No hay tipos de contrato cargados.
+                </div>
+
+            </div>
+
+            <div class="modal-footer rp-modal-footer">
+                <button class="rp-btn rp-btn-soft" data-bs-dismiss="modal">
+                    <i class="fa fa-times"></i>
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ===============================
      MODAL: LISTA DE CONFIGURACION

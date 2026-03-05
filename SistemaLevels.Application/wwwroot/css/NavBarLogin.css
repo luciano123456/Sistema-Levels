@@ -445,3 +445,58 @@
 .rp-input option {
     color: #000 !important;
 }
+
+
+.rp-contract-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    margin-bottom: 10px;
+    background: rgba(20,20,20,.25);
+}
+
+.rp-contract-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 260px;
+}
+
+.rp-contract-badge {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(0,0,0,.25);
+}
+
+    .rp-contract-badge.ok {
+        border-color: rgba(30,207,147,.35);
+        color: #aef3dd;
+    }
+
+    .rp-contract-badge.no {
+        border-color: rgba(255,90,106,.35);
+        color: #ffd0d6;
+    }
+
+.rp-contract-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.rp-file-input {
+    max-width: 280px;
+}
+
+.rp-btn-mini {
+    padding: 8px 10px;
+    border-radius: 12px;
+}

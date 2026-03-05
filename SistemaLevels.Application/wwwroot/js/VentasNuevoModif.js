@@ -293,12 +293,305 @@
         return Number(el?.value || 0);
     }
 
+
+    /* =========================================================
+    CONTRATOS (DOCX con plantilla servidor)
+    - Depende de: VN, buildModel, validarCamposVenta, vnRound2, vnToNumber
+    - Usa: errorModal / exitoModal
+    ========================================================= */
+
+    async function exportarContrato(tipo) {
+
+        try {
+
+            if (!validarCamposVenta())
+                return;
+
+            const model = buildModel();
+            const idTipoContrato = Number(model.IdTipoContrato || 0);
+
+            if (!idTipoContrato) {
+                errorModal("Seleccioná el Tipo de contrato.");
+                return;
+            }
+
+            // ===============================
+            // 1️⃣ Obtener plantilla DOCX
+            // ===============================
+
+            const tplBuf = await fetchContratoTemplate(
+                idTipoContrato,
+                `Contrato_${idTipoContrato}.docx`
+            );
+
+            // ===============================
+            // 2️⃣ Generar datos del contrato
+            // ===============================
+
+            const data = buildContratoData(model);
+
+            // ===============================
+            // 3️⃣ Generar DOCX con docxtemplater
+            // ===============================
+
+            const blobDocx = renderDocxFromTemplate(tplBuf, data);
+
+            // ===============================
+            // WORD
+            // ===============================
+
+            if (tipo === "word") {
+
+                const url = URL.createObjectURL(blobDocx);
+
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${data.NombreArchivo}.docx`;
+                a.click();
+
+                URL.revokeObjectURL(url);
+
+                exitoModal("Contrato generado en Word.");
+                return;
+            }
+
+            // ===============================
+            // PDF
+            // ===============================
+
+            const arrayBuffer = await blobDocx.arrayBuffer();
+
+            // convertir DOCX a HTML
+            const result = await mammoth.convertToHtml({ arrayBuffer });
+
+            const html = result.value;
+
+            // contenedor temporal
+            const container = document.createElement("div");
+
+            container.style.padding = "40px";
+           
+            container.style.left = "-9999px"
+            container.style.top = "-9999px"
+            container.style.background = "white";
+            container.innerHTML = html;
+
+            document.body.appendChild(container);
+
+            const opt = {
+                margin: 10,
+                filename: `${data.NombreArchivo}.pdf`,
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: {
+                    unit: "mm",
+                    format: "a4",
+                    orientation: "portrait"
+                }
+            };
+
+            await html2pdf()
+                .set(opt)
+                .from(container)
+                .save();
+
+            document.body.removeChild(container);
+
+            exitoModal("Contrato generado en PDF.");
+
+        }
+        catch (e) {
+
+            console.error(e);
+            errorModal("No se pudo generar el contrato.");
+
+        }
+
+    }
+    async function fetchContratoTemplate(idTipoContrato, fallbackName) {
+        const r = await fetch(`/Contratos/Descargar?idTipoContrato=${idTipoContrato}&nombre=${encodeURIComponent(fallbackName)}`, {
+            method: "GET",
+            headers: { "Authorization": "Bearer " + (token || "") }
+        });
+
+        if (!r.ok) {
+            // 🔥 este error tiene que ir con errorModal
+            throw new Error("No existe plantilla para este tipo de contrato.");
+        }
+
+        return await r.arrayBuffer();
+    }
+
+    function buildContratoData(model) {
+
+        // ===== selects (texto visible)
+        const NombreCliente = ($("#IdCliente").find(":selected")?.text() || "").trim();
+        const ProductoraCliente = ($("#IdProductora").find(":selected")?.text() || "").trim();
+        const Ubicacion = ($("#IdUbicacion").find(":selected")?.text() || "").trim();
+        const NombreMoneda = ($("#IdMoneda").find(":selected")?.text() || "").trim();
+        const TipoContrato = ($("#IdTipoContrato").find(":selected")?.text() || "").trim();
+
+        // ===== fecha (día/mes/año)
+        const f = model?.Fecha ? new Date(model.Fecha) : null;
+        const Dia = f ? String(f.getDate()) : "";
+        const Mes = f ? f.toLocaleString("es-AR", { month: "long" }) : "";
+        const Año = f ? String(f.getFullYear()) : "";
+
+        const Fecha = f ? f.toLocaleDateString("es-AR") : "";
+
+        // ===== duración HH:MM
+        const dur = (document.getElementById("Duracion")?.value || "00:00").trim();
+        const [hhRaw, mmRaw] = dur.split(":");
+        const DuracionHora = (hhRaw ?? "0").replace(/^0+/, "") || "0";
+        const DuracionMinuto = (mmRaw ?? "0").replace(/^0+/, "") || "0";
+
+        // ===== exclusividad
+        // En tu contrato @Exclusividad está pegado al final del punto 1.1,
+        // por eso devolvemos un texto que ya trae el "extra".
+        let Exclusividad = "";
+        if (Number(model?.IdOpExclusividad || 0) === 1) Exclusividad = " con exclusividad.";
+        else if (Number(model?.IdOpExclusividad || 0) === 2) Exclusividad = "";
+
+        // ===== importes
+        const ImporteTotal = vnRound2(model?.ImporteTotal || 0);
+        const ImporteTotalMitad_1 = vnRound2(ImporteTotal / 2);
+        const ImporteTotalMitad_2 = vnRound2(ImporteTotal - ImporteTotalMitad_1); // evita centavos raros
+
+        // ===== artista/representante (si tenés varios, tomo el primero)
+        const art0 = (VN.detalle.artistas || [])[0] || null;
+
+        const NombreArtista = art0 ? textById(VN.combos.artistas, art0.IdArtista) : "";
+        const NombreRepresentante = art0 ? textById(VN.combos.representantes, art0.IdRepresentante) : "";
+
+        // ===== lugar/espacio (tu doc usa @Lugar y @Espacio)
+        // @Lugar suele ser "Ciudad/Provincia", @Espacio es el predio/venue
+        // Como en tu pantalla solo tenés Ubicación, lo mapeo ahí.
+        const Lugar = Ubicacion;
+        const Espacio = model?.Espacio || ""; // si no existe en tu VM, queda vacío
+
+        // ===== nombre de archivo
+        const safe = (s) => String(s || "")
+            .trim()
+            .replace(/[\\/:*?"<>|]/g, "")     // inválidos Windows
+            .replace(/\s+/g, "_")
+            .slice(0, 80);
+
+        const NombreArchivo =
+            `Contrato_${safe(NombreCliente || "Cliente")}_${(f ? `${Año}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}` : "sin_fecha")}`;
+
+        // ===== devolvemos TODO lo que tu doc pide + extras útiles
+        const data = {
+
+            // --- util
+            NombreArchivo,
+
+            // --- contrato: cliente
+            NombreCliente,
+            DniCliente: model?.DniCliente || "",
+            CuitCliente: model?.CuitCliente || "",
+            DomicilioCliente: model?.DomicilioCliente || "",
+            ProductoraCliente,
+
+            // --- contrato: artista + productora/manager
+            NombreArtista,
+            DniArtista: model?.DniArtista || "",
+            DomicilioArtista: model?.DomicilioArtista || "",
+            CuitArtista: model?.CuitArtista || "",
+            DatosArtista2: model?.DatosArtista2 || "",
+
+            NombreRepresentante,
+            DniRepresentante: model?.DniRepresentante || "",
+            DomicilioRepresentante: model?.DomicilioRepresentante || "",
+            CuitRepresentante: model?.CuitRepresentante || "",
+
+            // --- fecha / show
+            Dia,
+            Mes,
+            Año,
+            Fecha,
+
+            Lugar,
+            Espacio,
+            Ubicacion,
+            NombreEvento: model?.NombreEvento || "",
+
+            DuracionHora,
+            DuracionMinuto,
+            Exclusividad,
+
+            // --- dinero
+            ImporteTotal,
+            ImporteTotalMitad_1,
+            ImporteTotalMitad_2,
+
+            NombreMoneda_1: NombreMoneda,
+            NombreMoneda_2: NombreMoneda,
+            NombreMoneda_3: NombreMoneda,
+
+            // --- extras (por si querés mostrar/validar)
+            TipoContrato,
+            DiasPrevios: model?.DiasPrevios ?? "",
+            FechaHasta: model?.FechaHasta ? new Date(model.FechaHasta).toLocaleString("es-AR") : ""
+        };
+
+        // ✅ opcional: espejo con @... por si después configurás delimiters raro
+        // (Docxtemplater NO reemplaza @Campo por defecto)
+        // data["@NombreCliente"] = data.NombreCliente; // etc...
+
+        return data;
+    }
+
+    function textById(list, id) {
+        id = Number(id || 0);
+        if (!id) return "";
+        const it = (list || []).find(x => Number(x.Id) === id);
+        return it?.Nombre || it?.Descripcion || "";
+    }
+
+    function renderDocxFromTemplate(arrayBuffer, data) {
+
+        const zip = new PizZip(arrayBuffer);
+
+        // Archivos DOCX donde puede haber texto
+        const xmlFiles = Object.keys(zip.files).filter(f =>
+            f.startsWith("word/") && f.endsWith(".xml")
+        );
+
+        xmlFiles.forEach(file => {
+
+            let xml = zip.file(file).asText();
+
+            // 🔹 Word rompe texto en varios nodos
+            xml = xml.replace(/<\/w:t>\s*<w:t[^>]*>/g, "");
+
+            // 🔹 Convertir @Campo -> {Campo}
+            xml = xml.replace(/@([A-Za-z0-9_]+)/g, "{$1}");
+
+            zip.file(file, xml);
+
+        });
+
+        const doc = new docxtemplater(zip, {
+            paragraphLoop: true,
+            linebreaks: true,
+            nullGetter: () => ""
+        });
+
+        doc.render(data);
+
+        return doc.getZip().generate({
+            type: "blob",
+            mimeType:
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        });
+    }
     /* =========================
        INIT
     ========================= */
     document.addEventListener("DOMContentLoaded", async () => {
         try {
             initDuracionMask();
+           
             initSecciones()
             bindUI();
 
@@ -319,17 +612,29 @@
             // si viene id (editar)
             const idVenta = Number(VN.init.id || document.getElementById("Venta_Id")?.value || 0);
             if (idVenta > 0) {
+
+                const titulo = document.getElementById("tituloVenta");
+                if (titulo) titulo.textContent = " Modificar venta";
+
                 await abrirVenta(idVenta);
+
             } else {
-                // nueva
+
+                const titulo = document.getElementById("tituloVenta");
+                if (titulo) titulo.textContent = " Registrar venta";
+
                 document.getElementById("Venta_Id").value = "0";
 
-                renderDetalle();        // 👈 ESTO
-                recalcularTotales();    // 👈 (recomendado)
+                renderDetalle();
+                recalcularTotales();
+
+                // auditoría vacía
+                setAuditoria({});
 
                 vnSetSaving(false, "Listo", "ok");
             }
 
+          
             // autosave draft
             setInterval(() => {
                 if (!VN.flags.autosaveEnabled) return;
@@ -345,8 +650,16 @@
         }
     });
 
+    document.querySelectorAll(".Inputmiles").forEach(inp => {
+
+        inp.addEventListener("input", function () {
+            formatearMilesInput(this);
+        });
+
+    });
+
     function bindUI() {
-        const btnGuardar = document.getElementById("btnGuardar");
+        const btnGuardar = document.getElementById("btnGuardarVenta");
         const btnReset = document.getElementById("btnReset");
         const btnDraftRestore = document.getElementById("btnDraftRestore");
         const btnDraftClear = document.getElementById("btnDraftClear");
@@ -415,6 +728,22 @@
             renderDetalle();
             recalcularTotales();
             vnMarkDirty();
+        });
+
+        // CONTRATO
+        document.getElementById("btnContrato")?.addEventListener("click", async () => {
+
+            const idTipoContrato = Number(document.getElementById("IdTipoContrato")?.value || 0);
+
+            if (!idTipoContrato) {
+                vnToastErr("Seleccioná el Tipo de contrato antes de generar.");
+                return;
+            }
+
+            const formato = document.getElementById("Contrato_Formato")?.value || "pdf";
+
+            await exportarContrato(formato);
+
         });
 
         document
@@ -716,23 +1045,40 @@
     }
 
     function setAuditoria(v) {
+
         const audReg = document.getElementById("audReg");
         const audMod = document.getElementById("audMod");
 
-        if (audReg) {
-            if (v.UsuarioRegistra && v.FechaRegistra) {
-                audReg.innerHTML = `<div class="vn-chip"><i class="fa fa-user"></i> Registrado por <b>${v.UsuarioRegistra}</b> • <b>${humanDate(v.FechaRegistra)}</b></div>`;
+        const emptyHtml = `
+        <div class="vn-empty">
+            <i class="fa fa-clock-o"></i>
+            <div>Sin información de auditoría</div>
+            <small>La auditoría se generará cuando se registre o modifique la venta</small>
+        </div>
+    `;
+
+     
+
+        if (audMod && audReg) {
+
+            if (v?.UsuarioModifica && v?.FechaModifica) {
+
+                audMod.innerHTML = `
+                <div class="vn-chip">
+                    <i class="fa fa-edit"></i>
+                    Última modificación por <b>${v.UsuarioModifica}</b>
+                    • <b>${humanDate(v.FechaModifica)}</b>
+                </div>
+            `;
+
             } else {
-                audReg.innerHTML = `<div class="vn-chip"><i class="fa fa-user"></i> —</div>`;
+
+                audMod.innerHTML = emptyHtml;
+
             }
+
         }
-        if (audMod) {
-            if (v.UsuarioModifica && v.FechaModifica) {
-                audMod.innerHTML = `<div class="vn-chip"><i class="fa fa-edit"></i> Última modificación por <b>${v.UsuarioModifica}</b> • <b>${humanDate(v.FechaModifica)}</b></div>`;
-            } else {
-                audMod.innerHTML = `<div class="vn-chip"><i class="fa fa-edit"></i> —</div>`;
-            }
-        }
+
     }
 
     function humanDate(fecha) {
@@ -758,6 +1104,9 @@
         if (cntA) cntA.textContent = `(${VN.detalle.artistas.length})`;
         if (cntP) cntP.textContent = `(${VN.detalle.personal.length})`;
         if (cntC) cntC.textContent = `(${VN.detalle.cobros.length})`;
+
+        aplicarFormatoMiles()
+
     }
 
     function renderArtistas() {
@@ -788,7 +1137,7 @@
                     <td><select class="form-select vn-input vn-mini vn-a-artista" data-idx="${idx}"></select></td>
                     <td><select class="form-select vn-input vn-mini vn-a-rep" data-idx="${idx}"></select></td>
                     <td><input class="form-control vn-input vn-mini vn-a-porc" data-idx="${idx}" type="number" min="0" step="0.01" value="${Number(it.PorcComision || 0)}"></td>
-                    <td><input class="form-control vn-input vn-mini vn-a-total" data-idx="${idx}" type="text" value="${Number(it.TotalComision || 0)}"></td>
+                    <td><input class="form-control vn-input  vn-mini vn-a-total Inputmiles" data-idx="${idx}" type="text" value="${Number(it.TotalComision || 0)}"></td>
                     <td class="text-end">
                         <button class="btn btn-outline-danger vn-btn vn-mini" type="button" onclick="window.vnDelArtista(${idx})">
                             <i class="fa fa-trash"></i>
@@ -825,7 +1174,7 @@
         tb.querySelectorAll("input.vn-a-porc").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.artistas[idx].PorcComision = Number(this.value || 0);
+                VN.detalle.artistas[idx].PorcComision = formatearMiles(Number(this.value || 0));
                 calcArtistaFromPercent(idx);
                 recalcularTotales();
                 vnMarkDirty();
@@ -836,7 +1185,7 @@
         tb.querySelectorAll("input.vn-a-total").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.artistas[idx].TotalComision = vnToNumber(this.value);
+                VN.detalle.artistas[idx].TotalComision = formatearMiles(vnToNumber(this.value));
                 calcArtistaFromTotal(idx);
                 recalcularTotales();
                 vnMarkDirty();
@@ -851,7 +1200,7 @@
         it.TotalComision = vnRound2(total * (pct / 100));
         // refrescar celda total sin rerender completo
         const inp = document.querySelector(`input.vn-a-total[data-idx="${idx}"]`);
-        if (inp) inp.value = String(it.TotalComision || 0);
+        if (inp) inp.value = formatearMiles(String(it.TotalComision || 0));
     }
 
     function calcArtistaFromTotal(idx) {
@@ -860,7 +1209,7 @@
         const val = Number(it.TotalComision || 0);
         it.PorcComision = total > 0 ? vnRound2((val / total) * 100) : 0;
         const inp = document.querySelector(`input.vn-a-porc[data-idx="${idx}"]`);
-        if (inp) inp.value = String(it.PorcComision || 0);
+        if (inp) inp.value = formatearMiles(String(it.PorcComision || 0));
     }
 
     function renderPersonal() {
@@ -895,10 +1244,10 @@
                     <td><select class="form-select vn-input vn-mini vn-p-cargo" data-idx="${idx}"></select></td>
                     <td><select class="form-select vn-input vn-mini vn-p-tipo" data-idx="${idx}"></select></td>
                     <td>
-                        <input class="form-control vn-input vn-mini vn-p-porc" data-idx="${idx}"
+                        <input class="form-control vn-input vn-mini vn-p-porc Inputmiles" data-idx="${idx}"
                                type="number" min="0" step="0.01" value="${Number(it.PorcComision || 0)}" ${isFixed ? "disabled" : ""}>
                     </td>
-                    <td><input class="form-control vn-input vn-mini vn-p-total" data-idx="${idx}" type="text" value="${Number(it.TotalComision || 0)}"></td>
+                    <td><input class="form-control vn-input vn-mini vn-p-total Inputmiles" data-idx="${idx}" type="text" value="${Number(it.TotalComision || 0)}"></td>
                     <td class="text-end">
                         <button class="btn btn-outline-danger vn-btn vn-mini" type="button" onclick="window.vnDelPersonal(${idx})">
                             <i class="fa fa-trash"></i>
@@ -998,7 +1347,7 @@
         const pct = Number(it.PorcComision || 0);
         it.TotalComision = vnRound2(total * (pct / 100));
         const inp = document.querySelector(`input.vn-p-total[data-idx="${idx}"]`);
-        if (inp) inp.value = String(it.TotalComision || 0);
+        if (inp) inp.value = formatearMiles(String(it.TotalComision || 0));
     }
 
     function calcPersonalFromTotal(idx) {
@@ -1007,7 +1356,7 @@
         const val = Number(it.TotalComision || 0);
         it.PorcComision = total > 0 ? vnRound2((val / total) * 100) : 0;
         const inp = document.querySelector(`input.vn-p-porc[data-idx="${idx}"]`);
-        if (inp) inp.value = String(it.PorcComision || 0);
+        if (inp) inp.value = formatearMiles(String(it.PorcComision || 0));
     }
 
     function calcPersonalFixed(idx) {
@@ -1017,7 +1366,7 @@
         const val = Number(it.TotalComision || 0);
         it.PorcComision = total > 0 ? vnRound2((val / total) * 100) : 0;
         const inp = document.querySelector(`input.vn-p-porc[data-idx="${idx}"]`);
-        if (inp) inp.value = String(it.PorcComision || 0);
+        if (inp) inp.value = formatearMiles(String(it.PorcComision || 0));
     }
 
     function renderCobros() {
@@ -1049,9 +1398,9 @@
                     <td><input class="form-control vn-input vn-mini vn-c-fecha" data-idx="${idx}" type="datetime-local" value="${fechaIso}"></td>
                     <td><select class="form-select vn-input vn-mini vn-c-mon" data-idx="${idx}"></select></td>
                     <td><select class="form-select vn-input vn-mini vn-c-cuenta" data-idx="${idx}"></select></td>
-                    <td><input class="form-control vn-input vn-mini vn-c-imp" data-idx="${idx}" type="text" value="${Number(it.Importe || 0)}"></td>
-                    <td><input class="form-control vn-input vn-mini vn-c-cot" data-idx="${idx}" type="number" step="0.0001" min="0" value="${Number(it.Cotizacion || 1)}"></td>
-                    <td><input class="form-control vn-input vn-mini vn-c-conv" data-idx="${idx}" type="text" value="${Number(it.Conversion || 0)}"></td>
+                    <td><input class="form-control vn-input vn-mini vn-c-imp Inputmiles" data-idx="${idx}" type="text" value="${Number(it.Importe || 0)}"></td>
+                    <td><input class="form-control vn-input vn-mini vn-c-cot Inputmiles" data-idx="${idx}" type="number" step="0.0001" min="0" value="${Number(it.Cotizacion || 1)}"></td>
+                    <td><input class="form-control vn-input vn-mini vn-c-conv Inputmiles" data-idx="${idx}" type="text" value="${Number(it.Conversion || 0)}"></td>
                     <td class="text-end">
                         <button class="btn btn-outline-danger vn-btn vn-mini" type="button" onclick="window.vnDelCobro(${idx})">
                             <i class="fa fa-trash"></i>
@@ -1062,30 +1411,51 @@
         });
 
         // moneda
-        tb.querySelectorAll("select.vn-c-mon").forEach(sel => {
-            const idx = Number(sel.dataset.idx);
-            vnFillSelectDom(sel, VN.combos.monedas, "Id", "Nombre", "Seleccionar");
-            sel.value = String(VN.detalle.cobros[idx].IdMoneda || "");
-            $(sel)?.select2({ width: "100%", allowClear: true, placeholder: "Moneda" })
-                .on("change", function () {
+       tb.querySelectorAll("select.vn-c-mon").forEach(sel => {
 
-                    VN.detalle.cobros[idx].IdMoneda = Number(this.value || 0);
+    const idx = Number(sel.dataset.idx);
 
-                    // 🔹 cargar cuentas de esa moneda
-                    cargarCuentasPorMoneda(idx, VN.detalle.cobros[idx].IdMoneda);
+    vnFillSelectDom(sel, VN.combos.monedas, "Id", "Nombre", "Seleccionar");
 
-                    // reset cotización si no es manual
-                    if (!VN.detalle.cobros[idx].ManualConversion) {
-                        VN.detalle.cobros[idx].Cotizacion = 1;
-                        const cotEl = document.querySelector(`input.vn-c-cot[data-idx="${idx}"]`);
-                        if (cotEl) cotEl.value = "1";
-                    }
+    sel.value = String(VN.detalle.cobros[idx].IdMoneda || "");
 
-                    recalcularCobro(idx);
-                    vnMarkDirty();
+    $(sel)?.select2({
+        width: "100%",
+        allowClear: true,
+        placeholder: "Moneda"
+    })
+    .on("change", function () {
 
-                });
-        });
+        const idMoneda = Number(this.value || 0);
+
+        VN.detalle.cobros[idx].IdMoneda = idMoneda;
+
+        // 🔹 buscar moneda
+        const moneda = VN.combos.monedas.find(m => Number(m.Id) === idMoneda);
+
+        if (moneda) {
+
+            const cot = Number(moneda.Cotizacion || 1);
+
+            VN.detalle.cobros[idx].Cotizacion = formatearMiles(cot);
+
+            const cotEl = document.querySelector(`input.vn-c-cot[data-idx="${idx}"]`);
+
+            if (cotEl)
+                cotEl.value = formatearMiles(cot);
+
+        }
+
+        // 🔹 cargar cuentas de esa moneda
+        cargarCuentasPorMoneda(idx, idMoneda);
+
+        recalcularCobro(idx);
+
+        vnMarkDirty();
+
+    });
+
+});
 
         // cuenta
         tb.querySelectorAll("select.vn-c-cuenta").forEach(sel => {
@@ -1119,7 +1489,7 @@
         tb.querySelectorAll("input.vn-c-imp").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.cobros[idx].Importe = vnToNumber(this.value);
+                VN.detalle.cobros[idx].Importe = formatearMiles(vnToNumber(this.value));
                 VN.detalle.cobros[idx].ManualConversion = false;
                 recalcularCobro(idx);
                 vnMarkDirty();
@@ -1130,7 +1500,7 @@
         tb.querySelectorAll("input.vn-c-cot").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.cobros[idx].Cotizacion = Number(this.value || 1) || 1;
+                VN.detalle.cobros[idx].Cotizacion = formatearMiles(Number(this.value || 1) || 1);
                 VN.detalle.cobros[idx].ManualConversion = false;
                 recalcularCobro(idx);
                 vnMarkDirty();
@@ -1141,7 +1511,7 @@
         tb.querySelectorAll("input.vn-c-conv").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.cobros[idx].Conversion = vnToNumber(this.value);
+                VN.detalle.cobros[idx].Conversion = formatearMiles(vnToNumber(this.value));
                 VN.detalle.cobros[idx].ManualConversion = true;
                 recalcularTotales();
                 vnMarkDirty();
@@ -1322,55 +1692,84 @@
        BUILD MODEL (VMVenta)
     ========================= */
     function buildModel() {
+
         const idVenta = Number(document.getElementById("Venta_Id")?.value || 0);
         const idCliente = vnGetClienteId();
 
-        // antes de mapear, recalculamos para que quede consistente
         recalcularTotales();
 
         const importeTotal = vnGetImporteTotal();
 
-        // Cobrado / saldo: (como tu VM tiene estos campos, y tu repo actual los pisa desde entity)
-        // igual los mandamos calculados (no molesta)
         const totalComisiones =
             (VN.detalle.artistas || []).reduce((a, x) => a + Number(x.TotalComision || 0), 0) +
             (VN.detalle.personal || []).reduce((a, x) => a + Number(x.TotalComision || 0), 0);
 
-        const cobrado = (VN.detalle.cobros || []).reduce((a, x) => a + Number(x.Conversion || 0), 0);
+        const cobrado =
+            (VN.detalle.cobros || []).reduce((a, x) => a + Number(x.Conversion || 0), 0);
+
         const saldo = vnRound2(importeTotal - totalComisiones - cobrado);
 
+        const dur = document.getElementById("Duracion")?.value || "00:00";
+        const [h, m] = dur.split(":").map(Number);
+
+        const durDate = new Date();
+        durDate.setHours(h || 0);
+        durDate.setMinutes(m || 0);
+        durDate.setSeconds(0);
+        durDate.setMilliseconds(0);
+
         const model = {
+
             Id: idVenta,
 
-            Fecha: new Date(document.getElementById("Fecha")?.value),
+            Fecha: document.getElementById("Fecha")?.value
+                ? new Date(document.getElementById("Fecha").value)
+                : new Date(),
+
+            Duracion: durDate,
+
             IdUbicacion: Number(document.getElementById("IdUbicacion")?.value || 0),
-            NombreEvento: document.getElementById("NombreEvento")?.value || "",
-            Duracion: document.getElementById("Duracion")?.value
-                ? new Date(document.getElementById("Duracion").value)
-                : new Date(document.getElementById("Fecha").value),
+
+            NombreEvento:
+                document.getElementById("NombreEvento")?.value || "",
 
             IdCliente: Number(idCliente || 0),
+
             IdProductora: Number(document.getElementById("IdProductora")?.value || 0),
+
             IdMoneda: Number(document.getElementById("IdMoneda")?.value || 0),
+
             IdEstado: Number(document.getElementById("IdEstado")?.value || 0),
 
             ImporteTotal: vnRound2(importeTotal),
+
             ImporteAbonado: vnRound2(cobrado),
+
             Saldo: vnRound2(saldo),
 
-            NotaInterna: (document.getElementById("NotaInterna")?.value || "").trim() || null,
-            NotaCliente: (document.getElementById("NotaCliente")?.value || "").trim() || null,
+            NotaInterna:
+                (document.getElementById("NotaInterna")?.value || "").trim() || null,
 
-            IdTipoContrato: Number(document.getElementById("IdTipoContrato")?.value || 0),
-            IdOpExclusividad: document.getElementById("IdOpExclusividad")?.value
-                ? Number(document.getElementById("IdOpExclusividad").value)
-                : null,
-            DiasPrevios: document.getElementById("DiasPrevios")?.value
-                ? Number(document.getElementById("DiasPrevios").value)
-                : null,
-            FechaHasta: document.getElementById("FechaHasta")?.value
-                ? new Date(document.getElementById("FechaHasta").value)
-                : null,
+            NotaCliente:
+                (document.getElementById("NotaCliente")?.value || "").trim() || null,
+
+            IdTipoContrato:
+                Number(document.getElementById("IdTipoContrato")?.value || 0),
+
+            IdOpExclusividad:
+                document.getElementById("IdOpExclusividad")?.value
+                    ? Number(document.getElementById("IdOpExclusividad").value)
+                    : null,
+
+            DiasPrevios:
+                document.getElementById("DiasPrevios")?.value
+                    ? Number(document.getElementById("DiasPrevios").value)
+                    : null,
+
+            FechaHasta:
+                document.getElementById("FechaHasta")?.value
+                    ? new Date(document.getElementById("FechaHasta").value)
+                    : null,
 
             Artistas: (VN.detalle.artistas || []).map(x => ({
                 Id: Number(x.Id || 0),
@@ -1381,33 +1780,61 @@
             })),
 
             Personal: (VN.detalle.personal || []).map(x => {
+
                 const tipo = Number(x.IdTipoComision || 0);
                 const total = vnRound2(Number(x.TotalComision || 0));
-                const pct = (tipo === 2)
-                    ? (importeTotal > 0 ? vnRound2((total / importeTotal) * 100) : 0)
-                    : vnRound2(Number(x.PorcComision || 0));
 
-                return ({
+                const pct =
+                    tipo === 2
+                        ? (importeTotal > 0
+                            ? vnRound2((total / importeTotal) * 100)
+                            : 0)
+                        : vnRound2(Number(x.PorcComision || 0));
+
+                return {
                     Id: Number(x.Id || 0),
                     IdPersonal: Number(x.IdPersonal || 0),
                     IdCargo: Number(x.IdCargo || 0),
-                    IdTipoComision: Number(x.IdTipoComision || 0),
+                    IdTipoComision: tipo,
                     PorcComision: pct,
                     TotalComision: total
-                });
+                };
+
             }),
 
-            Cobros: (VN.detalle.cobros || []).map(x => ({
-                Id: Number(x.Id || 0),
-                Fecha: x.Fecha ? new Date(x.Fecha) : new Date(),
-                IdMoneda: Number(x.IdMoneda || 0),
-                IdCuenta: Number(x.IdCuenta || 0),
-                Importe: vnRound2(Number(x.Importe || 0)),
-                Cotizacion: vnRound2(Number(x.Cotizacion || 1) || 1),
-                Conversion: vnRound2(Number(x.Conversion || x.Importe || 0)),
-                NotaCliente: (x.NotaCliente || "").trim() || null,
-                NotaInterna: (x.NotaInterna || "").trim() || null
-            }))
+            Cobros: (VN.detalle.cobros || [])
+                .filter(x => Number(x.IdCuenta || 0) > 0)
+                .map(x => ({
+
+                    Id: Number(x.Id || 0),
+
+                    Fecha: x.Fecha
+                        ? new Date(x.Fecha)
+                        : new Date(),
+
+                    IdMoneda: Number(x.IdMoneda || 0),
+
+                    IdCuenta: Number(x.IdCuenta || 0),
+
+                    Importe: vnRound2(Number(x.Importe || 0)),
+
+                    Cotizacion: vnRound2(Number(x.Cotizacion || 1)),
+
+                    Conversion: vnRound2(
+                        Number(
+                            x.Conversion > 0
+                                ? x.Conversion
+                                : (Number(x.Importe || 0) *
+                                    Number(x.Cotizacion || 1))
+                        )
+                    ),
+
+                    NotaCliente:
+                        (x.NotaCliente || "").trim() || null,
+
+                    NotaInterna:
+                        (x.NotaInterna || "").trim() || null
+                }))
         };
 
         return model;
@@ -1489,7 +1916,7 @@
                     IdOpExclusividad: document.getElementById("IdOpExclusividad")?.value || "",
                     DiasPrevios: document.getElementById("DiasPrevios")?.value || "",
                     FechaHasta: document.getElementById("FechaHasta")?.value || "",
-                    ImporteTotal: document.getElementById("ImporteTotal")?.value || "",
+                    ImporteTotal: formatearSinMiles(document.getElementById("ImporteTotal")?.value) || "",
                     NotaInterna: document.getElementById("NotaInterna")?.value || "",
                     NotaCliente: document.getElementById("NotaCliente")?.value || ""
                 },
@@ -1707,3 +2134,61 @@ function validarCampoIndividual(el) {
 }
 
 
+
+// Mini helper UI (sin lógica de negocio): marca tile seleccionado y setea #Contrato_Formato
+(function () {
+    function setFormato(fmt) {
+        var inp = document.getElementById("Contrato_Formato");
+        if (inp) inp.value = fmt;
+
+        var tileWord = document.getElementById("tileWord");
+        var tilePdf = document.getElementById("tilePdf");
+
+        if (tileWord) tileWord.classList.toggle("is-selected", fmt === "word");
+        if (tilePdf) tilePdf.classList.toggle("is-selected", fmt === "pdf");
+
+        var rWord = document.querySelector('input[name="ContratoFormato"][value="word"]');
+        var rPdf = document.querySelector('input[name="ContratoFormato"][value="pdf"]');
+        if (rWord) rWord.checked = (fmt === "word");
+        if (rPdf) rPdf.checked = (fmt === "pdf");
+    }
+
+    document.addEventListener("click", function (e) {
+        var tile = e.target.closest && e.target.closest(".vn-contract-tile");
+        if (tile && tile.dataset && tile.dataset.formato) {
+            setFormato(tile.dataset.formato);
+        }
+    });
+
+    // Modal: si eligen Word/PDF desde el modal, sincroniza el selector de la sección
+    document.addEventListener("click", function (e) {
+        var btn = e.target.closest && e.target.closest(".vn-export-option");
+        if (!btn) return;
+
+        var tipo = btn.getAttribute("data-tipo");
+        if (tipo === "word" || tipo === "pdf") setFormato(tipo);
+    });
+
+    // default
+    setFormato("pdf");
+})();
+
+document.addEventListener("input", function (e) {
+    const input = e.target;
+    if (!input.classList || !input.classList.contains("Inputmiles")) return;
+
+    const cursorPos = input.selectionStart || 0;
+    const originalLength = input.value.length;
+
+    const soloNumeros = input.value.replace(/\D/g, "");
+    if (!soloNumeros) { input.value = ""; return; }
+
+    const formateado = formatearMiles(soloNumeros);
+    input.value = formateado;
+
+    const newLength = formateado.length;
+    const delta = newLength - originalLength;
+    const newPos = Math.max(0, cursorPos + delta);
+
+    try { input.setSelectionRange(newPos, newPos); } catch { }
+});
