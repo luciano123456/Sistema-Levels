@@ -61,5 +61,7 @@ public partial class Personal
 
     public virtual ICollection<VentasCobrosComisione> VentasCobrosComisiones { get; set; } = new List<VentasCobrosComisione>();
 
+    public virtual ICollection<VentasArtista> VentasArtista { get; set; } = new List<VentasArtista>();
+
     public virtual ICollection<VentasPersonal> VentasPersonals { get; set; } = new List<VentasPersonal>();
 }

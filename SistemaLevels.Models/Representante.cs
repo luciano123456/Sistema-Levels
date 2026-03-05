@@ -41,5 +41,5 @@ public partial class Representante
 
     public virtual User IdUsuarioRegistraNavigation { get; set; } = null!;
 
-    public virtual ICollection<VentasArtista> VentasArtista { get; set; } = new List<VentasArtista>();
+    
 }

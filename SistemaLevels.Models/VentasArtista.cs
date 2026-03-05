@@ -21,7 +21,7 @@ public partial class VentasArtista
 
     public virtual Artista IdArtistaNavigation { get; set; } = null!;
 
-    public virtual Representante IdRepresentanteNavigation { get; set; } = null!;
+    public virtual Personal IdRepresentanteNavigation { get; set; } = null!;
 
     public virtual Venta IdVentaNavigation { get; set; } = null!;
 }
