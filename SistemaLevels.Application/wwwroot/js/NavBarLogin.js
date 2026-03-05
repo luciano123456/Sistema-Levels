@@ -392,3 +392,208 @@ function cerrarSesion() {
     localStorage.removeItem('JwtToken'); // Borrar token
     window.location.href = '/Login/Logout'; // Ir al login
 }
+
+async function abrirContratosPlantillas() {
+    try {
+        // cierra el modal general y abre el de plantillas
+        $('#ModalEdicionConfiguraciones').modal('hide');
+        await cargarContratosPlantillasUI();
+        $('#modalContratosPlantillas').modal('show');
+    } catch (e) {
+        console.error(e);
+        errorModal("No se pudieron cargar las plantillas de contratos.");
+    }
+}
+
+async function cargarContratosPlantillasUI() {
+    const cont = document.getElementById("contratosPlantillas-list");
+    const lblVacio = document.getElementById("lblContratosPlantillasVacio");
+    if (!cont) return;
+
+    cont.innerHTML = "";
+
+    // 1) tipos de contrato (ya existe tu controller de config)
+    const tipos = await fetch(`/TiposContratos/Lista`, {
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    }).then(r => r.ok ? r.json() : []);
+
+    if (!tipos || tipos.length === 0) {
+        lblVacio?.removeAttribute("hidden");
+        return;
+    }
+    lblVacio?.setAttribute("hidden", "hidden");
+
+    // 2) estado de plantillas en servidor
+    const plantillas = await fetch(`/Contratos/Lista`, {
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json'
+        }
+    }).then(r => r.ok ? r.json() : []);
+
+    const map = new Map((plantillas || []).map(x => [Number(x.IdTipoContrato), x]));
+
+    // 3) render
+    tipos.forEach(t => {
+        const idTipo = Number(t.Id || 0);
+        const nombre = t.Nombre || `Tipo ${idTipo}`;
+
+        const existe = map.has(idTipo);
+        const info = map.get(idTipo);
+        const fecha = info?.FechaModifica ? new Date(info.FechaModifica).toLocaleString("es-AR") : "";
+
+        cont.insertAdjacentHTML("beforeend", `
+            <div class="rp-contract-row" data-id="${idTipo}">
+                <div class="rp-contract-left">
+                    <div class="rp-item-icon"><i class="fa fa-file-text-o"></i></div>
+                    <div>
+                        <div class="rp-item-text"><b>${escapeHtml(nombre)}</b></div>
+                        <div style="font-size:12px; opacity:.8;">
+                            ID: ${idTipo} ${existe ? ("• Actualizado: " + fecha) : "• Sin plantilla"}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rp-contract-actions">
+                    <span class="rp-contract-badge ${existe ? "ok" : "no"}">
+                        ${existe ? "Plantilla OK" : "Falta plantilla"}
+                    </span>
+
+                    <input class="form-control rp-file-input"
+                           type="file"
+                           accept=".docx"
+                           data-file="${idTipo}">
+
+                    <button class="rp-btn rp-btn-primary rp-btn-mini"
+                            onclick="subirPlantillaContrato(${idTipo})">
+                        <i class="fa fa-upload"></i>
+                        Subir/Reemplazar
+                    </button>
+
+                    <button class="rp-btn rp-btn-soft rp-btn-mini"
+                            ${existe ? "" : "disabled"}
+                            onclick="descargarPlantillaContrato(${idTipo}, '${escapeJs(nombre)}')">
+                        <i class="fa fa-download"></i>
+                        Descargar
+                    </button>
+
+                    <button class="rp-btn rp-btn-soft rp-btn-mini"
+                            ${existe ? "" : "disabled"}
+                            onclick="eliminarPlantillaContrato(${idTipo})">
+                        <i class="fa fa-trash"></i>
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        `);
+    });
+}
+
+async function subirPlantillaContrato(idTipoContrato) {
+    try {
+        const row = document.querySelector(`.rp-contract-row[data-id="${idTipoContrato}"]`);
+        const input = row?.querySelector(`input[type="file"][data-file="${idTipoContrato}"]`);
+        const file = input?.files?.[0];
+
+        if (!file) {
+            errorModal("Seleccioná un .docx para subir.");
+            return;
+        }
+        if (!file.name.toLowerCase().endsWith(".docx")) {
+            errorModal("Solo se permite .docx.");
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append("file", file);
+
+        const r = await fetch(`/Contratos/Subir?idTipoContrato=${idTipoContrato}`, {
+            method: "POST",
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: fd
+        });
+
+        const data = await r.json();
+        if (!data.valor) {
+            errorModal(data.mensaje || "No se pudo subir la plantilla.");
+            return;
+        }
+
+        exitoModal(data.mensaje || "Plantilla guardada.");
+        await cargarContratosPlantillasUI();
+    } catch (e) {
+        console.error(e);
+        errorModal("Error subiendo la plantilla.");
+    }
+}
+
+async function descargarPlantillaContrato(idTipoContrato, nombreTipo) {
+    try {
+        const r = await fetch(`/Contratos/Descargar?idTipoContrato=${idTipoContrato}&nombre=${encodeURIComponent(nombreTipo)}`, {
+            method: "GET",
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (!r.ok) {
+            errorModal("No se pudo descargar la plantilla.");
+            return;
+        }
+
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `Contrato_${nombreTipo}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error(e);
+        errorModal("Error descargando la plantilla.");
+    }
+}
+
+async function eliminarPlantillaContrato(idTipoContrato) {
+    const ok = await confirmarModal("¿Eliminar la plantilla de este tipo de contrato?");
+    if (!ok) return;
+
+    try {
+        const r = await fetch(`/Contratos/Eliminar?idTipoContrato=${idTipoContrato}`, {
+            method: "DELETE",
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await r.json();
+        if (!data.valor) {
+            errorModal(data.mensaje || "No se pudo eliminar.");
+            return;
+        }
+
+        exitoModal(data.mensaje || "Plantilla eliminada.");
+        await cargarContratosPlantillasUI();
+    } catch (e) {
+        console.error(e);
+        errorModal("Error eliminando la plantilla.");
+    }
+}
+
+function escapeHtml(s) {
+    return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+function escapeJs(s) {
+    return String(s ?? "").replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+}

@@ -466,3 +466,125 @@
 #exportPdf i {
     color: #e53935;
 }
+
+
+.vn-subtitle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 2px 0 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+}
+
+.vn-subtitle .i {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: rgba(91,140,255,.16);
+    border: 1px solid rgba(91,140,255,.22);
+    box-shadow: 0 10px 24px rgba(91,140,255,.10);
+}
+
+.vn-subtitle .txt .t1 {
+    font-weight: 800;
+    letter-spacing: .2px;
+}
+
+.vn-subtitle .txt .t2 {
+    opacity: .75;
+    font-size: .92rem;
+}
+
+.vn-contract-wrap {
+    border-radius: 18px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    padding: 14px;
+    margin-top: 10px;
+}
+
+.vn-contract-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.vn-contract-tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 14px;
+    border-radius: 18px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.10);
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    user-select: none;
+}
+
+    .vn-contract-tile:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 30px rgba(0,0,0,.20);
+        border-color: rgba(91,140,255,.30);
+    }
+
+    .vn-contract-tile .ico {
+        width: 46px;
+        height: 46px;
+        border-radius: 16px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid rgba(255,255,255,.10);
+        background: rgba(255,255,255,.04);
+    }
+
+        .vn-contract-tile .ico.word {
+            background: rgba(0,120,215,.14);
+            border-color: rgba(0,120,215,.28);
+        }
+
+        .vn-contract-tile .ico.pdf {
+            background: rgba(255,60,60,.14);
+            border-color: rgba(255,60,60,.28);
+        }
+
+    .vn-contract-tile .txt .t1 {
+        font-weight: 900;
+        line-height: 1.1;
+    }
+
+    .vn-contract-tile .txt .t2 {
+        opacity: .75;
+        font-size: .92rem;
+        margin-top: 2px;
+    }
+
+    .vn-contract-tile input[type="radio"] {
+        position: absolute;
+        top: 14px;
+        right: 14px;
+        width: 18px;
+        height: 18px;
+        accent-color: #5b8cff;
+    }
+
+    .vn-contract-tile.is-selected {
+        border-color: rgba(91,140,255,.55);
+        box-shadow: 0 10px 30px rgba(91,140,255,.18);
+        background: rgba(91,140,255,.10);
+    }
+
+@media (max-width: 1200px) {
+    .vn-contract-tiles {
+        grid-template-columns: 1fr;
+    }
+}
+

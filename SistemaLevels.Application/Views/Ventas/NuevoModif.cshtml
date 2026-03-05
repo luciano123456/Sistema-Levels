@@ -13,16 +13,15 @@
     <link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
     <link href="~/css/VentasNuevoModif.css?v=1.0" rel="stylesheet" />
 
+    <!-- Extras SOLO para la sección Contrato (tiles PDF/Word + layout) -->
+  
 }
 
 <div class="container-fluid mt-4 ventanew">
 
     <!-- HEADER -->
-
     <div class="vn-card mb-3">
-
         <div class="vn-card-head">
-
             <div class="t">
                 <i class="fa fa-ticket"></i>
                 Ventas
@@ -30,103 +29,99 @@
 
             <div class="vn-actions">
 
-                <button id="btnDraftSave" class="btn btn-outline-light vn-btn">
+                <button id="btnDraftSave" class="btn btn-outline-light vn-btn" type="button">
                     <i class="fa fa-save"></i> Guardar borrador
                 </button>
 
                 <div class="vn-actions-secondary">
-
-                    <button id="btnDraftRestore" class="btn btn-info vn-btn">
+                    <button id="btnDraftRestore" class="btn btn-info vn-btn" type="button">
                         <i class="fa fa-refresh"></i> Restaurar borrador
                     </button>
 
-                    <button class="btn btn-warning vn-btn">
+                    <button class="btn btn-warning vn-btn" id="btnDraftClear" type="button">
                         <i class="fa fa-trash"></i> Limpiar borrador
                     </button>
-
                 </div>
 
-                <button class="btn btn-primary vn-btn-main">
-                    <i class="fa fa-check"></i> Guardar venta
+                <button class="btn btn-primary vn-btn-main" id="btnGuardarVenta" type="button">
+                    <i class="fa fa-check" id="tituloVenta"> Registrar venta</i>
                 </button>
 
             </div>
-
         </div>
-
     </div>
-
 
     <div class="vn-grid">
 
-
         <!-- =======================
-        FORMULARIO
+             FORMULARIO
         ======================= -->
-
         <div class="vn-card">
 
             <div class="vn-card-head vn-head-tabs">
-
                 <ul class="vn-head-nav">
-
                     <li>
-                        <button class="vn-head-btn active" data-sec="datos">
+                        <button class="vn-head-btn active" data-sec="datos" type="button">
                             <i class="fa fa-info-circle"></i>
                             Datos de la venta
                         </button>
                     </li>
 
                     <li>
-                        <button class="vn-head-btn" data-sec="artistas">
+                        <button class="vn-head-btn" data-sec="artistas" type="button">
                             <i class="fa fa-music"></i>
                             Artistas <span id="cntArtistas">(0)</span>
                         </button>
                     </li>
 
                     <li>
-                        <button class="vn-head-btn" data-sec="personal">
+                        <button class="vn-head-btn" data-sec="personal" type="button">
                             <i class="fa fa-id-badge"></i>
                             Personal <span id="cntPersonal">(0)</span>
                         </button>
                     </li>
 
                     <li>
-                        <button class="vn-head-btn" data-sec="cobros">
+                        <button class="vn-head-btn" data-sec="cobros" type="button">
                             <i class="fa fa-money"></i>
                             Cobros <span id="cntCobros">(0)</span>
                         </button>
                     </li>
 
                     <li>
-                        <button class="vn-head-btn" data-sec="notas">
+                        <button class="vn-head-btn" data-sec="contrato" type="button">
+                            <i class="fa fa-shield"></i>
+                            Contrato
+                        </button>
+                    </li>
+
+                    <li>
+                        <button class="vn-head-btn" data-sec="notas" type="button">
                             <i class="fa fa-sticky-note"></i>
                             Notas
                         </button>
                     </li>
 
                     <li>
-                        <button class="vn-head-btn" data-sec="auditoria">
+                        <button class="vn-head-btn" data-sec="auditoria" type="button">
                             <i class="fa fa-shield"></i>
                             Auditoría
                         </button>
                     </li>
-
                 </ul>
-
             </div>
 
             <div class="p-3">
 
-               
-
                 <input type="hidden" id="Venta_Id" value="@id" />
                 <input type="hidden" id="Venta_IdCliente" value="@idCliente" />
 
-                <!-- =====================
-                DATOS
-                ===================== -->
+                <!-- Formato elegido para exportar contrato (word/pdf) -->
+                <input type="hidden" id="Contrato_Formato" value="pdf" />
 
+                <!-- =====================
+                     DATOS
+                ===================== -->
                 <div class="vn-section active" id="sec-datos">
 
                     <div id="errorCampos" class="rp-error-panel d-none mb-2">
@@ -144,6 +139,15 @@
                                 onclick="cerrarErrorCampos()">
                             <i class="fa fa-times"></i>
                         </button>
+                    </div>
+
+                    <!-- ====== BLOQUE: DATOS GENERALES ====== -->
+                    <div class="vn-subtitle">
+                        <div class="i"><i class="fa fa-info-circle"></i></div>
+                        <div class="txt">
+                            <div class="t1">Datos de la venta</div>
+                            <div class="t2">Completá la información principal del evento</div>
+                        </div>
                     </div>
 
                     <div class="row g-3">
@@ -200,62 +204,27 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label vn-label">Tipo contrato</label>
-                            <select id="IdTipoContrato" class="form-select vn-input"></select>
+                            <label class="form-label">Importe total</label>
+                            <input id="ImporteTotal" class="form-control vn-input Inputmiles" type="text">
                             <div class="invalid-feedback">Campo obligatorio</div>
                         </div>
 
-                        <div class="col-md-4">
-                            <label class="form-label vn-label">Exclusividad</label>
-                            <select id="IdOpExclusividad" class="form-select vn-input"></select>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label vn-label">Días previos</label>
-                            <input type="number" id="DiasPrevios" class="form-control vn-input" />
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label vn-label">Fecha hasta</label>
-                            <input type="datetime-local" id="FechaHasta" class="form-control vn-input" />
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label">Importe total</label>
-
-                            <input id="ImporteTotal"
-                                   class="form-control vn-input"
-                                   type="text">
-
-                            <div class="invalid-feedback">
-                                Campo obligatorio
-                            </div>
-                        </div>
-
-                        <button class="btn btn-success vn-btn" id="btnContrato">
-                            <i class="fa fa-file-text-o"></i>
-                            Generar contrato
-                        </button>
-
                     </div>
+
 
                 </div>
 
-
                 <!-- =====================
-                ARTISTAS
+                     ARTISTAS
                 ===================== -->
-
                 <div class="vn-section" id="sec-artistas">
 
-                    <button class="btn btn-outline-light vn-btn mb-2" id="btnAddArtista">
+                    <button class="btn btn-outline-light vn-btn mb-2" id="btnAddArtista" type="button">
                         <i class="fa fa-plus"></i> Agregar artista
                     </button>
 
                     <div class="vn-gridtable">
-
                         <table class="table vn-table">
-
                             <thead>
                                 <tr>
                                     <th>Artista</th>
@@ -267,28 +236,22 @@
                             </thead>
 
                             <tbody id="tbArtistas"></tbody>
-
                         </table>
-
                     </div>
 
                 </div>
 
-
                 <!-- =====================
-                PERSONAL
+                     PERSONAL
                 ===================== -->
-
                 <div class="vn-section" id="sec-personal">
 
-                    <button class="btn btn-outline-light vn-btn mb-2" id="btnAddPersonal">
+                    <button class="btn btn-outline-light vn-btn mb-2" id="btnAddPersonal" type="button">
                         <i class="fa fa-plus"></i> Agregar personal
                     </button>
 
                     <div class="vn-gridtable">
-
                         <table class="table vn-table">
-
                             <thead>
                                 <tr>
                                     <th>Personal</th>
@@ -301,28 +264,22 @@
                             </thead>
 
                             <tbody id="tbPersonal"></tbody>
-
                         </table>
-
                     </div>
 
                 </div>
 
-
                 <!-- =====================
-                COBROS
+                     COBROS
                 ===================== -->
-
                 <div class="vn-section" id="sec-cobros">
 
-                    <button class="btn btn-outline-light vn-btn mb-2" id="btnAddCobro">
+                    <button class="btn btn-outline-light vn-btn mb-2" id="btnAddCobro" type="button">
                         <i class="fa fa-plus"></i> Agregar cobro
                     </button>
 
                     <div class="vn-gridtable">
-
                         <table class="table vn-table">
-
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -336,66 +293,143 @@
                             </thead>
 
                             <tbody id="tbCobros"></tbody>
-
                         </table>
+                    </div>
+
+                </div>
+
+                <div class="vn-section" id="sec-contrato">
+
+
+                    <!-- ====== BLOQUE: CONTRATO ====== -->
+                    <div class="vn-contract-wrap">
+
+                        <div class="vn-subtitle" style="margin-top:0;">
+                            <div class="i"><i class="fa fa-file-text-o"></i></div>
+                            <div class="txt">
+                                <div class="t1">Contrato</div>
+                                <div class="t2">Definí condiciones y elegí formato de exportación</div>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Tipo contrato</label>
+                                <select id="IdTipoContrato" class="form-select vn-input"></select>
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Exclusividad</label>
+                                <!-- PRECONFIG: Si=1 / No=2 -->
+                                <select id="IdOpExclusividad" class="form-select vn-input">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="1">Sí</option>
+                                    <option value="2">No</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label vn-label">Días previos</label>
+                                <input type="number" id="DiasPrevios" class="form-control vn-input" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label vn-label">Fecha hasta</label>
+                                <input type="datetime-local" id="FechaHasta" class="form-control vn-input" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label vn-label">Formato</label>
+
+                                <div class="vn-contract-tiles">
+
+                                    <!-- WORD -->
+                                    <label class="vn-contract-tile" id="tileWord" data-formato="word">
+                                        <div class="ico word">
+                                            <i class="fa fa-file-word-o"></i>
+                                        </div>
+                                        <div class="txt">
+                                            <div class="t1">Word</div>
+                                            <div class="t2">.docx editable</div>
+                                        </div>
+                                        <input type="radio" name="ContratoFormato" value="word" />
+                                    </label>
+
+                                    <!-- PDF -->
+                                    <label class="vn-contract-tile is-selected" id="tilePdf" data-formato="pdf">
+                                        <div class="ico pdf">
+                                            <i class="fa fa-file-pdf-o"></i>
+                                        </div>
+                                        <div class="txt">
+                                            <div class="t1">PDF</div>
+                                            <div class="t2">Documento final</div>
+                                        </div>
+                                        <input type="radio" name="ContratoFormato" value="pdf" checked />
+                                    </label>
+
+                                </div>
+
+                                <div class="mt-2 small" style="opacity:.75;">
+                                    Tip: podés cambiar el formato acá; el botón “Generar contrato” lo usa directamente.
+                                </div>
+                            </div>
+
+                            <div class="col-12 d-flex gap-2 flex-wrap mt-1">
+                                <button class="btn btn-success vn-btn" id="btnContrato" type="button">
+                                    <i class="fa fa-file-text-o"></i>
+                                    Generar contrato
+                                </button>
+
+                            </div>
+
+                        </div>
 
                     </div>
 
                 </div>
 
-
                 <!-- =====================
-                NOTAS
+                     NOTAS
                 ===================== -->
-
                 <div class="vn-section" id="sec-notas">
 
                     <div class="row g-3">
-
                         <div class="col-12">
                             <label class="form-label vn-label">Nota interna</label>
-<textarea id="NotaInterna" class="form-control vn-input" rows="4"></textarea>
+                            <textarea id="NotaInterna" class="form-control vn-input" rows="4"></textarea>
                         </div>
 
                         <div class="col-12">
                             <label class="form-label vn-label">Nota cliente</label>
-<textarea id="NotaCliente" class="form-control vn-input" rows="4"></textarea>
+                            <textarea id="NotaCliente" class="form-control vn-input" rows="4"></textarea>
                         </div>
-
                     </div>
 
                 </div>
 
-
                 <!-- =====================
-                AUDITORIA
+                     AUDITORIA
                 ===================== -->
-
                 <div class="vn-section" id="sec-auditoria">
-
                     <div id="audReg"></div>
                     <div id="audMod"></div>
-
                 </div>
 
             </div>
-
         </div>
 
-
         <!-- =======================
-        RESUMEN FINANCIERO
+             RESUMEN FINANCIERO
         ======================= -->
-
         <div class="vn-card">
 
             <div class="vn-card-head">
-
                 <div class="t">
                     <i class="fa fa-line-chart"></i>
                     Resumen financiero
                 </div>
-
             </div>
 
             <div class="p-3 vn-summary">
@@ -429,17 +463,13 @@
 </div>
 
 <!-- =========================
-MODAL EXPORTAR CONTRATO
+     MODAL EXPORTAR CONTRATO
 ========================= -->
-
 <div class="modal fade vn-export-modal" id="modalExportarContrato" tabindex="-1">
-
     <div class="modal-dialog modal-dialog-centered modal-md">
-
         <div class="modal-content vn-export-card">
 
             <div class="modal-header">
-
                 <h5 class="modal-title">
                     <i class="fa fa-file-text-o"></i>
                     Exportar contrato
@@ -447,11 +477,9 @@ MODAL EXPORTAR CONTRATO
 
                 <button type="button" class="btn-close"
                         data-bs-dismiss="modal"></button>
-
             </div>
 
             <div class="modal-body">
-
                 <p class="vn-export-desc">
                     Elegí el formato en el que querés descargar el contrato.
                 </p>
@@ -459,10 +487,10 @@ MODAL EXPORTAR CONTRATO
                 <div class="vn-export-options">
 
                     <!-- WORD -->
-
                     <button class="vn-export-option"
                             data-tipo="word"
-                            id="btnExportWord">
+                            id="btnExportWord"
+                            type="button">
 
                         <div class="icon word">
                             <i class="fa fa-file-word-o"></i>
@@ -476,10 +504,10 @@ MODAL EXPORTAR CONTRATO
                     </button>
 
                     <!-- PDF -->
-
                     <button class="vn-export-option"
                             data-tipo="pdf"
-                            id="btnExportPdf">
+                            id="btnExportPdf"
+                            type="button">
 
                         <div class="icon pdf">
                             <i class="fa fa-file-pdf-o"></i>
@@ -497,10 +525,9 @@ MODAL EXPORTAR CONTRATO
             </div>
 
         </div>
-
     </div>
-
 </div>
+
 <partial name="~/Views/Utils/Modals.cshtml" />
 
 @section Scripts {
@@ -509,15 +536,25 @@ MODAL EXPORTAR CONTRATO
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pizzip/3.1.5/pizzip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docxtemplater/3.37.9/docxtemplater.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.5/dist/pizzip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docxtemplater@3.37.9/build/docxtemplater.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.4/dist/docx-preview.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
 
     <script>
         window.VN_INIT = {
-        id: @id,
-        idCliente: @idCliente
+            id: @id,
+            idCliente: @idCliente
         };
+
+   
     </script>
 
     <script src="~/js/VentasNuevoModif.js?v=1.0"></script>
