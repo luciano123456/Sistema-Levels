@@ -59,7 +59,9 @@ public partial class Personal
 
     public virtual ICollection<Tarea> Tareas { get; set; } = new List<Tarea>();
 
-    public virtual ICollection<VentasCobrosComisione> VentasCobrosComisiones { get; set; } = new List<VentasCobrosComisione>();
+    public virtual ICollection<VentasArtista> VentasArtista { get; set; } = new List<VentasArtista>();
+
+    public virtual ICollection<VentasCobrosComision> VentasCobrosComisiones { get; set; } = new List<VentasCobrosComision>();
 
     public virtual ICollection<VentasPersonal> VentasPersonals { get; set; } = new List<VentasPersonal>();
 }

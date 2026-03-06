@@ -14,6 +14,22 @@ namespace SistemaLevels.BLL.Service
             _repo = repo;
         }
 
+        public async Task<IQueryable<Venta>> ListarFiltrado(
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+    int? idEstado,
+    int? idArtista,
+    int? idCliente)
+        {
+            return await _repo.ListarFiltrado(
+                fechaDesde,
+                fechaHasta,
+                idEstado,
+                idArtista,
+                idCliente
+            );
+        }
+
         public async Task<ServiceResult> Insertar(
             Venta venta,
             List<VentasArtista> artistas,

@@ -31,8 +31,6 @@ public partial class Representante
 
     public string? Dni { get; set; }
 
-
-
     public virtual Pais IdPaisNavigation { get; set; } = null!;
 
     public virtual PaisesTiposDocumento? IdTipoDocumentoNavigation { get; set; }
@@ -40,6 +38,4 @@ public partial class Representante
     public virtual User? IdUsuarioModificaNavigation { get; set; }
 
     public virtual User IdUsuarioRegistraNavigation { get; set; } = null!;
-
-    public virtual ICollection<VentasArtista> VentasArtista { get; set; } = new List<VentasArtista>();
 }

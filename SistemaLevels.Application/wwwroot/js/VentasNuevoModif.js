@@ -139,6 +139,25 @@
             return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
         } catch { return ""; }
     }
+
+    function vnIsoDateTimeLocal(d) {
+
+        if (!d) return "";
+
+        const dt = new Date(d);
+        if (isNaN(dt.getTime())) return "";
+
+        const pad = n => String(n).padStart(2, "0");
+
+        return dt.getFullYear() + "-" +
+            pad(dt.getMonth() + 1) + "-" +
+            pad(dt.getDate()) + "T" +
+            pad(dt.getHours()) + ":" +
+            pad(dt.getMinutes());
+
+    }
+
+
     function vnNowIsoLocal() {
         return vnIsoLocalFromDate(new Date());
     }
@@ -964,14 +983,36 @@
             document.getElementById("Venta_Id").value = String(v.Id || 0);
             document.getElementById("Venta_IdCliente").value = String(v.IdCliente || 0);
 
+            // =========================
             // Cliente
+            // =========================
             setClienteSeleccionado(Number(v.IdCliente || 0), true);
 
-            // Datos
-            document.getElementById("Fecha").value = vnIsoDateTime(v.Fecha);
-            document.getElementById("NombreEvento").value = v.NombreEvento || "";
-            document.getElementById("Duracion").value = vnIsoLocalFromDate(v.Duracion);
+            // =========================
+            // Fecha (input type="date" => YYYY-MM-DD)
+            // =========================
+            const elFecha = document.getElementById("Fecha");
+            if (elFecha) {
+                elFecha.value = vnIsoDateOnly(v.Fecha); // ✅ date-only
+            }
 
+            // =========================
+            // Nombre evento
+            // =========================
+            document.getElementById("NombreEvento").value = v.NombreEvento || "";
+
+            // =========================
+            // Duración (input "HH:mm")
+            // VM trae DateTime => extraer HH:mm
+            // =========================
+            const elDur = document.getElementById("Duracion");
+            if (elDur) {
+                elDur.value = vnTimeHHmm(v.Duracion); // ✅ "HH:mm"
+            }
+
+            // =========================
+            // Combos (Select2)
+            // =========================
             document.getElementById("IdUbicacion").value = String(v.IdUbicacion || "");
             $("#IdUbicacion")?.trigger("change.select2");
 
@@ -987,56 +1028,98 @@
             document.getElementById("IdTipoContrato").value = String(v.IdTipoContrato || "");
             $("#IdTipoContrato")?.trigger("change.select2");
 
-            document.getElementById("IdOpExclusividad").value = v.IdOpExclusividad != null ? String(v.IdOpExclusividad) : "";
+            document.getElementById("IdOpExclusividad").value =
+                v.IdOpExclusividad != null ? String(v.IdOpExclusividad) : "";
             $("#IdOpExclusividad")?.trigger("change.select2");
 
-            document.getElementById("DiasPrevios").value = v.DiasPrevios != null ? String(v.DiasPrevios) : "";
-            document.getElementById("FechaHasta").value = v.FechaHasta ? vnIsoDateTime(v.FechaHasta) : "";
+            // =========================
+            // Campos opcionales
+            // =========================
+            document.getElementById("DiasPrevios").value =
+                v.DiasPrevios != null ? String(v.DiasPrevios) : "";
 
-            document.getElementById("ImporteTotal").value = String(v.ImporteTotal ?? "");
+            const elFechaHasta = document.getElementById("FechaHasta");
+            if (elFechaHasta) {
+                // si tu input es datetime-local: usar vnIsoDateTimeLocal
+                // si tu input es date: usar vnIsoDateOnly
+                // (te dejo el más común: datetime-local)
+                elFechaHasta.value = v.FechaHasta ? vnIsoDateTimeLocal(v.FechaHasta) : "";
+            }
+
+            // =========================
+            // ImporteTotal (texto, y si tenés miles, lo formateás después)
+            // =========================
+            const elImp = document.getElementById("ImporteTotal");
+            if (elImp) {
+                // guardo como número simple, sin "NaN"
+                elImp.value = String(Number(v.ImporteTotal ?? 0));
+            }
 
             document.getElementById("NotaInterna").value = v.NotaInterna || "";
             document.getElementById("NotaCliente").value = v.NotaCliente || "";
 
-            // Detalle
-            VN.detalle.artistas = Array.isArray(v.Artistas) ? v.Artistas.map(x => ({
-                Id: Number(x.Id || 0),
-                IdArtista: Number(x.IdArtista || 0),
-                IdRepresentante: Number(x.IdRepresentante || 0),
-                PorcComision: Number(x.PorcComision || 0),
-                TotalComision: Number(x.TotalComision || 0)
-            })) : [];
+            // =========================
+            // Detalle (normalización)
+            // =========================
+            VN.detalle.artistas = Array.isArray(v.Artistas)
+                ? v.Artistas.map(x => ({
+                    Id: Number(x.Id || 0),
+                    IdArtista: Number(x.IdArtista || 0),
+                    IdRepresentante: Number(x.IdRepresentante || 0),
+                    PorcComision: Number(x.PorcComision || 0),
+                    TotalComision: Number(x.TotalComision || 0)
+                }))
+                : [];
 
-            VN.detalle.personal = Array.isArray(v.Personal) ? v.Personal.map(x => ({
-                Id: Number(x.Id || 0),
-                IdPersonal: Number(x.IdPersonal || 0),
-                IdCargo: Number(x.IdCargo || 0),
-                IdTipoComision: Number(x.IdTipoComision || 0),
-                PorcComision: Number(x.PorcComision || 0),
-                TotalComision: Number(x.TotalComision || 0)
-            })) : [];
+            VN.detalle.personal = Array.isArray(v.Personal)
+                ? v.Personal.map(x => ({
+                    Id: Number(x.Id || 0),
+                    IdPersonal: Number(x.IdPersonal || 0),
+                    IdCargo: Number(x.IdCargo || 0),
+                    IdTipoComision: Number(x.IdTipoComision || 0),
+                    PorcComision: Number(x.PorcComision || 0),
+                    TotalComision: Number(x.TotalComision || 0)
+                }))
+                : [];
 
-            VN.detalle.cobros = Array.isArray(v.Cobros) ? v.Cobros.map(x => ({
-                Id: Number(x.Id || 0),
-                Fecha: x.Fecha ? new Date(x.Fecha) : new Date(),
-                IdMoneda: Number(x.IdMoneda || 0),
-                IdCuenta: Number(x.IdCuenta || 0),
-                Importe: Number(x.Importe || 0),
-                Cotizacion: Number(x.Cotizacion || 1) || 1,
-                Conversion: Number(x.Conversion || 0),
-                ManualConversion: true, // si viene del backend, respetamos
-                NotaCliente: x.NotaCliente || "",
-                NotaInterna: x.NotaInterna || ""
-            })) : [];
+            VN.detalle.cobros = Array.isArray(v.Cobros)
+                ? v.Cobros.map(x => {
+                    const importe = Number(x.Importe || 0);
+                    const cot = Number(x.Cotizacion || 1) || 1;
+                    const conv = Number(x.Conversion || 0);
 
+                    return {
+                        Id: Number(x.Id || 0),
+                        Fecha: x.Fecha ? new Date(x.Fecha) : new Date(),
+                        IdMoneda: Number(x.IdMoneda || 0),
+                        IdCuenta: Number(x.IdCuenta || 0),
+                        Importe: importe,
+                        Cotizacion: cot,
+                        Conversion: conv > 0 ? conv : vnRound2(importe * cot), // ✅ fallback consistente
+                        ManualConversion: true, // viene de backend => respetamos
+                        NotaCliente: x.NotaCliente || "",
+                        NotaInterna: x.NotaInterna || ""
+                    };
+                })
+                : [];
+
+            // =========================
+            // Render + totales
+            // =========================
             renderDetalle();
             recalcularTotales();
 
-            // auditoría
+            // =========================
+            // Auditoría
+            // =========================
             setAuditoria(v);
 
             VN.flags.dirty = false;
             vnSetSaving(false, "Listo", "ok");
+
+            // Si usás input con miles, aplicalo al final
+            if (typeof aplicarFormatoMiles === "function") aplicarFormatoMiles();
+
         } catch (e) {
             console.error(e);
             vnToastErr("No se pudo abrir la venta.");
@@ -1844,13 +1927,16 @@
        GUARDAR
     ========================= */
     async function guardarVenta() {
+
         if (!validarCamposVenta()) return;
 
         const model = buildModel();
         const isNew = Number(model.Id || 0) === 0;
 
         try {
+
             vnSetSaving(true, "Guardando...");
+
             const url = isNew ? API.insertar : API.actualizar;
             const method = isNew ? "POST" : "PUT";
 
@@ -1865,30 +1951,32 @@
             const data = await r.json();
 
             if (!data.valor) {
+
                 vnToastErr(data.mensaje || "No se pudo guardar.");
                 vnSetSaving(false, "Error", "err");
                 return;
+
             }
 
             vnToastOk(data.mensaje || "Guardado OK");
-            vnSetSaving(false, "Guardado", "ok");
 
-            // limpiar borrador
+            // limpiar draft
             localStorage.removeItem(DRAFT_KEY());
             VN.flags.dirty = false;
 
-            // si devuelve idReferencia, reabrimos para traer IDs de detalles (si el backend los asigna)
-            const idRef = Number(data.idReferencia || 0);
-            if (idRef > 0) {
-                await abrirVenta(idRef);
-            } else {
-                // fallback: si era nueva y no devolvió id, dejamos como está
-                // (pero tu service sí devuelve IdReferencia según tu código)
-            }
+            vnSetSaving(false, "Guardado", "ok");
+
+            // siempre ir al index
+            setTimeout(() => {
+                window.location.href = "/Ventas";
+            }, 600);
+
         } catch (e) {
+
             console.error(e);
             vnToastErr("Error guardando la venta.");
             vnSetSaving(false, "Error", "err");
+
         }
     }
 
@@ -2192,3 +2280,4 @@ document.addEventListener("input", function (e) {
 
     try { input.setSelectionRange(newPos, newPos); } catch { }
 });
+

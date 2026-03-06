@@ -113,9 +113,9 @@ public partial class User
 
     public virtual ICollection<VentasCobro> VentasCobroIdUsuarioRegistraNavigations { get; set; } = new List<VentasCobro>();
 
-    public virtual ICollection<VentasCobrosComisione> VentasCobrosComisioneIdUsuarioModificaNavigations { get; set; } = new List<VentasCobrosComisione>();
+    public virtual ICollection<VentasCobrosComision> VentasCobrosComisioneIdUsuarioModificaNavigations { get; set; } = new List<VentasCobrosComision>();
 
-    public virtual ICollection<VentasCobrosComisione> VentasCobrosComisioneIdUsuarioRegistraNavigations { get; set; } = new List<VentasCobrosComisione>();
+    public virtual ICollection<VentasCobrosComision> VentasCobrosComisioneIdUsuarioRegistraNavigations { get; set; } = new List<VentasCobrosComision>();
 
     public virtual ICollection<VentasPersonal> VentasPersonalIdUsuarioModificaNavigations { get; set; } = new List<VentasPersonal>();
 
