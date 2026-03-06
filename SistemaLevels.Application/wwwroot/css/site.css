@@ -862,3 +862,12 @@ thead tr.filters th {
     overflow-y: auto;
     max-height: calc(100vh - header - footer);
 }
+
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #5b8cff66;
+    border-radius: 10px;
+}

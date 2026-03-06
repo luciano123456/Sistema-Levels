@@ -112,6 +112,9 @@ builder.Services.AddScoped<IOpcionesBinariasService, OpcionesBinariasService>();
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 
+builder.Services.AddScoped<IArtistasCuentaCorrienteRepository, ArtistasCuentaCorrienteRepository>();
+builder.Services.AddScoped<IArtistasCuentaCorrienteService, ArtistasCuentaCorrienteService>();
+
 
 
 
