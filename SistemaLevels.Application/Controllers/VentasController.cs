@@ -48,6 +48,49 @@ public class VentasController : Controller
         return Ok(lista);
     }
 
+
+    [HttpPost]
+    public async Task<IActionResult> ListaFiltrada([FromBody] VMVentasFiltro f)
+    {
+        var ventas = await _service.ListarFiltrado(
+            f.FechaDesde,
+            f.FechaHasta,
+            f.IdEstado,
+            f.IdArtista,
+            f.IdCliente
+        );
+
+        var lista = ventas
+            .Select(v => new VMVenta
+            {
+                Id = v.Id,
+                Fecha = v.Fecha,
+                NombreEvento = v.NombreEvento,
+
+                IdCliente = v.IdCliente,
+                Cliente = v.IdClienteNavigation.Nombre,
+
+                IdProductora = v.IdProductora,
+                Productora = v.IdProductoraNavigation.Nombre,
+
+                IdUbicacion = v.IdUbicacion,
+                Ubicacion = v.IdUbicacionNavigation.Descripcion,
+
+                IdMoneda = v.IdMoneda,
+                Moneda = v.IdMonedaNavigation.Nombre,
+
+                IdEstado = v.IdEstado,
+                Estado = v.IdEstadoNavigation.Nombre,
+
+                ImporteTotal = v.ImporteTotal,
+                ImporteAbonado = v.ImporteAbonado,
+                Saldo = v.Saldo
+            })
+            .OrderByDescending(x => x.Fecha)
+            .ToList();
+
+        return Ok(lista);
+    }
     /* ===============================
    PANEL DERECHA: TODAS LAS VENTAS
 =============================== */

@@ -13,5 +13,12 @@ namespace SistemaLevels.BLL.Service
         Task<Venta?> Obtener(int id);
         Task<IQueryable<Venta>> ObtenerTodos();
         Task<IQueryable<Venta>> ObtenerPorCliente(int idCliente);
+        Task<IQueryable<Venta>> ListarFiltrado(
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+    int? idEstado,
+    int? idArtista,
+    int? idCliente
+);
     }
 }

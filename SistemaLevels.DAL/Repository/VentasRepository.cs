@@ -323,5 +323,41 @@ namespace SistemaLevels.DAL.Repository
 
             await _db.SaveChangesAsync();
         }
+
+        public async Task<IQueryable<Venta>> ListarFiltrado(
+    DateTime? fechaDesde,
+    DateTime? fechaHasta,
+    int? idEstado,
+    int? idArtista,
+    int? idCliente)
+        {
+            IQueryable<Venta> query = _db.Ventas
+                .Include(x => x.IdClienteNavigation)
+                .Include(x => x.IdProductoraNavigation)
+                .Include(x => x.IdMonedaNavigation)
+                .Include(x => x.IdEstadoNavigation)
+                .Include(x => x.IdUbicacionNavigation);
+
+            if (fechaDesde.HasValue)
+                query = query.Where(x => x.Fecha >= fechaDesde);
+
+            if (fechaHasta.HasValue)
+                query = query.Where(x => x.Fecha <= fechaHasta);
+
+            if (idEstado.HasValue)
+                query = query.Where(x => x.IdEstado == idEstado);
+
+            if (idCliente.HasValue)
+                query = query.Where(x => x.IdCliente == idCliente);
+
+            if (idArtista.HasValue)
+                query = query.Where(x =>
+                    x.VentasArtista.Any(a => a.IdArtista == idArtista));
+
+            return await Task.FromResult(query);
+        }
+
     }
-}
+
+    
+    }

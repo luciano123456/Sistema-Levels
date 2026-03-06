@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SistemaLevels.Models;
 
-public partial class VentasCobrosComisione
+public partial class VentasCobrosComision
 {
     public int Id { get; set; }
 

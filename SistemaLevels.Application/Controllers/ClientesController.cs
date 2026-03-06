@@ -50,12 +50,14 @@ public class ClientesController : Controller
             CodigoPostal = c.CodigoPostal,
             IdCondicionIva = c.IdCondicionIva,
 
+        
             AsociacionAutomatica = c.AsociacionAutomatica,
 
             Pais = c.IdPaisNavigation != null ? c.IdPaisNavigation.Nombre : "",
             Provincia = c.IdProvinciaNavigation != null ? c.IdProvinciaNavigation.Nombre : "",
             TipoDocumento = c.IdTipoDocumentoNavigation != null ? c.IdTipoDocumentoNavigation.Nombre : "",
             CondicionIva = c.IdCondicionIvaNavigation != null ? c.IdCondicionIvaNavigation.Nombre : "",
+
 
             // texto de productoras (si querés mostrarlo en grilla)
             Productora = (c.ClientesProductoras != null && c.ClientesProductoras.Count > 0)
@@ -65,6 +67,10 @@ public class ClientesController : Controller
                         : "1 asignada")
                     : $"{c.ClientesProductoras.Count} asignadas")
                 : "",
+
+            ProductorasIds = c.ClientesProductoras != null
+    ? c.ClientesProductoras.Select(x => x.IdProductora).ToList()
+    : new List<int>(),
 
             IdUsuarioRegistra = c.IdUsuarioRegistra,
             FechaRegistra = c.FechaRegistra,

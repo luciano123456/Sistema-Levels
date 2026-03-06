@@ -65,22 +65,21 @@
             <div class="col-12">
                 <div class="card-glass p-3">
 
-                    <!-- FILTROS (colapsable, generalizable) -->
-                    <div class="rp-filtros-wrap">
+                    <div class="rp-filtros-wrap mb-3">
                         <div class="rp-filtros-head"
                              data-bs-toggle="collapse"
-                             data-bs-target="#panelFiltros"
+                             data-bs-target="#panelFiltrosVentas"
                              aria-expanded="false"
-                             aria-controls="panelFiltros">
+                             aria-controls="panelFiltrosVentas">
                             <div class="title">
                                 <i class="fa fa-filter"></i>
                                 <span>Filtros</span>
-                                <small class="text-muted-cc" id="txtFiltrosEstado" style="margin-left:8px;"></small>
+                                <small class="text-muted-cc" id="txtFiltrosEstadoVentas" style="margin-left:8px;"></small>
                             </div>
                             <i class="fa fa-chevron-down chev"></i>
                         </div>
 
-                        <div id="panelFiltros" class="collapse">
+                        <div id="panelFiltrosVentas" class="collapse">
                             <div class="rp-filtros-body">
                                 <div class="row g-3">
 
@@ -95,42 +94,22 @@
                                     </div>
 
                                     <div class="col-md-3">
-                                        <div class="rp-filter-label">Categoría</div>
-                                        <select id="fCategoria" class="rp-filter-select select2"></select>
+                                        <div class="rp-filter-label">Estado</div>
+                                        <select id="fEstado" class="rp-filter-select select2"></select>
                                     </div>
 
                                     <div class="col-md-3">
-                                        <div class="rp-filter-label">Personal</div>
-                                        <select id="fPersonal" class="rp-filter-select select2"></select>
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <div class="rp-filter-label">Moneda</div>
-                                        <select id="fMoneda" class="rp-filter-select select2"></select>
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <div class="rp-filter-label">Cuenta</div>
-                                        <select id="fCuenta" class="rp-filter-select select2"></select>
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <div class="rp-filter-label">Concepto contiene</div>
-                                        <input type="text" id="fConcepto" class="rp-filter-input" placeholder="Ej: alquiler..." />
-                                    </div>
-
-                                    <div class="col-md-3">
-                                        <div class="rp-filter-label">Importe mínimo</div>
-                                        <input type="number" id="fImporteMin" class="rp-filter-input" step="0.01" />
+                                        <div class="rp-filter-label">Artista</div>
+                                        <select id="fArtista" class="rp-filter-select select2"></select>
                                     </div>
 
                                 </div>
 
                                 <div class="rp-filtros-actions">
-                                    <button class="btn btn-outline-light" type="button" onclick="limpiarFiltros()">
+                                    <button class="btn btn-outline-light" type="button" onclick="limpiarFiltrosVentas()">
                                         <i class="fa fa-eraser"></i> Limpiar
                                     </button>
-                                    <button class="btn btn-primary" type="button" onclick="aplicarFiltros()">
+                                    <button class="btn btn-primary" type="button" onclick="aplicarFiltrosVentas()">
                                         <i class="fa fa-check"></i> Aplicar
                                     </button>
                                 </div>

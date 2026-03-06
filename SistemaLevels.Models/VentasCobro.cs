@@ -49,5 +49,5 @@ public partial class VentasCobro
 
     public virtual Venta IdVentaNavigation { get; set; } = null!;
 
-    public virtual ICollection<VentasCobrosComisione> VentasCobrosComisiones { get; set; } = new List<VentasCobrosComisione>();
+    public virtual ICollection<VentasCobrosComision> VentasCobrosComisiones { get; set; } = new List<VentasCobrosComision>();
 }

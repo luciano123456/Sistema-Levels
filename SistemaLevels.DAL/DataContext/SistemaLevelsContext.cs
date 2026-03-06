@@ -100,7 +100,7 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<VentasCobro> VentasCobros { get; set; }
 
-    public virtual DbSet<VentasCobrosComisione> VentasCobrosComisiones { get; set; }
+    public virtual DbSet<VentasCobrosComision> VentasCobrosComisiones { get; set; }
 
     public virtual DbSet<VentasEstado> VentasEstados { get; set; }
 
@@ -1321,7 +1321,7 @@ public partial class SistemaLevelsContext : DbContext
                 .HasConstraintName("FK_Ventas_Cobros_Ventas");
         });
 
-        modelBuilder.Entity<VentasCobrosComisione>(entity =>
+        modelBuilder.Entity<VentasCobrosComision>(entity =>
         {
             entity.ToTable("Ventas_Cobros_Comisiones");
 

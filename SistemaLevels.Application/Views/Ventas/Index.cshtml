@@ -7,6 +7,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
 
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
     <link href="~/css/disenopantallas.css" rel="stylesheet" />
     <link href="~/css/Ventas.css?v=1.0" rel="stylesheet" />
 }
@@ -66,6 +69,7 @@
 
             <div class="vi-card-body">
 
+                <!-- BUSCAR CLIENTE -->
                 <div class="vi-search mb-2">
                     <i class="fa fa-search"></i>
                     <input id="txtBuscarCliente"
@@ -73,6 +77,43 @@
                            placeholder="Buscar cliente..." />
                 </div>
 
+                <!-- FILTROS CLIENTES -->
+                <div class="rp-filtros-body p-0 mb-2">
+
+                    <div class="row g-2">
+
+                        <div class="col-12">
+                            <div class="rp-filter-label">Productora</div>
+                            <select id="fClienteProductora"
+                                    class="rp-filter-select select2"
+                                    style="width:100%"></select>
+                        </div>
+
+                        <div class="col-12">
+
+                            <div class="vi-switch-wrap">
+
+                                <label class="vi-switch">
+
+                                    <input type="checkbox" id="fClienteSaldo">
+
+                                    <span class="slider"></span>
+
+                                </label>
+
+                                <span class="vi-switch-label">
+                                    Solo con saldo
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- LISTA CLIENTES -->
                 <div id="clientesList" class="vi-list"></div>
 
             </div>
@@ -101,6 +142,87 @@
 
             </div>
 
+
+            <div class="rp-filtros-wrap mb-3">
+
+                <div class="rp-filtros-head"
+                     data-bs-toggle="collapse"
+                     data-bs-target="#panelFiltrosVentas"
+                     aria-expanded="false"
+                     aria-controls="panelFiltros">
+
+                    <div class="title">
+                        <i class="fa fa-filter"></i>
+                        <span>Filtros</span>
+                    </div>
+
+                    <i class="fa fa-chevron-down chev"></i>
+
+                </div>
+
+                <div id="panelFiltrosVentas" class="collapse">
+
+                    <div class="rp-filtros-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Fecha desde</div>
+                                <input type="date"
+                                       id="fFechaDesde"
+                                       class="rp-filter-input" />
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Fecha hasta</div>
+                                <input type="date"
+                                       id="fFechaHasta"
+                                       class="rp-filter-input" />
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Estado</div>
+                                <select id="fEstado"
+                                        class="rp-filter-select select2"
+                                        style="width:100%">
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Artista</div>
+                                <select id="fArtista"
+                                        class="rp-filter-select select2"
+                                        style="width:100%">
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <div class="rp-filtros-actions">
+
+                            <button class="btn btn-outline-light"
+                                    type="button"
+                                    onclick="limpiarFiltrosVentas()">
+                                <i class="fa fa-eraser"></i>
+                                Limpiar
+                            </button>
+
+                            <button class="btn btn-primary"
+                                    type="button"
+                                    onclick="aplicarFiltrosVentas()">
+                                <i class="fa fa-check"></i>
+                                Aplicar
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
             <div class="vi-card-body">
 
                 <!-- KPIs -->
@@ -128,7 +250,7 @@
 
                 </div>
 
-                <!-- BUSCADOR -->
+                <!-- BUSCAR VENTA -->
                 <div class="vi-search mb-2">
                     <i class="fa fa-search"></i>
                     <input id="txtBuscarVenta"
@@ -149,9 +271,34 @@
 
 
 @section Scripts {
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- 3️⃣ DataTables Buttons (DESPUÉS del core) -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 
-    <script src="~/js/Ventas.js?v=1.0"></script>
+    <!-- 4️⃣ Dependencias exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
+    <!-- 5️⃣ Botones HTML5 -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+    <!-- fixedHeader -->
+    <script src="https://cdn.datatables.net/fixedheader/3.2.2/js/dataTables.fixedHeader.min.js"></script>
+
+    <!-- select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- moment -->
+    <script src="~/js/utils/moment.js"></script>
+
+    <!-- charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Tu JS -->
+    <script src="~/js/Ventas.js?v=1.1"></script>
 }
+
+
