@@ -65,13 +65,11 @@ namespace SistemaLevels.Application.Models.ViewModels
         public decimal PorcComision { get; set; }
         public decimal TotalComision { get; set; }
 
-        // por ahora no CC
         public int? IdArtistaCc { get; set; }
 
         public string? Artista { get; set; }
         public string? Representante { get; set; }
     }
-
     public class VMVentaPersonal
     {
         public int Id { get; set; }

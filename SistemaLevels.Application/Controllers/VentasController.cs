@@ -20,19 +20,16 @@ public class VentasController : Controller
     [AllowAnonymous]
     public IActionResult Index() => View();
 
-
     [AllowAnonymous]
     public IActionResult NuevoModif(int id = 0, int idCliente = 0)
     {
         ViewBag.Id = id;
         ViewBag.IdCliente = idCliente;
-
         return View();
     }
 
-
     /* ===============================
-       PANEL IZQUIERDA: CLIENTES
+       CLIENTES
     =============================== */
 
     [HttpGet]
@@ -48,6 +45,9 @@ public class VentasController : Controller
         return Ok(lista);
     }
 
+    /* ===============================
+       LISTA FILTRADA
+    =============================== */
 
     [HttpPost]
     public async Task<IActionResult> ListaFiltrada([FromBody] VMVentasFiltro f)
@@ -61,97 +61,7 @@ public class VentasController : Controller
         );
 
         var lista = ventas
-            .Select(v => new VMVenta
-            {
-                Id = v.Id,
-                Fecha = v.Fecha,
-                NombreEvento = v.NombreEvento,
-
-                IdCliente = v.IdCliente,
-                Cliente = v.IdClienteNavigation.Nombre,
-
-                IdProductora = v.IdProductora,
-                Productora = v.IdProductoraNavigation.Nombre,
-
-                IdUbicacion = v.IdUbicacion,
-                Ubicacion = v.IdUbicacionNavigation.Descripcion,
-
-                IdMoneda = v.IdMoneda,
-                Moneda = v.IdMonedaNavigation.Nombre,
-
-                IdEstado = v.IdEstado,
-                Estado = v.IdEstadoNavigation.Nombre,
-
-                ImporteTotal = v.ImporteTotal,
-                ImporteAbonado = v.ImporteAbonado,
-                Saldo = v.Saldo
-            })
-            .OrderByDescending(x => x.Fecha)
-            .ToList();
-
-        return Ok(lista);
-    }
-    /* ===============================
-   PANEL DERECHA: TODAS LAS VENTAS
-=============================== */
-
-    [HttpGet]
-    public async Task<IActionResult> Lista()
-    {
-        var ventas = await _service.ObtenerTodos();
-
-        var lista = ventas
-            .Select(v => new VMVenta
-            {
-                Id = v.Id,
-                Fecha = v.Fecha,
-                NombreEvento = v.NombreEvento,
-
-                IdCliente = v.IdCliente,
-                Cliente = v.IdClienteNavigation != null
-                    ? v.IdClienteNavigation.Nombre
-                    : "",
-
-                IdProductora = v.IdProductora,
-                Productora = v.IdProductoraNavigation != null
-                    ? v.IdProductoraNavigation.Nombre
-                    : "",
-
-                IdUbicacion = v.IdUbicacion,
-                Ubicacion = v.IdUbicacionNavigation != null
-                    ? v.IdUbicacionNavigation.Descripcion
-                    : "",
-
-                IdMoneda = v.IdMoneda,
-                Moneda = v.IdMonedaNavigation != null
-                    ? v.IdMonedaNavigation.Nombre
-                    : "",
-
-                IdEstado = v.IdEstado,
-                Estado = v.IdEstadoNavigation != null
-                    ? v.IdEstadoNavigation.Nombre
-                    : "",
-
-                ImporteTotal = v.ImporteTotal,
-                ImporteAbonado = v.ImporteAbonado,
-                Saldo = v.Saldo
-            })
-            .OrderByDescending(x => x.Fecha)
-            .ToList();
-
-        return Ok(lista);
-    }
-
-    /* ===============================
-       PANEL DERECHA: VENTAS POR CLIENTE
-    =============================== */
-
-    [HttpGet]
-    public async Task<IActionResult> ListaPorCliente(int idCliente)
-    {
-        var ventas = await _service.ObtenerPorCliente(idCliente);
-
-        var lista = ventas.Select(v => new VMVenta
+        .Select(v => new VMVenta
         {
             Id = v.Id,
             Fecha = v.Fecha,
@@ -175,20 +85,106 @@ public class VentasController : Controller
             ImporteTotal = v.ImporteTotal,
             ImporteAbonado = v.ImporteAbonado,
             Saldo = v.Saldo
-        }).OrderByDescending(x => x.Fecha).ToList();
+        })
+        .OrderByDescending(x => x.Fecha)
+        .ToList();
 
         return Ok(lista);
     }
 
     /* ===============================
-       EDITAR INFO (venta completa)
+       LISTA GENERAL
+    =============================== */
+
+    [HttpGet]
+    public async Task<IActionResult> Lista()
+    {
+        var ventas = await _service.ObtenerTodos();
+
+        var lista = ventas
+        .Select(v => new VMVenta
+        {
+            Id = v.Id,
+            Fecha = v.Fecha,
+            NombreEvento = v.NombreEvento,
+
+            IdCliente = v.IdCliente,
+            Cliente = v.IdClienteNavigation != null ? v.IdClienteNavigation.Nombre : "",
+
+            IdProductora = v.IdProductora,
+            Productora = v.IdProductoraNavigation != null ? v.IdProductoraNavigation.Nombre : "",
+
+            IdUbicacion = v.IdUbicacion,
+            Ubicacion = v.IdUbicacionNavigation != null ? v.IdUbicacionNavigation.Descripcion : "",
+
+            IdMoneda = v.IdMoneda,
+            Moneda = v.IdMonedaNavigation != null ? v.IdMonedaNavigation.Nombre : "",
+
+            IdEstado = v.IdEstado,
+            Estado = v.IdEstadoNavigation != null ? v.IdEstadoNavigation.Nombre : "",
+
+            ImporteTotal = v.ImporteTotal,
+            ImporteAbonado = v.ImporteAbonado,
+            Saldo = v.Saldo
+        })
+        .OrderByDescending(x => x.Fecha)
+        .ToList();
+
+        return Ok(lista);
+    }
+
+    /* ===============================
+       VENTAS POR CLIENTE
+    =============================== */
+
+    [HttpGet]
+    public async Task<IActionResult> ListaPorCliente(int idCliente)
+    {
+        var ventas = await _service.ObtenerPorCliente(idCliente);
+
+        var lista = ventas
+        .Select(v => new VMVenta
+        {
+            Id = v.Id,
+            Fecha = v.Fecha,
+            NombreEvento = v.NombreEvento,
+
+            IdCliente = v.IdCliente,
+            Cliente = v.IdClienteNavigation != null ? v.IdClienteNavigation.Nombre : "",
+
+            IdProductora = v.IdProductora,
+            Productora = v.IdProductoraNavigation != null ? v.IdProductoraNavigation.Nombre : "",
+
+            IdUbicacion = v.IdUbicacion,
+            Ubicacion = v.IdUbicacionNavigation != null ? v.IdUbicacionNavigation.Descripcion : "",
+
+            IdMoneda = v.IdMoneda,
+            Moneda = v.IdMonedaNavigation != null ? v.IdMonedaNavigation.Nombre : "",
+
+            IdEstado = v.IdEstado,
+            Estado = v.IdEstadoNavigation != null ? v.IdEstadoNavigation.Nombre : "",
+
+            ImporteTotal = v.ImporteTotal,
+            ImporteAbonado = v.ImporteAbonado,
+            Saldo = v.Saldo
+        })
+        .OrderByDescending(x => x.Fecha)
+        .ToList();
+
+        return Ok(lista);
+    }
+
+    /* ===============================
+       OBTENER VENTA COMPLETA
     =============================== */
 
     [HttpGet]
     public async Task<IActionResult> EditarInfo(int id)
     {
         var v = await _service.Obtener(id);
-        if (v == null) return NotFound();
+
+        if (v == null)
+            return NotFound();
 
         var vm = new VMVenta
         {
@@ -220,24 +216,25 @@ public class VentasController : Controller
             {
                 Id = a.Id,
                 IdArtista = a.IdArtista,
-                Artista = a.IdArtistaNavigation != null ? a.IdArtistaNavigation.Nombre : "",
                 IdRepresentante = a.IdRepresentante,
-                Representante = a.IdRepresentanteNavigation != null ? a.IdRepresentanteNavigation.Nombre : "",
                 PorcComision = a.PorcComision,
-                TotalComision = a.TotalComision
+                TotalComision = a.TotalComision,
+                IdArtistaCc = a.IdArtistaCc,
+                Artista = a.IdArtistaNavigation != null ? a.IdArtistaNavigation.Nombre : "",
+                Representante = a.IdRepresentanteNavigation != null ? a.IdRepresentanteNavigation.Nombre : ""
             }).ToList(),
 
             Personal = v.VentasPersonals.Select(p => new VMVentaPersonal
             {
                 Id = p.Id,
                 IdPersonal = p.IdPersonal,
-                Personal = p.IdPersonalNavigation != null ? p.IdPersonalNavigation.Nombre : "",
                 IdCargo = p.IdCargo,
-                Cargo = p.IdCargoNavigation != null ? p.IdCargoNavigation.Nombre : "",
                 IdTipoComision = p.IdTipoComision,
-                TipoComision = p.IdTipoComisionNavigation != null ? p.IdTipoComisionNavigation.Nombre : "",
                 PorcComision = p.PorcComision,
-                TotalComision = p.TotalComision
+                TotalComision = p.TotalComision,
+                Personal = p.IdPersonalNavigation != null ? p.IdPersonalNavigation.Nombre : "",
+                Cargo = p.IdCargoNavigation != null ? p.IdCargoNavigation.Nombre : "",
+                TipoComision = p.IdTipoComisionNavigation != null ? p.IdTipoComisionNavigation.Nombre : ""
             }).ToList(),
 
             Cobros = v.VentasCobros.Select(c => new VMVentaCobro
@@ -245,20 +242,23 @@ public class VentasController : Controller
                 Id = c.Id,
                 Fecha = c.Fecha,
                 IdMoneda = c.IdMoneda,
-                Moneda = c.IdMonedaNavigation != null ? c.IdMonedaNavigation.Nombre : "",
                 IdCuenta = c.IdCuenta,
-                Cuenta = c.IdCuentaNavigation != null ? c.IdCuentaNavigation.Nombre : "",
                 Importe = c.Importe,
                 Cotizacion = c.Cotizacion,
                 Conversion = c.Conversion,
                 NotaCliente = c.NotaCliente,
-                NotaInterna = c.NotaInterna
+                NotaInterna = c.NotaInterna,
+                IdClienteCc = c.IdClienteCc,
+                IdArtistaCc = c.IdArtistaCc,
+                IdCaja = c.IdCaja,
+                Moneda = c.IdMonedaNavigation != null ? c.IdMonedaNavigation.Nombre : "",
+                Cuenta = c.IdCuentaNavigation != null ? c.IdCuentaNavigation.Nombre : ""
             }).OrderBy(x => x.Fecha).ToList(),
 
             FechaRegistra = v.FechaRegistra,
-            UsuarioRegistra = v.IdUsuarioRegistraNavigation?.Usuario,
+            UsuarioRegistra = v.IdUsuarioRegistraNavigation != null ? v.IdUsuarioRegistraNavigation.Usuario : "",
             FechaModifica = v.FechaModifica,
-            UsuarioModifica = v.IdUsuarioModificaNavigation?.Usuario
+            UsuarioModifica = v.IdUsuarioModificaNavigation != null ? v.IdUsuarioModificaNavigation.Usuario : ""
         };
 
         return Ok(vm);
@@ -273,20 +273,22 @@ public class VentasController : Controller
     {
         int idUsuario = int.Parse(User.FindFirst("Id")!.Value);
 
-        var venta = MapVenta(model, idUsuario, esUpdate: false);
+        var venta = MapVenta(model, idUsuario, false);
 
         var artistas = (model.Artistas ?? new()).Select(x => new VentasArtista
         {
+            Id = x.Id,
             IdVenta = 0,
             IdArtista = x.IdArtista,
             IdRepresentante = x.IdRepresentante,
             PorcComision = x.PorcComision,
             TotalComision = x.TotalComision,
-            IdArtistaCc = 0
+            IdArtistaCc = x.IdArtistaCc ?? 0
         }).ToList();
 
         var personal = (model.Personal ?? new()).Select(x => new VentasPersonal
         {
+            Id = x.Id,
             IdVenta = 0,
             IdPersonal = x.IdPersonal,
             IdCargo = x.IdCargo,
@@ -299,30 +301,32 @@ public class VentasController : Controller
 
         var cobros = (model.Cobros ?? new()).Select(x => new VentasCobro
         {
+            Id = x.Id,
             IdVenta = 0,
-
-            IdClienteCc = null,
-            IdArtistaCc = null,
-            IdCaja = null,
-
+            IdClienteCc = x.IdClienteCc,
+            IdArtistaCc = x.IdArtistaCc,
+            IdCaja = x.IdCaja,
             Fecha = x.Fecha == default ? DateTime.Now : x.Fecha,
             IdMoneda = x.IdMoneda,
             IdCuenta = x.IdCuenta,
             Importe = x.Importe,
-
             Cotizacion = x.Cotizacion <= 0 ? 1 : x.Cotizacion,
             Conversion = x.Conversion <= 0 ? x.Importe : x.Conversion,
-
             NotaCliente = x.NotaCliente,
             NotaInterna = x.NotaInterna,
-
             IdUsuarioRegistra = idUsuario,
             FechaRegistra = DateTime.Now
         }).ToList();
 
         ServiceResult result = await _service.Insertar(venta, artistas, personal, cobros);
 
-        return Ok(new { valor = result.Ok, mensaje = result.Mensaje, tipo = result.Tipo, idReferencia = result.IdReferencia });
+        return Ok(new
+        {
+            valor = result.Ok,
+            mensaje = result.Mensaje,
+            tipo = result.Tipo,
+            idReferencia = result.IdReferencia
+        });
     }
 
     /* ===============================
@@ -334,20 +338,22 @@ public class VentasController : Controller
     {
         int idUsuario = int.Parse(User.FindFirst("Id")!.Value);
 
-        var venta = MapVenta(model, idUsuario, esUpdate: true);
+        var venta = MapVenta(model, idUsuario, true);
 
         var artistas = (model.Artistas ?? new()).Select(x => new VentasArtista
         {
+            Id = x.Id,
             IdVenta = model.Id,
             IdArtista = x.IdArtista,
             IdRepresentante = x.IdRepresentante,
             PorcComision = x.PorcComision,
             TotalComision = x.TotalComision,
-            IdArtistaCc = 0
+            IdArtistaCc = x.IdArtistaCc ?? 0
         }).ToList();
 
         var personal = (model.Personal ?? new()).Select(x => new VentasPersonal
         {
+            Id = x.Id,
             IdVenta = model.Id,
             IdPersonal = x.IdPersonal,
             IdCargo = x.IdCargo,
@@ -360,67 +366,77 @@ public class VentasController : Controller
 
         var cobros = (model.Cobros ?? new()).Select(x => new VentasCobro
         {
+            Id = x.Id,
             IdVenta = model.Id,
-
-            IdClienteCc = null,
-            IdArtistaCc = null,
-            IdCaja = null,
-
+            IdClienteCc = x.IdClienteCc,
+            IdArtistaCc = x.IdArtistaCc,
+            IdCaja = x.IdCaja,
             Fecha = x.Fecha == default ? DateTime.Now : x.Fecha,
             IdMoneda = x.IdMoneda,
             IdCuenta = x.IdCuenta,
             Importe = x.Importe,
-
             Cotizacion = x.Cotizacion <= 0 ? 1 : x.Cotizacion,
             Conversion = x.Conversion <= 0 ? x.Importe : x.Conversion,
-
             NotaCliente = x.NotaCliente,
             NotaInterna = x.NotaInterna,
-
             IdUsuarioRegistra = idUsuario,
             FechaRegistra = DateTime.Now
         }).ToList();
 
         ServiceResult result = await _service.Actualizar(venta, artistas, personal, cobros);
 
-        return Ok(new { valor = result.Ok, mensaje = result.Mensaje, tipo = result.Tipo, idReferencia = result.IdReferencia });
+        return Ok(new
+        {
+            valor = result.Ok,
+            mensaje = result.Mensaje,
+            tipo = result.Tipo,
+            idReferencia = result.IdReferencia
+        });
     }
+
+    /* ===============================
+       ELIMINAR
+    =============================== */
 
     [HttpDelete]
     public async Task<IActionResult> Eliminar(int id)
     {
         ServiceResult result = await _service.Eliminar(id);
-        return Ok(new { valor = result.Ok, mensaje = result.Mensaje, tipo = result.Tipo, idReferencia = result.IdReferencia });
+
+        return Ok(new
+        {
+            valor = result.Ok,
+            mensaje = result.Mensaje,
+            tipo = result.Tipo,
+            idReferencia = result.IdReferencia
+        });
     }
+
+    /* ===============================
+       MAPEO
+    =============================== */
 
     private static Venta MapVenta(VMVenta model, int idUsuario, bool esUpdate)
     {
         var venta = new Venta
         {
             Id = model.Id,
-
             Fecha = model.Fecha,
             IdUbicacion = model.IdUbicacion,
             NombreEvento = model.NombreEvento,
             Duracion = model.Duracion,
-
             IdCliente = model.IdCliente,
             IdProductora = model.IdProductora,
             IdMoneda = model.IdMoneda,
             IdEstado = model.IdEstado,
-
             ImporteTotal = model.ImporteTotal,
-
             NotaInterna = model.NotaInterna,
             NotaCliente = model.NotaCliente,
-
             IdTipoContrato = model.IdTipoContrato,
             IdOpExclusividad = model.IdOpExclusividad,
             DiasPrevios = model.DiasPrevios,
             FechaHasta = model.FechaHasta,
-
-            // CC sin uso
-            IdClienteCc = null,
+            IdClienteCc = model.IdClienteCc,
             IdPresupuesto = null
         };
 

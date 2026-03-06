@@ -72,7 +72,7 @@
         personal: "/Personal/Lista",
         cargos: "/PersonalRol/Lista",
         tiposComision: "/TiposComisiones/Lista",
-        cuentas: "/MonedasCuentas/Lista",
+        cuentas: "/MonedasCuenta/Lista",
         cuentasPorMoneda: (id) => `/MonedasCuenta/ListaMoneda?idMoneda=${id}`,
     };
 
@@ -1541,14 +1541,20 @@
 });
 
         // cuenta
-        tb.querySelectorAll("select.vn-c-cuenta").forEach(sel => {
+        tb.querySelectorAll("select.vn-c-cuenta").forEach(async sel => {
 
             const idx = Number(sel.dataset.idx);
             const idMoneda = VN.detalle.cobros[idx].IdMoneda || 0;
 
-            cargarCuentasPorMoneda(idx, idMoneda);
+            await cargarCuentasPorMoneda(idx, idMoneda);
 
             sel.value = String(VN.detalle.cobros[idx].IdCuenta || "");
+
+            $(sel)?.select2({
+                width: "100%",
+                allowClear: true,
+                placeholder: "Cuenta"
+            });
 
             $(sel)?.on("change", function () {
 

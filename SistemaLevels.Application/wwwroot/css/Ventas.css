@@ -332,14 +332,6 @@
 
 /* scroll lindo */
 
-#clientesList::-webkit-scrollbar {
-    width: 6px;
-}
-
-#clientesList::-webkit-scrollbar-thumb {
-    background: #5b8cff66;
-    border-radius: 10px;
-}
 
 /* =========================
    EMPTY STATE VENTAS

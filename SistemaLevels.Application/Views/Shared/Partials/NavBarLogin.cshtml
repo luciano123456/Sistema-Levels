@@ -17,10 +17,38 @@
                     </a>
                 </li>
 
-                <li class="nav-item" id="seccionArtistas">
-                    <a class="nav-link" href="@Url.Action("Index", "Artistas")">
+
+                <li class="nav-item dropdown" id="seccionArtistas">
+
+                    <a class="nav-link dropdown-toggle"
+                       href="#"
+                       id="artistasDropdownLink"
+                       role="button"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false">
+
                         Artistas
+
                     </a>
+
+                    <ul class="dropdown-menu" aria-labelledby="artistasDropdownLink">
+
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("Index", "Artistas")">
+                                Artistas
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("Index", "ArtistasCuentaCorriente")">
+                                Cuenta Corriente
+                            </a>
+                        </li>
+
+                    </ul>
+
                 </li>
 
                 <li class="nav-item" id="seccionClientes">
