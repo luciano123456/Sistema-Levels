@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Cuenta Corriente Artistas";
+    ViewData["Title"] = "Cuenta Corriente Clientes";
 }
 
 @section Estilos {
@@ -38,9 +38,9 @@
             </span>
 
             <div>
-                <h2 class="m-0 fw-800">Cuenta Corriente Artistas</h2>
+                <h2 class="m-0 fw-800">Cuenta Corriente Clientes</h2>
                 <small class="text-muted-cc">
-                    Gestión general • Artistas y movimientos
+                    Gestión general • Clientes y movimientos
                 </small>
             </div>
 
@@ -69,18 +69,18 @@
     <div class="cc-grid">
 
         <!-- =====================
-             ARTISTAS
+             ClienteS
         ====================== -->
         <div class="cc-card cc-left">
 
             <div class="cc-card-head">
                 <div class="t">
                     <i class="fa fa-users"></i>
-                    Artistas
+                    Clientes
                 </div>
 
                 <div class="vi-kpi">
-                    <span id="kpiArtistas">0</span>
+                    <span id="kpiClientes">0</span>
                 </div>
             </div>
 
@@ -88,9 +88,9 @@
 
                 <div class="vi-search mb-2">
                     <i class="fa fa-search"></i>
-                    <input id="txtBuscarArtista"
+                    <input id="txtBuscarCliente"
                            class="form-control vi-input"
-                           placeholder="Buscar artista..." />
+                           placeholder="Buscar Cliente..." />
                 </div>
 
                 <div class="rp-filtros-body p-0 mb-2">
@@ -100,7 +100,7 @@
                             <div class="vi-switch-wrap">
 
                                 <label class="vi-switch">
-                                    <input type="checkbox" id="fArtistaSaldoActivo">
+                                    <input type="checkbox" id="fClienteSaldoActivo">
                                     <span class="slider"></span>
                                 </label>
 
@@ -114,7 +114,7 @@
                     </div>
                 </div>
 
-                <div id="artistasList" class="cc-artist-list"></div>
+                <div id="ClientesList" class="cc-artist-list"></div>
 
             </div>
         </div>
@@ -132,8 +132,8 @@
                 </div>
 
                 <div class="vi-filters">
-                    <div id="lblFiltroArtista" class="vi-pill">
-                        Seleccioná un artista
+                    <div id="lblFiltroCliente" class="vi-pill">
+                        Seleccioná un Cliente
                     </div>
                 </div>
 
@@ -273,7 +273,7 @@
                     <div class="cc-toolbar-actions">
                         <div id="chipSaldoEstado" class="cc-balance-chip warn">
                             <i class="fa fa-line-chart"></i>
-                            Sin artista seleccionado
+                            Sin Cliente seleccionado
                         </div>
                     </div>
 
@@ -314,7 +314,7 @@
 
                 <div id="ccEmpty" class="cc-empty mt-3 d-none">
                     <i class="fa fa-folder-open-o"></i>
-                    Seleccioná un artista para visualizar su cuenta corriente.
+                    Seleccioná un Cliente para visualizar su cuenta corriente.
                 </div>
 
             </div>
@@ -365,8 +365,8 @@
                 <form class="row g-3">
 
                     <div class="col-md-6">
-                        <label class="form-label">Artista</label>
-                        <input id="pArtistaNombre" class="form-control" readonly>
+                        <label class="form-label">Cliente</label>
+                        <input id="pClienteNombre" class="form-control" readonly>
                     </div>
 
                     <div class="col-md-6">
@@ -465,8 +465,8 @@
                 <form class="row g-3">
 
                     <div class="col-md-6">
-                        <label class="form-label">Artista</label>
-                        <input id="aArtistaNombre" class="form-control" readonly>
+                        <label class="form-label">Cliente</label>
+                        <input id="aClienteNombre" class="form-control" readonly>
                     </div>
 
                     <div class="col-md-6">
@@ -643,7 +643,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <!-- tu JS -->
-    <script src="~/js/ArtistasCuentaCorriente.js?v=1.0"></script>
+    <script src="~/js/ClientesCuentaCorriente.js?v=1.0"></script>
 }
 
 

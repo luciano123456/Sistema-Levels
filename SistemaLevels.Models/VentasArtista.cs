@@ -7,7 +7,7 @@ public partial class VentasArtista
 {
     public int Id { get; set; }
 
-    public int IdArtistaCc { get; set; }
+    public int? IdArtistaCc { get; set; }
 
     public int IdVenta { get; set; }
 

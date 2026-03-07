@@ -1,15 +1,15 @@
 ﻿using SistemaLevels.Models;
 
-namespace SistemaLevels.DAL.Repository
+namespace SistemaLevels.BLL.Service
 {
-    public interface IArtistasCuentaCorrienteRepository
+    public interface IClientesCuentaCorrienteService
     {
-        Task<List<(Artista artista, decimal saldo)>> ListarArtistas(string? buscar);
+        Task<List<(Cliente cliente, decimal saldo)>> ListarClientes(string? buscar);
 
-        Task<(ArtistasCuentaCorriente? mov, string? cuenta, decimal saldo)> ObtenerMovimiento(int id);
+        Task<(ClientesCuentaCorriente? mov, string? cuenta, decimal saldo)> ObtenerMovimiento(int id);
 
-        Task<List<ArtistasCuentaCorriente>> Movimientos(
-            int idArtista,
+        Task<List<ClientesCuentaCorriente>> Movimientos(
+            int idCliente,
             int? idMoneda,
             DateTime? desde,
             DateTime? hasta,
@@ -17,20 +17,20 @@ namespace SistemaLevels.DAL.Repository
             string? texto);
 
         Task<decimal> SaldoAnterior(
-            int idArtista,
+            int idCliente,
             int? idMoneda,
             DateTime? desde);
 
         Task<(decimal debe, decimal haber, int cantidad)> Resumen(
-            int idArtista,
+            int idCliente,
             int? idMoneda,
             DateTime? desde,
             DateTime? hasta,
             string? tipoMov,
             string? texto);
 
-        Task<bool> RegistrarPago(
-            int idArtista,
+        Task<bool> RegistrarCobro(
+            int idCliente,
             int idMoneda,
             int idCuenta,
             DateTime fecha,
@@ -39,7 +39,7 @@ namespace SistemaLevels.DAL.Repository
             int idUsuario);
 
         Task<bool> RegistrarAjuste(
-            int idArtista,
+            int idCliente,
             int idMoneda,
             DateTime fecha,
             string concepto,

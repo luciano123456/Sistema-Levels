@@ -4,11 +4,11 @@ using SistemaLevels.BLL.Service;
 
 namespace SistemaLevels.Controllers
 {
-    public class ArtistasCuentaCorrienteController : Controller
+    public class ClientesCuentaCorrienteController : Controller
     {
-        private readonly IArtistasCuentaCorrienteService _service;
+        private readonly IClientesCuentaCorrienteService _service;
 
-        public ArtistasCuentaCorrienteController(IArtistasCuentaCorrienteService service)
+        public ClientesCuentaCorrienteController(IClientesCuentaCorrienteService service)
         {
             _service = service;
         }
@@ -18,21 +18,19 @@ namespace SistemaLevels.Controllers
             return View();
         }
 
-        public async Task<IActionResult> ListaArtistas(string? buscar)
+        public async Task<IActionResult> ListaClientes(string? buscar)
         {
-            var data = await _service.ListarArtistas(buscar);
+            var data = await _service.ListarClientes(buscar);
 
-            var lista = data.Select(x => new VMArtistasCuentaCorrienteArtista
+            var lista = data.Select(x => new VMClientesCuentaCorrienteCliente
             {
-                Id = x.artista.Id,
-                Nombre = x.artista.NombreArtistico,
-
+                Id = x.cliente.Id,
+                Nombre = x.cliente.Nombre,
                 Saldo = x.saldo
             });
 
             return Ok(lista);
         }
-
 
         [HttpGet]
         public async Task<IActionResult> Movimiento(int id)
@@ -45,7 +43,7 @@ namespace SistemaLevels.Controllers
             return Ok(new
             {
                 mov.Id,
-                mov.IdArtista,
+                mov.IdCliente,
                 mov.IdMoneda,
                 mov.TipoMov,
                 mov.Fecha,
@@ -58,11 +56,12 @@ namespace SistemaLevels.Controllers
                 saldo
             });
         }
+
         [HttpPost]
-        public async Task<IActionResult> Movimientos([FromBody] VMArtistasCuentaCorrienteFiltro filtro)
+        public async Task<IActionResult> Movimientos([FromBody] VMClientesCuentaCorrienteFiltro filtro)
         {
             var movimientos = await _service.Movimientos(
-                filtro.IdArtista.Value,
+                filtro.IdCliente.Value,
                 filtro.IdMoneda,
                 filtro.FechaDesde,
                 filtro.FechaHasta,
@@ -70,17 +69,17 @@ namespace SistemaLevels.Controllers
                 filtro.Texto);
 
             decimal saldo = await _service.SaldoAnterior(
-                filtro.IdArtista.Value,
+                filtro.IdCliente.Value,
                 filtro.IdMoneda,
                 filtro.FechaDesde);
 
-            var lista = new List<VMArtistasCuentaCorrienteMovimiento>();
+            var lista = new List<VMClientesCuentaCorrienteMovimiento>();
 
             foreach (var m in movimientos)
             {
                 saldo += m.Debe - m.Haber;
 
-                lista.Add(new VMArtistasCuentaCorrienteMovimiento
+                lista.Add(new VMClientesCuentaCorrienteMovimiento
                 {
                     Id = m.Id,
                     Fecha = m.Fecha,
@@ -90,7 +89,7 @@ namespace SistemaLevels.Controllers
                     Haber = m.Haber,
                     Saldo = saldo,
                     Moneda = m.IdMonedaNavigation?.Nombre,
-                    PuedeEliminar = m.TipoMov == "PAGO ARTISTA" || m.TipoMov == "AJUSTE ARTISTA"
+                    PuedeEliminar = m.TipoMov == "COBRO CLIENTE" || m.TipoMov == "AJUSTE CLIENTE"
                 });
             }
 
@@ -98,22 +97,22 @@ namespace SistemaLevels.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Resumen([FromBody] VMArtistasCuentaCorrienteFiltro filtro)
+        public async Task<IActionResult> Resumen([FromBody] VMClientesCuentaCorrienteFiltro filtro)
         {
             var saldoAnterior = await _service.SaldoAnterior(
-                filtro.IdArtista.Value,
+                filtro.IdCliente.Value,
                 filtro.IdMoneda,
                 filtro.FechaDesde);
 
             var (debe, haber, cantidad) = await _service.Resumen(
-                filtro.IdArtista.Value,
+                filtro.IdCliente.Value,
                 filtro.IdMoneda,
                 filtro.FechaDesde,
                 filtro.FechaHasta,
                 filtro.TipoMov,
                 filtro.Texto);
 
-            var vm = new VMArtistasCuentaCorrienteResumen
+            var vm = new VMClientesCuentaCorrienteResumen
             {
                 SaldoAnterior = saldoAnterior,
                 Debe = debe,
@@ -126,13 +125,12 @@ namespace SistemaLevels.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> RegistrarPago([FromBody] VMArtistasCuentaCorrientePago model)
+        public async Task<IActionResult> RegistrarCobro([FromBody] VMClientesCuentaCorrienteCobro model)
         {
-            try { 
             int idUsuario = int.Parse(User.FindFirst("Id")!.Value);
 
-            var resp = await _service.RegistrarPago(
-                model.IdArtista,
+            var resp = await _service.RegistrarCobro(
+                model.IdCliente,
                 model.IdMoneda,
                 model.IdCuenta,
                 model.Fecha,
@@ -141,47 +139,30 @@ namespace SistemaLevels.Controllers
                 idUsuario);
 
             return Ok(new { valor = resp });
-            }
-            catch (Exception ex)
-            {
-                return Ok(new { valor = false });
-            }
         }
 
         [HttpPost]
-        public async Task<IActionResult> RegistrarAjuste([FromBody] VMArtistasCuentaCorrienteAjuste model)
+        public async Task<IActionResult> RegistrarAjuste([FromBody] VMClientesCuentaCorrienteAjuste model)
         {
-            try
-            {
-                int idUsuario = int.Parse(User.FindFirst("Id")!.Value);
+            int idUsuario = int.Parse(User.FindFirst("Id")!.Value);
 
-                var resp = await _service.RegistrarAjuste(
-                    model.IdArtista,
-                    model.IdMoneda,
-                    model.Fecha,
-                    model.Concepto,
-                    model.Debe,
-                    model.Haber,
-                    idUsuario);
+            var resp = await _service.RegistrarAjuste(
+                model.IdCliente,
+                model.IdMoneda,
+                model.Fecha,
+                model.Concepto,
+                model.Debe,
+                model.Haber,
+                idUsuario);
 
-                return Ok(new { valor = resp });
-            } catch  (Exception ex)
-            {
-                return Ok(new { valor = false });
-            }
+            return Ok(new { valor = resp });
         }
 
         [HttpDelete]
         public async Task<IActionResult> Eliminar(int id)
         {
-            try
-            {
-                var resp = await _service.Eliminar(id);
-                return Ok(new { valor = resp });
-            } catch (Exception ex)
-            {
-                return Ok(new { valor = false });
-            }
+            var resp = await _service.Eliminar(id);
+            return Ok(new { valor = resp });
         }
     }
 }

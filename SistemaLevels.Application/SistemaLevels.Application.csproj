@@ -11,6 +11,7 @@
     <Content Remove="wwwroot\js\Artistas.js" />
     <Content Remove="wwwroot\js\ArtistasCuentaCorriente.js" />
     <Content Remove="wwwroot\js\Clientes.js" />
+    <Content Remove="wwwroot\js\ClientesCuentaCorriente.js" />
     <Content Remove="wwwroot\js\CurrencyWidget.js" />
     <Content Remove="wwwroot\js\Gastos.js" />
     <Content Remove="wwwroot\js\Home.js" />
@@ -31,6 +32,7 @@
 
   <ItemGroup>
     <None Include="wwwroot\Imagenes\Clientes.png" />
+    <None Include="wwwroot\js\ClientesCuentaCorriente.js" />
     <None Include="wwwroot\js\ArtistasCuentaCorriente.js" />
     <None Include="wwwroot\js\VentasNuevoModif.js" />
     <None Include="wwwroot\js\Ventas.js" />

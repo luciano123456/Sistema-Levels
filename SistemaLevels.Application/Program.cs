@@ -116,6 +116,9 @@ builder.Services.AddScoped<IArtistasCuentaCorrienteRepository, ArtistasCuentaCor
 builder.Services.AddScoped<IArtistasCuentaCorrienteService, ArtistasCuentaCorrienteService>();
 
 
+builder.Services.AddScoped<IClientesCuentaCorrienteRepository, ClientesCuentaCorrienteRepository>();
+builder.Services.AddScoped<IClientesCuentaCorrienteService, ClientesCuentaCorrienteService>();
+
 
 
 
