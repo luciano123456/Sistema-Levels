@@ -6,6 +6,7 @@ namespace SistemaLevels.Models;
 public partial class ArtistasPago
 {
     public int Id { get; set; }
+    public int IdCobro { get; set; }
 
     public int IdUsuarioRegistra { get; set; }
 

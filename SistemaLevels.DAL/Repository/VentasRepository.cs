@@ -855,6 +855,15 @@ namespace SistemaLevels.DAL.Repository
 
                     await _db.SaveChangesAsync();
                 }
+
+                await UpsertMovimientoCajaComisionAsync(
+    venta,
+    cobro.Id,
+    comision.TotalComision,
+    venta.IdMoneda,
+    cobro.IdCuenta,
+    $"Comisión personal cobro venta {venta.NombreEvento}"
+);
             }
             catch (Exception ex)
             {
@@ -867,34 +876,38 @@ namespace SistemaLevels.DAL.Repository
         {
             try
             {
-                ArtistasCuentaCorriente? mov = null;
+                var pagos = await _db.ArtistasPagos
+                    .Where(x => x.IdCobro == cobro.Id)
+                    .ToListAsync();
 
-                if (cobro.IdArtistaCc.HasValue && cobro.IdArtistaCc.Value > 0)
+                foreach (var pago in pagos)
                 {
-                    mov = await _db.ArtistasCuentaCorrientes
-                        .FirstOrDefaultAsync(x => x.Id == cobro.IdArtistaCc.Value);
+                    if (pago.IdCaja.HasValue)
+                    {
+                        var caja = await _db.Cajas
+                            .FirstOrDefaultAsync(x => x.Id == pago.IdCaja.Value);
+
+                        if (caja != null)
+                            _db.Cajas.Remove(caja);
+                    }
+
+                    if (pago.IdArtistaCc.HasValue)
+                    {
+                        var cc = await _db.ArtistasCuentaCorrientes
+                            .FirstOrDefaultAsync(x => x.Id == pago.IdArtistaCc.Value);
+
+                        if (cc != null)
+                            _db.ArtistasCuentaCorrientes.Remove(cc);
+                    }
+
+                    _db.ArtistasPagos.Remove(pago);
                 }
 
-                mov ??= await _db.ArtistasCuentaCorrientes
-                    .FirstOrDefaultAsync(x =>
-                        x.TipoMov == "COMISION COBRO" &&
-                        x.IdMov == cobro.Id);
-
-                if (mov != null)
-                {
-                    _db.ArtistasCuentaCorrientes.Remove(mov);
-                    await _db.SaveChangesAsync();
-                }
-
-                if (cobro.IdArtistaCc.HasValue)
-                {
-                    cobro.IdArtistaCc = null;
-                    await _db.SaveChangesAsync();
-                }
+                await _db.SaveChangesAsync();
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error al eliminar comisión de artista del cobro {cobro.Id}.", ex);
+                throw new Exception($"Error al eliminar pago artista del cobro {cobro.Id}.", ex);
             }
         }
 
@@ -1237,7 +1250,7 @@ namespace SistemaLevels.DAL.Repository
                         IdMoneda = cobro.IdMoneda,
                         IdCuenta = cobro.IdCuenta,
                         Ingreso = cobro.Conversion,
-                        Egrreso = 0,
+                        Egreso = 0,
                         Saldo = 0,
                         IdUsuarioRegistra = ObtenerUsuarioActual(venta),
                         FechaRegistra = DateTime.Now
@@ -1256,7 +1269,7 @@ namespace SistemaLevels.DAL.Repository
                     mov.IdMoneda = cobro.IdMoneda;
                     mov.IdCuenta = cobro.IdCuenta;
                     mov.Ingreso = cobro.Conversion;
-                    mov.Egrreso = 0;
+                    mov.Egreso = 0;
                     mov.IdUsuarioModifica = ObtenerUsuarioActual(venta);
                     mov.FechaModifica = DateTime.Now;
 
@@ -1387,77 +1400,160 @@ namespace SistemaLevels.DAL.Repository
         {
             try
             {
-                var artistaVenta = await _db.VentasArtistas
-                    .Where(x => x.IdVenta == venta.Id)
-                    .FirstOrDefaultAsync();
+                var artistasVenta = await _db.VentasArtistas
+                    .Where(x => x.IdVenta == venta.Id && x.PorcComision > 0)
+                    .ToListAsync();
 
-                if (artistaVenta == null || artistaVenta.PorcComision <= 0)
+                if (!artistasVenta.Any())
                 {
                     await EliminarMovimientoArtistaCobroAsync(cobro);
                     return;
                 }
 
-                var totalComision = Math.Round(cobro.Conversion * (artistaVenta.PorcComision / 100m), 2);
-
-                if (totalComision <= 0)
+                foreach (var artistaVenta in artistasVenta)
                 {
-                    await EliminarMovimientoArtistaCobroAsync(cobro);
-                    return;
-                }
+                    var totalComision = Math.Round(
+                        cobro.Conversion * (artistaVenta.PorcComision / 100m),
+                        2);
 
-                ArtistasCuentaCorriente? mov = null;
+                    if (totalComision <= 0)
+                        continue;
 
-                if (cobro.IdArtistaCc.HasValue && cobro.IdArtistaCc.Value > 0)
-                {
-                    mov = await _db.ArtistasCuentaCorrientes
-                        .FirstOrDefaultAsync(x => x.Id == cobro.IdArtistaCc.Value);
-                }
+                    var concepto = $"Comisión cobro venta {venta.NombreEvento}";
 
-                mov ??= await _db.ArtistasCuentaCorrientes
-                    .FirstOrDefaultAsync(x =>
-                        x.TipoMov == "COMISION COBRO" &&
-                        x.IdMov == cobro.Id);
+                    var pago = await _db.ArtistasPagos
+                        .FirstOrDefaultAsync(x =>
+                            x.IdCobro == cobro.Id &&
+                            x.IdArtista == artistaVenta.IdArtista);
 
-                if (mov == null)
-                {
-                    mov = new ArtistasCuentaCorriente
+                    if (pago == null)
                     {
-                        IdArtista = artistaVenta.IdArtista,
-                        IdMoneda = venta.IdMoneda,
-                        TipoMov = "COMISION COBRO",
-                        IdMov = cobro.Id,
-                        Fecha = cobro.Fecha,
-                        Concepto = $"Comisión cobro venta {venta.NombreEvento}",
-                        Debe = 0,
-                        Haber = totalComision,
-                        IdUsuarioRegistra = ObtenerUsuarioActual(venta),
-                        FechaRegistra = DateTime.Now
-                    };
+                        pago = new ArtistasPago
+                        {
+                            IdCobro = cobro.Id,
+                            IdArtista = artistaVenta.IdArtista,
+                            Fecha = cobro.Fecha,
+                            Concepto = concepto,
 
-                    _db.ArtistasCuentaCorrientes.Add(mov);
-                    await _db.SaveChangesAsync();
+                            IdMoneda = venta.IdMoneda,
+                            IdCuenta = cobro.IdCuenta,
 
-                    cobro.IdArtistaCc = mov.Id;
-                    await _db.SaveChangesAsync();
-                }
-                else
-                {
-                    mov.Fecha = cobro.Fecha;
-                    mov.Concepto = $"Comisión cobro venta {venta.NombreEvento}";
-                    mov.Debe = totalComision;
-                    mov.Haber = 0;
-                    mov.IdUsuarioModifica = ObtenerUsuarioActual(venta);
-                    mov.FechaModifica = DateTime.Now;
+                            Importe = totalComision,
+                            Cotizacion = 1,
+                            Conversion = totalComision,
 
-                    if (cobro.IdArtistaCc != mov.Id)
-                        cobro.IdArtistaCc = mov.Id;
+                            IdUsuarioRegistra = ObtenerUsuarioActual(venta),
+                            FechaRegistra = DateTime.Now
+                        };
 
-                    await _db.SaveChangesAsync();
+                        _db.ArtistasPagos.Add(pago);
+                        await _db.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        pago.Importe = totalComision;
+                        pago.Conversion = totalComision;
+                        pago.IdCuenta = cobro.IdCuenta;
+                        pago.Fecha = cobro.Fecha;
+
+                        pago.IdUsuarioModifica = ObtenerUsuarioActual(venta);
+                        pago.FechaModifica = DateTime.Now;
+
+                        await _db.SaveChangesAsync();
+                    }
+
+                    await UpsertMovimientoCajaPagoArtistaAsync(venta, pago);
+                    await UpsertMovimientoCuentaCorrientePagoArtistaAsync(venta, pago);
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error al upsertar comisión de artista del cobro {cobro.Id}.", ex);
+                throw new Exception($"Error al registrar pago de artista del cobro {cobro.Id}.", ex);
+            }
+        }
+
+        private async Task UpsertMovimientoCajaPagoArtistaAsync(Venta venta, ArtistasPago pago)
+        {
+            var mov = await _db.Cajas
+                .FirstOrDefaultAsync(x =>
+                    x.TipoMov == "PAGO_ARTISTA" &&
+                    x.IdMov == pago.Id);
+
+            if (mov == null)
+            {
+                mov = new Caja
+                {
+                    TipoMov = "PAGO_ARTISTA",
+                    IdMov = pago.Id,
+                    Fecha = pago.Fecha,
+                    Concepto = pago.Concepto,
+                    IdMoneda = pago.IdMoneda,
+                    IdCuenta = pago.IdCuenta,
+                    Ingreso = 0,
+                    Egreso = pago.Conversion,
+                    Saldo = 0,
+                    IdUsuarioRegistra = pago.IdUsuarioRegistra,
+                    FechaRegistra = DateTime.Now
+                };
+
+                _db.Cajas.Add(mov);
+                await _db.SaveChangesAsync();
+
+                pago.IdCaja = mov.Id;
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                mov.Egreso = pago.Conversion;
+                mov.IdCuenta = pago.IdCuenta;
+
+                await _db.SaveChangesAsync();
+            }
+        }
+
+        private async Task UpsertMovimientoCuentaCorrientePagoArtistaAsync(Venta venta, ArtistasPago pago)
+        {
+            ArtistasCuentaCorriente? mov = null;
+
+            if (pago.IdArtistaCc.HasValue && pago.IdArtistaCc.Value > 0)
+            {
+                mov = await _db.ArtistasCuentaCorrientes
+                    .FirstOrDefaultAsync(x => x.Id == pago.IdArtistaCc.Value);
+            }
+
+            mov ??= await _db.ArtistasCuentaCorrientes
+                .FirstOrDefaultAsync(x =>
+                    x.TipoMov == "PAGO ARTISTA" &&
+                    x.IdMov == pago.Id);
+
+            if (mov == null)
+            {
+                mov = new ArtistasCuentaCorriente
+                {
+                    IdArtista = pago.IdArtista,
+                    IdMoneda = pago.IdMoneda,
+                    TipoMov = "PAGO ARTISTA",
+                    IdMov = pago.Id,
+                    Fecha = pago.Fecha,
+                    Concepto = pago.Concepto,
+                    Debe = pago.Conversion,
+                    Haber = 0,
+                    IdUsuarioRegistra = pago.IdUsuarioRegistra,
+                    FechaRegistra = DateTime.Now
+                };
+
+                _db.ArtistasCuentaCorrientes.Add(mov);
+                await _db.SaveChangesAsync();
+
+                pago.IdArtistaCc = mov.Id;
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                mov.Debe = pago.Conversion;
+                mov.Fecha = pago.Fecha;
+
+                await _db.SaveChangesAsync();
             }
         }
 
@@ -1564,5 +1660,66 @@ namespace SistemaLevels.DAL.Repository
             var cotizacion = cobro.Cotizacion <= 0 ? 1 : cobro.Cotizacion;
             return cobro.Importe * cotizacion;
         }
+
+        private async Task UpsertMovimientoCajaComisionAsync(
+    Venta venta,
+    int idMov,
+    decimal importe,
+    int idMoneda,
+    int idCuenta,
+    string concepto)
+        {
+            try
+            {
+                var mov = await _db.Cajas
+                    .FirstOrDefaultAsync(x =>
+                        x.TipoMov == "COMISION" &&
+                        x.IdMov == idMov &&
+                        x.Concepto == concepto);
+
+                if (importe <= 0)
+                {
+                    if (mov != null)
+                    {
+                        _db.Cajas.Remove(mov);
+                        await _db.SaveChangesAsync();
+                    }
+                    return;
+                }
+
+                if (mov == null)
+                {
+                    mov = new Caja
+                    {
+                        TipoMov = "COMISION",
+                        IdMov = idMov,
+                        Fecha = DateTime.Now,
+                        Concepto = concepto,
+                        IdMoneda = idMoneda,
+                        IdCuenta = idCuenta,
+                        Ingreso = 0,
+                        Egreso = importe,
+                        Saldo = 0,
+                        IdUsuarioRegistra = ObtenerUsuarioActual(venta),
+                        FechaRegistra = DateTime.Now
+                    };
+
+                    _db.Cajas.Add(mov);
+                }
+                else
+                {
+                    mov.Egreso = importe;
+                    mov.IdUsuarioModifica = ObtenerUsuarioActual(venta);
+                    mov.FechaModifica = DateTime.Now;
+                }
+
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error al registrar egreso de caja por comisión.", ex);
+            }
+        }
     }
+
 }
