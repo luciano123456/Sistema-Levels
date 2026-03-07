@@ -51,12 +51,38 @@
 
                 </li>
 
-                <li class="nav-item" id="seccionClientes">
-                    <a class="nav-link" href="@Url.Action("Index", "Clientes")">
-                        Clientes
-                    </a>
-                </li>
+                <li class="nav-item dropdown" id="seccionClientes">
 
+                    <a class="nav-link dropdown-toggle"
+                       href="#"
+                       id="artistasDropdownLink"
+                       role="button"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false">
+
+                        Clientes
+
+                    </a>
+
+                    <ul class="dropdown-menu" aria-labelledby="artistasDropdownLink">
+
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("Index", "Clientes")">
+                                Clientes
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("Index", "ClientesCuentaCorriente")">
+                                Cuenta Corriente
+                            </a>
+                        </li>
+
+                    </ul>
+
+                </li>
                 <li class="nav-item" id="seccionProductoras">
                     <a class="nav-link" href="@Url.Action("Index", "Productoras")">
                         Productoras

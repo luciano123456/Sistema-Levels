@@ -17,7 +17,7 @@ namespace SistemaLevels.BLL.Service
             return await _repo.ListarArtistas(buscar);
         }
 
-        public async Task<(ArtistasCuentaCorriente? mov, string? cuenta)> ObtenerMovimiento(int id)
+        public async Task<(ArtistasCuentaCorriente? mov, string? cuenta, decimal saldo)> ObtenerMovimiento(int id)
         {
             return await _repo.ObtenerMovimiento(id);
         }

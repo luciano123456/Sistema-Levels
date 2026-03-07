@@ -731,6 +731,51 @@
             vnMarkDirty();
         });
 
+        const btnEliminar = document.getElementById("btnEliminarVenta");
+
+        btnEliminar?.addEventListener("click", async () => {
+
+            const id = Number(document.getElementById("Venta_Id")?.value || 0);
+
+            if (!id) {
+                errorModal("La venta aún no está guardada.");
+                return;
+            }
+
+            const ok = await confirmarModal("¿Eliminar la venta? Esta acción no se puede deshacer.");
+
+            if (!ok) return;
+
+            try {
+
+                const r = await fetch(`/Ventas/Eliminar?id=${id}`, {
+                    method: "DELETE",
+                    headers: {
+                        "Authorization": "Bearer " + (token || "")
+                    }
+                });
+
+                const data = await r.json();
+
+                if (!data.valor) {
+                    errorModal(data.mensaje);
+                    return;
+                }
+
+                exitoModal("Venta eliminada correctamente.");
+
+                setTimeout(() => {
+                    window.location.href = "/Ventas";
+                }, 800);
+
+            }
+            catch (e) {
+                console.error(e);
+                errorModal("Error eliminando la venta.");
+            }
+
+        });
+
         document.getElementById("btnAddCobro")?.addEventListener("click", () => {
             VN.detalle.cobros.push({
                 Id: 0,
@@ -1578,7 +1623,7 @@
         tb.querySelectorAll("input.vn-c-imp").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.cobros[idx].Importe = formatearMiles(vnToNumber(this.value));
+                VN.detalle.cobros[idx].Importe = vnToNumber(this.value);
                 VN.detalle.cobros[idx].ManualConversion = false;
                 recalcularCobro(idx);
                 vnMarkDirty();
@@ -1589,7 +1634,7 @@
         tb.querySelectorAll("input.vn-c-cot").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.cobros[idx].Cotizacion = formatearMiles(Number(this.value || 1) || 1);
+                VN.detalle.cobros[idx].Cotizacion = vnToNumber(this.value) || 1;
                 VN.detalle.cobros[idx].ManualConversion = false;
                 recalcularCobro(idx);
                 vnMarkDirty();
@@ -1600,7 +1645,7 @@
         tb.querySelectorAll("input.vn-c-conv").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.cobros[idx].Conversion = formatearMiles(vnToNumber(this.value));
+                VN.detalle.cobros[idx].Conversion = vnToNumber(this.value);
                 VN.detalle.cobros[idx].ManualConversion = true;
                 recalcularTotales();
                 vnMarkDirty();
@@ -1687,7 +1732,7 @@
         // Cobrado: usamos Conversion (base currency)
         const cobrado = (VN.detalle.cobros || []).reduce((a, x) => a + Number(x.Conversion || 0), 0);
 
-        const saldo = vnRound2(importeTotal - totalComisiones - cobrado);
+        const saldo = vnRound2(importeTotal - cobrado);
 
         // Summary IDs (del HTML)
         const sumImporte = document.getElementById("sumImporte");

@@ -4,61 +4,53 @@ using SistemaLevels.Models;
 
 namespace SistemaLevels.DAL.Repository
 {
-    public class ArtistasCuentaCorrienteRepository : IArtistasCuentaCorrienteRepository
+    public class ClientesCuentaCorrienteRepository : IClientesCuentaCorrienteRepository
     {
         private readonly SistemaLevelsContext _db;
 
-        private const string TIPO_MOV_PAGO = "PAGO ARTISTA";
-        private const string TIPO_MOV_AJUSTE = "AJUSTE ARTISTA";
+        private const string TIPO_MOV_COBRO = "COBRO CLIENTE";
+        private const string TIPO_MOV_AJUSTE = "AJUSTE CLIENTE";
 
-        public ArtistasCuentaCorrienteRepository(SistemaLevelsContext context)
+
+        public ClientesCuentaCorrienteRepository(SistemaLevelsContext context)
         {
             _db = context;
         }
 
-        public async Task<List<(Artista artista, decimal saldo)>> ListarArtistas(string? buscar)
+        public async Task<List<(Cliente cliente, decimal saldo)>> ListarClientes(string? buscar)
         {
-            var artistasQuery = _db.Artistas.AsQueryable();
+            var query = _db.Clientes.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(buscar))
-            {
-                artistasQuery = artistasQuery.Where(x =>
-                    x.NombreArtistico.Contains(buscar) ||
-                    x.Nombre.Contains(buscar));
-            }
+                query = query.Where(x => x.Nombre.Contains(buscar));
 
-            var artistas = await artistasQuery
-                .OrderBy(x => x.NombreArtistico)
-                .ToListAsync();
+            var clientes = await query.OrderBy(x => x.Nombre).ToListAsync();
 
-            var ids = artistas.Select(x => x.Id).ToList();
+            var ids = clientes.Select(x => x.Id).ToList();
 
-            var saldos = await _db.ArtistasCuentaCorrientes
-                .Where(x => ids.Contains(x.IdArtista))
-                .GroupBy(x => x.IdArtista)
+            var saldos = await _db.ClientesCuentaCorrientes
+                .Where(x => ids.Contains(x.IdCliente))
+                .GroupBy(x => x.IdCliente)
                 .Select(g => new
                 {
-                    IdArtista = g.Key,
+                    IdCliente = g.Key,
                     Saldo = g.Sum(x => x.Debe - x.Haber)
                 })
                 .ToListAsync();
 
-            var saldoDict = saldos.ToDictionary(x => x.IdArtista, x => x.Saldo);
+            var dict = saldos.ToDictionary(x => x.IdCliente, x => x.Saldo);
 
-            var resultado = artistas
-                .Select(a =>
-                (
-                    artista: a,
-                    saldo: saldoDict.ContainsKey(a.Id) ? saldoDict[a.Id] : 0
+            return clientes
+                .Select(c => (
+                    cliente: c,
+                    saldo: dict.ContainsKey(c.Id) ? dict[c.Id] : 0
                 ))
                 .ToList();
-
-            return resultado;
         }
 
-        public async Task<(ArtistasCuentaCorriente? mov, string? cuenta, decimal saldo)> ObtenerMovimiento(int id)
+        public async Task<(ClientesCuentaCorriente? mov, string? cuenta, decimal saldo)> ObtenerMovimiento(int id)
         {
-            var mov = await _db.ArtistasCuentaCorrientes
+            var mov = await _db.ClientesCuentaCorrientes
                 .Include(x => x.IdMonedaNavigation)
                 .FirstOrDefaultAsync(x => x.Id == id);
 
@@ -66,14 +58,14 @@ namespace SistemaLevels.DAL.Repository
                 return (null, null, 0);
 
             /* =====================================
-               MAPEO TIPO MOVIMIENTO
+               MAPEO TIPOS MOVIMIENTO
             ===================================== */
 
             string tipoCaja = mov.TipoMov switch
             {
-                "PAGO ARTISTA" => "PAGO_ARTISTA",
-                "AJUSTE ARTISTA" => "AJUSTE_ARTISTA",
-                "COMISION COBRO" => "COBRO",
+                "COBRO" => "COBRO",
+                "VENTA" => "VENTA",
+                "AJUSTE" => "AJUSTE_CLIENTE",
                 _ => ""
             };
 
@@ -82,7 +74,7 @@ namespace SistemaLevels.DAL.Repository
             if (!string.IsNullOrEmpty(tipoCaja))
             {
                 cuenta = await _db.Cajas
-                    .Where(x => x.IdMov == mov.IdMov && x.TipoMov.Contains(tipoCaja))
+                    .Where(x => x.IdMov == mov.IdMov && x.TipoMov == tipoCaja)
                     .Join(
                         _db.MonedasCuentas,
                         c => c.IdCuenta,
@@ -92,13 +84,9 @@ namespace SistemaLevels.DAL.Repository
                     .FirstOrDefaultAsync();
             }
 
-            /* =====================================
-               CALCULAR SALDO HASTA ESTE MOVIMIENTO
-            ===================================== */
-
-            var saldo = await _db.ArtistasCuentaCorrientes
+            var saldo = await _db.ClientesCuentaCorrientes
                 .Where(x =>
-                    x.IdArtista == mov.IdArtista &&
+                    x.IdCliente == mov.IdCliente &&
                     x.IdMoneda == mov.IdMoneda &&
                     (
                         x.Fecha < mov.Fecha ||
@@ -109,18 +97,18 @@ namespace SistemaLevels.DAL.Repository
 
             return (mov, cuenta, saldo);
         }
-        public async Task<List<ArtistasCuentaCorriente>> Movimientos(
-            int idArtista,
+
+        public async Task<List<ClientesCuentaCorriente>> Movimientos(
+            int idCliente,
             int? idMoneda,
             DateTime? desde,
             DateTime? hasta,
             string? tipoMov,
             string? texto)
         {
-            var query = _db.ArtistasCuentaCorrientes
+            var query = _db.ClientesCuentaCorrientes
                 .Include(x => x.IdMonedaNavigation)
-                .Where(x => x.IdArtista == idArtista)
-                .AsQueryable();
+                .Where(x => x.IdCliente == idCliente);
 
             if (idMoneda.HasValue)
                 query = query.Where(x => x.IdMoneda == idMoneda);
@@ -144,15 +132,14 @@ namespace SistemaLevels.DAL.Repository
         }
 
         public async Task<decimal> SaldoAnterior(
-            int idArtista,
+            int idCliente,
             int? idMoneda,
             DateTime? desde)
         {
-            if (!desde.HasValue)
-                return 0;
+            if (!desde.HasValue) return 0;
 
-            var query = _db.ArtistasCuentaCorrientes
-                .Where(x => x.IdArtista == idArtista && x.Fecha < desde);
+            var query = _db.ClientesCuentaCorrientes
+                .Where(x => x.IdCliente == idCliente && x.Fecha < desde);
 
             if (idMoneda.HasValue)
                 query = query.Where(x => x.IdMoneda == idMoneda);
@@ -161,15 +148,15 @@ namespace SistemaLevels.DAL.Repository
         }
 
         public async Task<(decimal debe, decimal haber, int cantidad)> Resumen(
-            int idArtista,
+            int idCliente,
             int? idMoneda,
             DateTime? desde,
             DateTime? hasta,
             string? tipoMov,
             string? texto)
         {
-            var query = _db.ArtistasCuentaCorrientes
-                .Where(x => x.IdArtista == idArtista);
+            var query = _db.ClientesCuentaCorrientes
+                .Where(x => x.IdCliente == idCliente);
 
             if (idMoneda.HasValue)
                 query = query.Where(x => x.IdMoneda == idMoneda);
@@ -193,8 +180,8 @@ namespace SistemaLevels.DAL.Repository
             return (debe, haber, cantidad);
         }
 
-        public async Task<bool> RegistrarPago(
-            int idArtista,
+        public async Task<bool> RegistrarCobro(
+            int idCliente,
             int idMoneda,
             int idCuenta,
             DateTime fecha,
@@ -206,11 +193,11 @@ namespace SistemaLevels.DAL.Repository
 
             try
             {
-                var mov = new ArtistasCuentaCorriente
+                var mov = new ClientesCuentaCorriente
                 {
-                    IdArtista = idArtista,
+                    IdCliente = idCliente,
                     IdMoneda = idMoneda,
-                    TipoMov = TIPO_MOV_PAGO,
+                    TipoMov = TIPO_MOV_COBRO,
                     Fecha = fecha,
                     Concepto = concepto,
                     Debe = 0,
@@ -219,20 +206,19 @@ namespace SistemaLevels.DAL.Repository
                     FechaRegistra = DateTime.Now
                 };
 
-                _db.ArtistasCuentaCorrientes.Add(mov);
+                _db.ClientesCuentaCorrientes.Add(mov);
                 await _db.SaveChangesAsync();
 
                 var caja = new Caja
                 {
-                    TipoMov = TIPO_MOV_PAGO,
+                    TipoMov = TIPO_MOV_COBRO,
                     IdMov = mov.Id,
                     Fecha = fecha,
-                    Concepto = $"Pago artista {concepto}",
+                    Concepto = $"Cobro cliente {concepto}",
                     IdMoneda = idMoneda,
                     IdCuenta = idCuenta,
-                    Ingreso = 0,
-                    Egrreso = importe,
-                    Saldo = 0,
+                    Ingreso = importe,
+                    Egrreso = 0,
                     IdUsuarioRegistra = idUsuario,
                     FechaRegistra = DateTime.Now
                 };
@@ -240,7 +226,6 @@ namespace SistemaLevels.DAL.Repository
                 _db.Cajas.Add(caja);
 
                 await _db.SaveChangesAsync();
-
                 await trx.CommitAsync();
 
                 return true;
@@ -253,7 +238,7 @@ namespace SistemaLevels.DAL.Repository
         }
 
         public async Task<bool> RegistrarAjuste(
-            int idArtista,
+            int idCliente,
             int idMoneda,
             DateTime fecha,
             string concepto,
@@ -261,9 +246,9 @@ namespace SistemaLevels.DAL.Repository
             decimal haber,
             int idUsuario)
         {
-            var mov = new ArtistasCuentaCorriente
+            var mov = new ClientesCuentaCorriente
             {
-                IdArtista = idArtista,
+                IdCliente = idCliente,
                 IdMoneda = idMoneda,
                 TipoMov = TIPO_MOV_AJUSTE,
                 Fecha = fecha,
@@ -274,7 +259,7 @@ namespace SistemaLevels.DAL.Repository
                 FechaRegistra = DateTime.Now
             };
 
-            _db.ArtistasCuentaCorrientes.Add(mov);
+            _db.ClientesCuentaCorrientes.Add(mov);
 
             await _db.SaveChangesAsync();
 
@@ -287,21 +272,20 @@ namespace SistemaLevels.DAL.Repository
 
             try
             {
-                var mov = await _db.ArtistasCuentaCorrientes
+                var mov = await _db.ClientesCuentaCorrientes
                     .FirstOrDefaultAsync(x => x.Id == id);
 
-                if (mov == null)
-                    return false;
+                if (mov == null) return false;
 
                 var caja = await _db.Cajas
                     .FirstOrDefaultAsync(x =>
-                        x.TipoMov == TIPO_MOV_PAGO &&
+                        x.TipoMov == TIPO_MOV_COBRO &&
                         x.IdMov == mov.Id);
 
                 if (caja != null)
                     _db.Cajas.Remove(caja);
 
-                _db.ArtistasCuentaCorrientes.Remove(mov);
+                _db.ClientesCuentaCorrientes.Remove(mov);
 
                 await _db.SaveChangesAsync();
 

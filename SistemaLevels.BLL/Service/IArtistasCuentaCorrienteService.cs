@@ -6,7 +6,7 @@ namespace SistemaLevels.BLL.Service
     {
         Task<List<(Artista artista, decimal saldo)>> ListarArtistas(string? buscar);
 
-        Task<(ArtistasCuentaCorriente? mov, string? cuenta)> ObtenerMovimiento(int id);
+        Task<(ArtistasCuentaCorriente? mov, string? cuenta, decimal saldo)> ObtenerMovimiento(int id);
 
         Task<List<ArtistasCuentaCorriente>> Movimientos(
             int idArtista,

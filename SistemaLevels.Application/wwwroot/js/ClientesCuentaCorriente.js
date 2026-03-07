@@ -1,6 +1,6 @@
 ﻿/* =========================================================
-   CUENTA CORRIENTE ARTISTAS
-   - Izquierda: artistas
+   CUENTA CORRIENTE ClienteS
+   - Izquierda: Clientes
    - Derecha: movimientos
    - Pago => HABER
    - Venta => DEBE
@@ -12,12 +12,12 @@ let monedasCC = [];
 let cuentasFiltro = [];
 
 const ACC = {
-    artistas: [],
-    artistasOriginal: [],
+    Clientes: [],
+    ClientesOriginal: [],
     movimientos: [],
     movimientosOriginal: [],
     movimientosMap: new Map(),
-    artistaSel: null,
+    ClienteSel: null,
     resumen: {
         saldoAnterior: 0,
         debe: 0,
@@ -29,15 +29,15 @@ const ACC = {
 };
 
 const API = {
-    artistas: (buscarArtista = "", soloSaldoActivo = false) =>
-        `/ArtistasCuentaCorriente/ListaArtistas?buscarArtista=${encodeURIComponent(buscarArtista || "")}&soloSaldoActivo=${soloSaldoActivo}`,
+    Clientes: (buscarCliente = "", soloSaldoActivo = false) =>
+        `/ClientesCuentaCorriente/ListaClientes?buscarCliente=${encodeURIComponent(buscarCliente || "")}&soloSaldoActivo=${soloSaldoActivo}`,
 
-    movimientos: "/ArtistasCuentaCorriente/Movimientos",
-    resumen: "/ArtistasCuentaCorriente/Resumen",
-    movimiento: id => `/ArtistasCuentaCorriente/Movimiento?id=${id}`,
-    registrarPago: "/ArtistasCuentaCorriente/RegistrarPago",
-    registrarAjuste: "/ArtistasCuentaCorriente/RegistrarAjuste",
-    eliminar: id => `/ArtistasCuentaCorriente/Eliminar?id=${id}`,
+    movimientos: "/ClientesCuentaCorriente/Movimientos",
+    resumen: "/ClientesCuentaCorriente/Resumen",
+    movimiento: id => `/ClientesCuentaCorriente/Movimiento?id=${id}`,
+    registrarPago: "/ClientesCuentaCorriente/RegistrarPago",
+    registrarAjuste: "/ClientesCuentaCorriente/RegistrarAjuste",
+    eliminar: id => `/ClientesCuentaCorriente/Eliminar?id=${id}`,
     monedas: "/PaisesMoneda/Lista",
     cuentasPorMoneda: idMoneda => `/MonedasCuenta/ListaMoneda?idMoneda=${idMoneda}`
 };
@@ -63,39 +63,39 @@ $(document).ready(async () => {
 
     await Promise.all([
         cargarMonedas(),
-        cargarArtistas()
+        cargarClientes()
     ]);
 
     inicializarSelect2CC();
-    renderArtistas();
+    renderClientes();
     mostrarEstadoSinSeleccion();
 });
 
 function wireEventos() {
 
     $("#btnRefreshCC").on("click", async () => {
-        await cargarArtistas();
+        await cargarClientes();
 
-        if (ACC.artistaSel) {
-            const nuevoSel = (ACC.artistasOriginal || []).find(x => x.Id === ACC.artistaSel.Id);
+        if (ACC.ClienteSel) {
+            const nuevoSel = (ACC.ClientesOriginal || []).find(x => x.Id === ACC.ClienteSel.Id);
             if (nuevoSel) {
-                ACC.artistaSel = nuevoSel;
+                ACC.ClienteSel = nuevoSel;
                 await cargarCuentaCorrienteSeleccionada();
             } else {
-                ACC.artistaSel = null;
+                ACC.ClienteSel = null;
                 mostrarEstadoSinSeleccion();
             }
         }
 
-        renderArtistas();
+        renderClientes();
     });
 
-    $("#txtBuscarArtista").on("input", function () {
-        renderArtistas();
+    $("#txtBuscarCliente").on("input", function () {
+        renderClientes();
     });
 
-    $("#fArtistaSaldoActivo").on("change", function () {
-        renderArtistas();
+    $("#fClienteSaldoActivo").on("change", function () {
+        renderClientes();
     });
     $("#btnPago").on("click", abrirModalPago);
     $("#btnAjuste").on("click", abrirModalAjuste);
@@ -365,36 +365,36 @@ async function cargarCuentasAjuste(idMoneda) {
 }
 
 /* =========================================================
-   ARTISTAS
+   ClienteS
 ========================================================= */
 
-async function cargarArtistas() {
+async function cargarClientes() {
 
-    const buscarArtista = ($("#txtBuscarArtista").val() || "").trim();
-    const soloSaldoActivo = $("#fArtistaSaldoActivo").is(":checked");
+    const buscarCliente = ($("#txtBuscarCliente").val() || "").trim();
+    const soloSaldoActivo = $("#fClienteSaldoActivo").is(":checked");
 
-    const r = await fetch(API.artistas(buscarArtista, soloSaldoActivo), {
+    const r = await fetch(API.Clientes(buscarCliente, soloSaldoActivo), {
         headers: authHeaders()
     });
 
     if (!r.ok) {
-        errorModal("Error cargando artistas.");
+        errorModal("Error cargando Clientes.");
         return;
     }
 
-    ACC.artistasOriginal = await r.json();
-    ACC.artistas = [...ACC.artistasOriginal];
+    ACC.ClientesOriginal = await r.json();
+    ACC.Clientes = [...ACC.ClientesOriginal];
 }
 
-function renderArtistas() {
+function renderClientes() {
 
-    const cont = $("#artistasList");
+    const cont = $("#ClientesList");
     cont.html("");
 
-    let lista = [...(ACC.artistasOriginal || [])];
+    let lista = [...(ACC.ClientesOriginal || [])];
 
-    const buscar = ($("#txtBuscarArtista").val() || "").toLowerCase();
-    const soloSaldo = $("#fArtistaSaldoActivo").is(":checked");
+    const buscar = ($("#txtBuscarCliente").val() || "").toLowerCase();
+    const soloSaldo = $("#fClienteSaldoActivo").is(":checked");
 
     if (buscar) {
         lista = lista.filter(a =>
@@ -408,13 +408,13 @@ function renderArtistas() {
         lista = lista.filter(a => Math.abs(Number(a.Saldo || 0)) > 0.0001);
     }
 
-    $("#kpiArtistas").text(lista.length);
+    $("#kpiClientes").text(lista.length);
 
     if (!lista.length) {
         cont.html(`
             <div class="cc-empty">
                 <i class="fa fa-users"></i>
-                No se encontraron artistas.
+                No se encontraron Clientes.
             </div>
         `);
         return;
@@ -426,14 +426,14 @@ function renderArtistas() {
         const inicial = nombre ? nombre.charAt(0).toUpperCase() : "?";
         const saldo = Number(a.Saldo || 0);
 
-        const active = ACC.artistaSel && ACC.artistaSel.Id === a.Id ? "active" : "";
+        const active = ACC.ClienteSel && ACC.ClienteSel.Id === a.Id ? "active" : "";
 
         let saldoClass = "saldo-cero";
         if (saldo > 0) saldoClass = "saldo-deuda";
         if (saldo < 0) saldoClass = "saldo-favor";
 
         cont.append(`
-            <div class="cc-artist-item ${active}" onclick="seleccionarArtista(${a.Id})">
+            <div class="cc-artist-item ${active}" onclick="seleccionarCliente(${a.Id})">
                 <div class="cc-artist-avatar">${inicial}</div>
 
                 <div class="cc-artist-main">
@@ -450,29 +450,29 @@ function renderArtistas() {
         `);
     });
 }
-async function seleccionarArtista(id) {
+async function seleccionarCliente(id) {
 
-    if (ACC.artistaSel && ACC.artistaSel.Id === id) {
-        ACC.artistaSel = null;
+    if (ACC.ClienteSel && ACC.ClienteSel.Id === id) {
+        ACC.ClienteSel = null;
         ACC.movimientos = [];
         ACC.movimientosOriginal = [];
         ACC.movimientosMap = new Map();
 
-        $("#lblFiltroArtista").text("Seleccioná un artista");
+        $("#lblFiltroCliente").text("Seleccioná un Cliente");
 
-        renderArtistas();
+        renderClientes();
         mostrarEstadoSinSeleccion();
         return;
     }
 
-    ACC.artistaSel = (ACC.artistasOriginal || []).find(x => x.Id === id) || null;
+    ACC.ClienteSel = (ACC.ClientesOriginal || []).find(x => x.Id === id) || null;
 
-    if (!ACC.artistaSel) return;
+    if (!ACC.ClienteSel) return;
 
-    $("#lblFiltroArtista").text(ACC.artistaSel.Nombre || ACC.artistaSel.NombreArtistico || "Artista");
+    $("#lblFiltroCliente").text(ACC.ClienteSel.Nombre || ACC.ClienteSel.NombreArtistico || "Cliente");
 
     await cargarCuentaCorrienteSeleccionada();
-    renderArtistas();
+    renderClientes();
 }
 
 async function cargarCuentaCorrienteSeleccionada() {
@@ -491,7 +491,7 @@ async function cargarCuentaCorrienteSeleccionada() {
 
 function obtenerFiltrosCC() {
     return {
-        IdArtista: ACC.artistaSel ? ACC.artistaSel.Id : null,
+        IdCliente: ACC.ClienteSel ? ACC.ClienteSel.Id : null,
         FechaDesde: $("#fFechaDesde").val() || null,
         FechaHasta: $("#fFechaHasta").val() || null,
         TipoMov: $("#fTipo").val() || null,
@@ -509,8 +509,8 @@ async function aplicarFiltrosCC() {
 
     actualizarEstadoFiltrosCC();
 
-    if (!ACC.artistaSel) {
-        return errorModal("Seleccioná un artista para aplicar filtros.");
+    if (!ACC.ClienteSel) {
+        return errorModal("Seleccioná un Cliente para aplicar filtros.");
     }
 
     await cargarCuentaCorrienteSeleccionada();
@@ -528,7 +528,7 @@ function limpiarFiltrosCC() {
     ACC.filtrosActivos = false;
     actualizarEstadoFiltrosCC();
 
-    if (ACC.artistaSel) {
+    if (ACC.ClienteSel) {
         cargarCuentaCorrienteSeleccionada();
     }
 }
@@ -544,7 +544,7 @@ function actualizarEstadoFiltrosCC() {
 
 async function cargarMovimientos() {
 
-    if (!ACC.artistaSel) {
+    if (!ACC.ClienteSel) {
         ACC.movimientos = [];
         ACC.movimientosOriginal = [];
         ACC.movimientosMap = new Map();
@@ -576,7 +576,7 @@ async function cargarMovimientos() {
 
 async function cargarResumen() {
 
-    if (!ACC.artistaSel) {
+    if (!ACC.ClienteSel) {
         ACC.resumen = {
             saldoAnterior: 0,
             debe: 0,
@@ -614,9 +614,9 @@ async function cargarResumen() {
 
 function renderMovimientos() {
 
-    $("#ccEmpty").toggleClass("d-none", !!ACC.artistaSel);
+    $("#ccEmpty").toggleClass("d-none", !!ACC.ClienteSel);
 
-    if (!ACC.artistaSel) {
+    if (!ACC.ClienteSel) {
         if (gridCuentaCorriente) {
             gridCuentaCorriente.clear().draw();
         }
@@ -710,9 +710,9 @@ async function configurarDataTable(data) {
 
             dom: 'Bfrtip',
             buttons: [
-                { text: 'Excel', action: () => abrirModalExportacion(gridCuentaCorriente, 'excel', 'CuentaCorrienteArtistas') },
-                { text: 'PDF', action: () => abrirModalExportacion(gridCuentaCorriente, 'pdf', 'CuentaCorrienteArtistas') },
-                { text: 'Imprimir', action: () => abrirModalExportacion(gridCuentaCorriente, 'print', 'CuentaCorrienteArtistas') },
+                { text: 'Excel', action: () => abrirModalExportacion(gridCuentaCorriente, 'excel', 'CuentaCorrienteClientes') },
+                { text: 'PDF', action: () => abrirModalExportacion(gridCuentaCorriente, 'pdf', 'CuentaCorrienteClientes') },
+                { text: 'Imprimir', action: () => abrirModalExportacion(gridCuentaCorriente, 'print', 'CuentaCorrienteClientes') },
                 'pageLength'
             ],
 
@@ -808,7 +808,7 @@ function configurarOpcionesColumnasCC() {
     const columnas = grid.settings().init().columns;
     const container = $('#configColumnasMenuCC');
 
-    const storageKey = `CuentaCorrienteArtistas_Columnas`;
+    const storageKey = `CuentaCorrienteClientes_Columnas`;
     const savedConfig = JSON.parse(localStorage.getItem(storageKey)) || {};
 
     container.empty();
@@ -866,8 +866,8 @@ function actualizarKpis() {
     const chip = $("#chipSaldoEstado");
     chip.removeClass("ok warn neg");
 
-    if (!ACC.artistaSel) {
-        chip.addClass("warn").html(`<i class="fa fa-line-chart"></i> Sin artista seleccionado`);
+    if (!ACC.ClienteSel) {
+        chip.addClass("warn").html(`<i class="fa fa-line-chart"></i> Sin Cliente seleccionado`);
         return;
     }
 
@@ -890,7 +890,7 @@ function mostrarEstadoSinSeleccion() {
     };
     actualizarKpis();
     renderMovimientos();
-    renderArtistas();
+    renderClientes();
 }
 
 /* =========================================================
@@ -917,14 +917,12 @@ function verMovimiento(id) {
             $("#vmHaber").text(fmtMoney(m.Haber || 0));
             $("#vmSaldo").text(fmtMoney(m.saldo || 0));
 
-
             if (m.Cuenta) {
                 $("#vmCuenta").text(m.Cuenta);
                 $("#divVmCuenta").show();
             } else {
                 $("#divVmCuenta").hide();
             }
-
 
             $("#modalVerMovimiento").modal("show");
 
@@ -957,20 +955,20 @@ async function eliminarMovimiento(id) {
 
         exitoModal(data.mensaje || "Movimiento eliminado correctamente.");
 
-        await cargarArtistas();
+        await cargarClientes();
 
-        if (ACC.artistaSel) {
-            const nuevoSel = (ACC.artistasOriginal || []).find(x => x.Id === ACC.artistaSel.Id);
+        if (ACC.ClienteSel) {
+            const nuevoSel = (ACC.ClientesOriginal || []).find(x => x.Id === ACC.ClienteSel.Id);
             if (nuevoSel) {
-                ACC.artistaSel = nuevoSel;
+                ACC.ClienteSel = nuevoSel;
                 await cargarCuentaCorrienteSeleccionada();
             } else {
-                ACC.artistaSel = null;
+                ACC.ClienteSel = null;
                 mostrarEstadoSinSeleccion();
             }
         }
 
-        renderArtistas();
+        renderClientes();
 
     } catch (e) {
         console.error(e);
@@ -984,13 +982,13 @@ async function eliminarMovimiento(id) {
 
 function abrirModalPago() {
 
-    if (!ACC.artistaSel) {
-        return errorModal("Seleccioná un artista.");
+    if (!ACC.ClienteSel) {
+        return errorModal("Seleccioná un Cliente.");
     }
 
     limpiarModalPago();
 
-    $("#pArtistaNombre").val(ACC.artistaSel.Nombre || ACC.artistaSel.NombreArtistico || "");
+    $("#pClienteNombre").val(ACC.ClienteSel.Nombre || ACC.ClienteSel.NombreArtistico || "");
     $("#pFecha").val(moment().format("YYYY-MM-DD"));
 
     ensureSelect2($("#pMoneda"), { dropdownParent: $("#modalPago") });
@@ -1091,14 +1089,14 @@ function validarPago() {
 }
 async function guardarPago() {
 
-    if (!ACC.artistaSel) {
-        return errorModal("Seleccioná un artista.");
+    if (!ACC.ClienteSel) {
+        return errorModal("Seleccioná un Cliente.");
     }
 
     if (!validarPago()) return;
 
     const modelo = {
-        IdArtista: ACC.artistaSel.Id,
+        IdCliente: ACC.ClienteSel.Id,
         Fecha: $("#pFecha").val(),
         IdMoneda: $("#pMoneda").val(),
         IdCuenta: $("#pCuenta").val(),
@@ -1130,17 +1128,17 @@ async function guardarPago() {
 
         exitoModal(data.mensaje || "Pago registrado correctamente.");
 
-        await cargarArtistas();
+        await cargarClientes();
 
-        if (ACC.artistaSel) {
-            const nuevoSel = (ACC.artistasOriginal || []).find(x => x.Id === ACC.artistaSel.Id);
+        if (ACC.ClienteSel) {
+            const nuevoSel = (ACC.ClientesOriginal || []).find(x => x.Id === ACC.ClienteSel.Id);
             if (nuevoSel) {
-                ACC.artistaSel = nuevoSel;
+                ACC.ClienteSel = nuevoSel;
                 await cargarCuentaCorrienteSeleccionada();
             }
         }
 
-        renderArtistas();
+        renderClientes();
 
     } catch (e) {
         console.error(e);
@@ -1169,13 +1167,13 @@ function verificarErroresPagoGeneral() {
 ========================================================= */
 function abrirModalAjuste() {
 
-    if (!ACC.artistaSel) {
-        return errorModal("Seleccioná un artista.");
+    if (!ACC.ClienteSel) {
+        return errorModal("Seleccioná un Cliente.");
     }
 
     limpiarModalAjuste();
 
-    $("#aArtistaNombre").val(ACC.artistaSel.Nombre || ACC.artistaSel.NombreArtistico || "");
+    $("#aClienteNombre").val(ACC.ClienteSel.Nombre || ACC.ClienteSel.NombreArtistico || "");
     $("#aFecha").val(moment().format("YYYY-MM-DD"));
 
     ensureSelect2($("#aMoneda"), { dropdownParent: $("#modalAjuste") });
@@ -1281,14 +1279,14 @@ function validarAjuste() {
 
 async function guardarAjuste() {
 
-    if (!ACC.artistaSel) {
-        return errorModal("Seleccioná un artista.");
+    if (!ACC.ClienteSel) {
+        return errorModal("Seleccioná un Cliente.");
     }
 
     if (!validarAjuste()) return;
 
     const modelo = {
-        IdArtista: ACC.artistaSel.Id,
+        IdCliente: ACC.ClienteSel.Id,
         Fecha: $("#aFecha").val(),
         IdMoneda: $("#aMoneda").val(),
         IdCuenta: $("#aCuenta").val(),
@@ -1321,17 +1319,17 @@ async function guardarAjuste() {
 
         exitoModal(data.mensaje || "Ajuste registrado correctamente.");
 
-        await cargarArtistas();
+        await cargarClientes();
 
-        if (ACC.artistaSel) {
-            const nuevoSel = (ACC.artistasOriginal || []).find(x => x.Id === ACC.artistaSel.Id);
+        if (ACC.ClienteSel) {
+            const nuevoSel = (ACC.ClientesOriginal || []).find(x => x.Id === ACC.ClienteSel.Id);
             if (nuevoSel) {
-                ACC.artistaSel = nuevoSel;
+                ACC.ClienteSel = nuevoSel;
                 await cargarCuentaCorrienteSeleccionada();
             }
         }
 
-        renderArtistas();
+        renderClientes();
 
     } catch (e) {
         console.error(e);
@@ -1361,11 +1359,11 @@ function verificarErroresAjusteGeneral() {
 
 function exportarEstadoCuentaPdf() {
 
-    if (!ACC.artistaSel) {
-        return errorModal("Seleccioná un artista.");
+    if (!ACC.ClienteSel) {
+        return errorModal("Seleccioná un Cliente.");
     }
 
-    const artista = ACC.artistaSel.Nombre || ACC.artistaSel.NombreArtistico || "Artista";
+    const Cliente = ACC.ClienteSel.Nombre || ACC.ClienteSel.NombreArtistico || "Cliente";
     const rows = ACC.movimientos.map(x => ([
         formatearFecha(x.Fecha),
         x.TipoMov || "",
@@ -1392,8 +1390,8 @@ function exportarEstadoCuentaPdf() {
         pageOrientation: 'landscape',
         content: [
             { text: 'Sistema Levels', style: 'title' },
-            { text: 'Estado de Cuenta Artista', style: 'subtitle', margin: [0, 0, 0, 12] },
-            { text: `Artista: ${artista}`, bold: true, margin: [0, 0, 0, 4] },
+            { text: 'Estado de Cuenta Cliente', style: 'subtitle', margin: [0, 0, 0, 12] },
+            { text: `Cliente: ${Cliente}`, bold: true, margin: [0, 0, 0, 4] },
             { text: `Emitido: ${moment().format("DD/MM/YYYY")}`, margin: [0, 0, 0, 12] },
             {
                 columns: [
@@ -1421,7 +1419,7 @@ function exportarEstadoCuentaPdf() {
         defaultStyle: {
             fontSize: 9
         }
-    }).download(`EstadoCuenta_${artista.replace(/\s+/g, "_")}.pdf`);
+    }).download(`EstadoCuenta_${Cliente.replace(/\s+/g, "_")}.pdf`);
 }
 
 /* =========================================================
