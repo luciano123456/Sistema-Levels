@@ -218,7 +218,7 @@ namespace SistemaLevels.DAL.Repository
                     IdMoneda = idMoneda,
                     IdCuenta = idCuenta,
                     Ingreso = importe,
-                    Egrreso = 0,
+                    Egreso = 0,
                     IdUsuarioRegistra = idUsuario,
                     FechaRegistra = DateTime.Now
                 };

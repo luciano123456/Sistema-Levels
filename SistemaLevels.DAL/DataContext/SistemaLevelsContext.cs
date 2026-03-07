@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using SistemaLevels.Models;
 
 namespace SistemaLevels.DAL.DataContext;
@@ -15,18 +14,6 @@ public partial class SistemaLevelsContext : DbContext
     public SistemaLevelsContext(DbContextOptions<SistemaLevelsContext> options)
         : base(options)
     {
-    }
-
-    private readonly IConfiguration _configuration;
-
-
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            var connectionString = _configuration.GetConnectionString("SistemaDB");
-            optionsBuilder.UseSqlServer(connectionString);
-        }
     }
 
     public virtual DbSet<Artista> Artistas { get; set; }
@@ -119,6 +106,9 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<VentasPersonal> VentasPersonals { get; set; }
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer("Server=DESKTOP-3MT5F5F; Database=Sistema_Levels; Integrated Security=true; Trusted_Connection=True; Encrypt=False");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -250,6 +240,7 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.FechaRegistra).HasColumnType("datetime");
             entity.Property(e => e.IdArtistaCc).HasColumnName("IdArtistaCC");
             entity.Property(e => e.IdMonedaCc).HasColumnName("IdMonedaCC");
+            entity.Property(e => e.IdCobro).HasColumnName("idcobro");
             entity.Property(e => e.Importe).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.NotaArtista)
                 .HasMaxLength(200)
@@ -288,7 +279,7 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.Concepto)
                 .HasMaxLength(255)
                 .IsUnicode(false);
-            entity.Property(e => e.Egrreso).HasColumnType("decimal(18, 2)");
+            entity.Property(e => e.Egreso).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Fecha).HasColumnType("datetime");
             entity.Property(e => e.FechaModifica).HasColumnType("datetime");
             entity.Property(e => e.FechaRegistra).HasColumnType("datetime");

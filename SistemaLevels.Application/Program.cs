@@ -124,7 +124,8 @@ builder.Services.AddScoped<IClientesCuentaCorrienteService, ClientesCuentaCorrie
 builder.Services.AddScoped<IPersonalCuentaCorrienteRepository, PersonalCuentaCorrienteRepository>();
 builder.Services.AddScoped<IPersonalCuentaCorrienteService, PersonalCuentaCorrienteService>();
 
-
+builder.Services.AddScoped<ICajaRepository, CajaRepository>();
+builder.Services.AddScoped<ICajaService, CajaService>();
 
 
 builder.Services.AddControllersWithViews()

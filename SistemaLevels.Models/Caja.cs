@@ -29,7 +29,7 @@ public partial class Caja
 
     public decimal Ingreso { get; set; }
 
-    public decimal Egrreso { get; set; }
+    public decimal Egreso { get; set; }
 
     public decimal Saldo { get; set; }
 
