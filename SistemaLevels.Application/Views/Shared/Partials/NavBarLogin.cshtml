@@ -11,10 +11,37 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-                <li class="nav-item" id="seccionPersonal">
-                    <a class="nav-link" href="@Url.Action("Index", "Personal")">
+                <li class="nav-item dropdown" id="seccionPersonal">
+
+                    <a class="nav-link dropdown-toggle"
+                       href="#"
+                       id="artistasDropdownLink"
+                       role="button"
+                       data-bs-toggle="dropdown"
+                       aria-expanded="false">
+
                         Personal
+
                     </a>
+
+                    <ul class="dropdown-menu" aria-labelledby="artistasDropdownLink">
+
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("Index", "Personal")">
+                                Personal
+                            </a>
+                        </li>
+
+                        <li>
+                            <a class="dropdown-item"
+                               href="@Url.Action("Index", "PersonalCuentaCorriente")">
+                                Cuenta Corriente
+                            </a>
+                        </li>
+
+                    </ul>
+
                 </li>
 
 

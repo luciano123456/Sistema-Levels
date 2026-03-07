@@ -599,3 +599,143 @@
     .vi-cc-val.ok {
         color: #4ade80;
     }
+
+.vi-saldo.deuda {
+    color: #ff5d5d;
+    font-weight: 800;
+}
+
+.vi-saldo.ok {
+    color: #38d27a;
+    font-weight: 800;
+}
+
+/* ===============================
+   SALES CARD PRO
+=============================== */
+
+.vi-sale {
+    background: linear-gradient(180deg,#1b2140,#11152b);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+    transition: all .18s ease;
+    cursor: pointer;
+}
+
+    .vi-sale:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255,255,255,.14);
+        box-shadow: 0 10px 25px rgba(0,0,0,.45);
+    }
+
+/* TOP */
+
+.vi-sale-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.vi-sale-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #e7ecff;
+}
+
+/* MIDDLE */
+
+.vi-sale-middle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 6px;
+}
+
+.vi-sale-fecha {
+    font-size: 12px;
+    color: #9aa8c5;
+}
+
+.vi-importes {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+
+.vi-total {
+    color: #e7ecff;
+}
+
+.vi-saldo {
+    font-weight: 600;
+}
+
+    .vi-saldo.deuda {
+        color: #ff5d5d;
+    }
+
+    .vi-saldo.favor {
+        color: #3ddc84;
+    }
+
+    .vi-saldo.neutral {
+        color: #9aa8c5;
+    }
+
+/* PROGRESS BAR */
+
+.vi-progress {
+    margin-top: 10px;
+    height: 6px;
+    background: #0b0f1d;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.vi-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg,#3ddc84,#1ec8ff);
+}
+
+/* META PROGRESS */
+
+.vi-progress-meta {
+    margin-top: 4px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #9aa8c5;
+}
+
+/* PROGRESS COLORS */
+
+.vi-progress-bar {
+    height: 100%;
+    transition: all .4s ease;
+}
+
+    /* rojo */
+
+    .vi-progress-bar.p0 {
+        background: linear-gradient(90deg,#ff5d5d,#ff2d55);
+    }
+
+    /* naranja */
+
+    .vi-progress-bar.p40 {
+        background: linear-gradient(90deg,#ffb347,#ff8c00);
+    }
+
+    /* azul */
+
+    .vi-progress-bar.p80 {
+        background: linear-gradient(90deg,#4facfe,#00c6ff);
+    }
+
+    /* verde */
+
+    .vi-progress-bar.p100 {
+        background: linear-gradient(90deg,#3ddc84,#00c853);
+    }

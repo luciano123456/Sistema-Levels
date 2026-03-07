@@ -373,7 +373,6 @@ async function seleccionarCliente(id) {
 /* =========================
    VENTAS
 ========================= */
-
 function renderVentas() {
 
     const cont = $("#ventasList");
@@ -387,32 +386,114 @@ function renderVentas() {
     });
 
     if (!list.length) {
+
         cont.html(`
-            <div class="vi-empty">
-                <div class="vi-empty-icon"><i class="fa fa-ticket"></i></div>
-                <div class="vi-empty-title">No hay ventas</div>
-                <div class="vi-empty-sub">Cuando registres una venta aparecerá aquí.</div>
-            </div>
+        <div class="vi-empty">
+            <div class="vi-empty-icon"><i class="fa fa-ticket"></i></div>
+            <div class="vi-empty-title">No hay ventas</div>
+            <div class="vi-empty-sub">Cuando registres una venta aparecerá aquí.</div>
+        </div>
         `);
+
         return;
     }
 
     list.forEach(v => {
-        cont.append(`
-            <div class="vi-sale" onclick="abrirVenta(${v.Id})">
-                <div class="top">
-                    <div class="name">#${v.Id} • ${v.NombreEvento || ""}</div>
-                    <div class="vi-estado ${estadoClass(v.Estado)}">${v.Estado || ""}</div>
-                </div>
 
-                <div class="meta">
-                    ${fmtDate(v.Fecha)} • ${fmtMoney(v.ImporteTotal)} • Saldo ${fmtMoney(v.Saldo)}
-                </div>
+        const total = Number(v.ImporteTotal || 0);
+        const abonado = Number(v.ImporteAbonado || 0);
+        const saldo = Number(v.Saldo || 0);
+
+        /* ======================
+           PROGRESO
+        ====================== */
+
+        const progreso = total > 0
+            ? Math.min(100, (abonado / total) * 100)
+            : 0;
+
+        let progresoClass = "p0";
+
+        if (progreso > 90) progresoClass = "p100";
+        else if (progreso > 60) progresoClass = "p80";
+        else if (progreso > 25) progresoClass = "p40";
+
+        /* ======================
+           SALDO COLOR
+        ====================== */
+
+        const saldoClass =
+            saldo > 0 ? "deuda" :
+                saldo < 0 ? "favor" :
+                    "neutral";
+
+        /* ======================
+           RENDER
+        ====================== */
+
+        cont.append(`
+
+<div class="vi-sale" onclick="abrirVenta(${v.Id})">
+
+    <div class="vi-sale-top">
+
+        <div class="vi-sale-title">
+            #${v.Id} • ${v.NombreEvento || ""}
+        </div>
+
+        <div class="vi-estado ${estadoClass(v.Estado)}">
+            ${v.Estado || ""}
+        </div>
+
+    </div>
+
+    <div class="vi-sale-middle">
+
+        <div class="vi-sale-fecha">
+            ${fmtDate(v.Fecha)}
+        </div>
+
+        <div class="vi-importes">
+
+            <div class="vi-total">
+                ${fmtMoney(total)}
             </div>
+
+            <div class="vi-saldo ${saldoClass}">
+                ${fmtMoney(saldo)}
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="vi-progress">
+
+        <div class="vi-progress-bar ${progresoClass}" style="width:${progreso}%"></div>
+
+        <span class="vi-progress-label">
+            ${Math.round(progreso)}%
+        </span>
+
+    </div>
+
+    <div class="vi-progress-meta">
+
+        <span>
+            ${fmtMoney(abonado)} cobrado
+        </span>
+
+        <span>
+            ${fmtMoney(total)}
+        </span>
+
+    </div>
+
+</div>
+
         `);
     });
 }
-
 /* =========================
    FILTROS VENTAS (panel derecho)
 ========================= */
