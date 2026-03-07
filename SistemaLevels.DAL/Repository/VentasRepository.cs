@@ -813,7 +813,7 @@ namespace SistemaLevels.DAL.Repository
 
                 mov ??= await _db.PersonalCuentaCorrientes
                     .FirstOrDefaultAsync(x =>
-                        x.TipoMov == "COMISION_COBRO" &&
+                        x.TipoMov == "COMISION COBRO" &&
                         x.IdMov == cobro.Id &&
                         x.IdPersonal == comision.IdPersonal);
 
@@ -823,12 +823,12 @@ namespace SistemaLevels.DAL.Repository
                     {
                         IdPersonal = comision.IdPersonal,
                         IdMoneda = venta.IdMoneda,
-                        TipoMov = "COMISION_COBRO",
+                        TipoMov = "COMISION COBRO",
                         IdMov = cobro.Id,
                         Fecha = cobro.Fecha,
                         Concepto = $"Comisión cobro venta {venta.NombreEvento}",
-                        Debe = comision.TotalComision,
-                        Haber = 0,
+                        Debe = 0,
+                        Haber = comision.TotalComision,
                         IdUsuarioRegistra = ObtenerUsuarioActual(venta),
                         FechaRegistra = DateTime.Now
                     };
@@ -877,7 +877,7 @@ namespace SistemaLevels.DAL.Repository
 
                 mov ??= await _db.ArtistasCuentaCorrientes
                     .FirstOrDefaultAsync(x =>
-                        x.TipoMov == "COMISION_COBRO" &&
+                        x.TipoMov == "COMISION COBRO" &&
                         x.IdMov == cobro.Id);
 
                 if (mov != null)
