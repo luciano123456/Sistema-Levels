@@ -1187,22 +1187,28 @@
 
      
 
-        if (audMod && audReg) {
 
-            if (v?.UsuarioModifica && v?.FechaModifica) {
-
-                audMod.innerHTML = `
+        if (audReg) {
+            if (v?.UsuarioRegistra && v?.FechaRegistra) {
+                audReg.innerHTML = `
                 <div class="vn-chip">
-                    <i class="fa fa-edit"></i>
-                    Última modificación por <b>${v.UsuarioModifica}</b>
-                    • <b>${humanDate(v.FechaModifica)}</b>
-                </div>
-            `;
-
+                    <i class="fa fa-plus-circle"></i>
+                    Registrado por <b>${v.UsuarioRegistra}</b>
+                    • <b>${humanDate(v.FechaRegistra)}</b>
+                </div>`;
             } else {
+                audReg.innerHTML = emptyHtml;
+            }
+        }
 
-                audMod.innerHTML = emptyHtml;
-
+        if (audMod) {
+            if (v?.UsuarioModifica && v?.FechaModifica) {
+                audMod.innerHTML = `
+                <div class="vn-chip mt-2">
+                    <i class="fa fa-plus-circle"></i>
+                    Modificado por <b>${v.UsuarioModifica}</b>
+                    • <b>${humanDate(v.FechaModifica)}</b>
+                </div>`;
             }
 
         }

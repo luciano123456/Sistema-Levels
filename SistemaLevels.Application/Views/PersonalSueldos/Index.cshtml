@@ -1,0 +1,300 @@
+﻿@{
+    ViewData["Title"] = "Sueldos";
+}
+
+@section Estilos {
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet" />
+
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+    <link href="~/css/disenopantallas.css" rel="stylesheet" />
+    <link href="~/css/PersonalSueldos.css" rel="stylesheet" />
+}
+
+<div class="container-fluid mt-4 ventas-index">
+
+    <!-- HEADER -->
+    <div class="vi-header cc-header shadow-lg rounded-4 p-3 mb-3">
+
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+
+            <span class="cc-badge">
+                <i class="fa fa-money"></i>
+            </span>
+
+            <div>
+                <h2 class="m-0 fw-800">Sueldos</h2>
+                <small class="text-muted-cc">
+                    Gestión general • Personal y Sueldos
+                </small>
+            </div>
+
+            <div class="ms-auto d-flex gap-2">
+
+                <button id="btnNuevoSueldo" class="btn btn-success vi-btn">
+                    <i class="fa fa-plus me-2"></i> Nuevo sueldo
+                </button>
+
+                <button id="btnExportPdf" class="btn btn-danger vi-btn">
+                    <i class="fa fa-file-pdf-o me-2"></i> Exportar PDF
+                </button>
+
+                <button id="btnRefresh" class="btn btn-outline-light vi-btn">
+                    <i class="fa fa-refresh me-2"></i> Actualizar
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- GRID -->
+    <div class="vi-grid">
+
+        <!-- =====================
+             PERSONAL
+        ====================== -->
+        <div class="vi-card vi-left">
+
+            <div class="vi-card-head">
+                <div class="t">
+                    <i class="fa fa-users"></i>
+                    Personal
+                </div>
+
+                <div class="vi-kpi">
+                    <span id="kpiPersonal">0</span>
+                </div>
+            </div>
+
+            <div class="vi-card-body">
+
+                <!-- BUSCAR PERSONAL -->
+                <div class="vi-search mb-2">
+                    <i class="fa fa-search"></i>
+                    <input id="txtBuscarPersonal"
+                           class="form-control vi-input"
+                           placeholder="Buscar personal..." />
+                </div>
+
+                <!-- FILTROS PERSONAL -->
+                <div class="rp-filtros-body p-0 mb-2">
+
+                    <div class="row g-2">
+
+                        <div class="col-12">
+
+                            <div class="vi-switch-wrap">
+
+                                <label class="vi-switch">
+                                    <input type="checkbox" id="fPersonalSaldo">
+                                    <span class="slider"></span>
+                                </label>
+
+                                <span class="vi-switch-label">
+                                    Solo con saldo pendiente
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- LISTA PERSONAL -->
+                <div id="personalList" class="vi-list"></div>
+
+            </div>
+        </div>
+
+
+        <!-- =====================
+             SUELDOS
+        ====================== -->
+        <div class="vi-card vi-right">
+
+            <div class="vi-card-head">
+
+                <div class="t">
+                    <i class="fa fa-folder-open"></i>
+                    Sueldos
+                </div>
+
+                <div class="vi-filters">
+
+                    <div id="lblFiltroPersonal" class="vi-pill">
+                        Todo el personal
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="rp-filtros-wrap mb-3">
+
+                <div class="rp-filtros-head"
+                     data-bs-toggle="collapse"
+                     data-bs-target="#panelFiltrosSueldos"
+                     aria-expanded="false"
+                     aria-controls="panelFiltrosSueldos">
+
+                    <div class="title">
+                        <i class="fa fa-filter"></i>
+                        <span>Filtros</span>
+                    </div>
+
+                    <i class="fa fa-chevron-down chev"></i>
+
+                </div>
+
+                <div id="panelFiltrosSueldos" class="collapse">
+
+                    <div class="rp-filtros-body">
+
+                        <div class="row g-3">
+
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Fecha desde</div>
+                                <input type="date"
+                                       id="fFechaDesde"
+                                       class="rp-filter-input" />
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Fecha hasta</div>
+                                <input type="date"
+                                       id="fFechaHasta"
+                                       class="rp-filter-input" />
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Moneda</div>
+                                <select id="fMoneda"
+                                        class="rp-filter-select select2"
+                                        style="width:100%">
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="rp-filter-label">Estado</div>
+                                <select id="fEstado"
+                                        class="rp-filter-select select2"
+                                        style="width:100%">
+                                    <option value="">Todos</option>
+                                    <option value="PENDIENTE">Pendiente</option>
+                                    <option value="PARCIAL">Parcial</option>
+                                    <option value="PAGADO">Pagado</option>
+                                </select>
+                            </div>
+
+                        </div>
+
+                        <div class="rp-filtros-actions">
+
+                            <button class="btn btn-outline-light"
+                                    type="button"
+                                    onclick="limpiarFiltrosSueldos()">
+                                <i class="fa fa-eraser"></i>
+                                Limpiar
+                            </button>
+
+                            <button class="btn btn-primary"
+                                    type="button"
+                                    onclick="aplicarFiltrosSueldos()">
+                                <i class="fa fa-check"></i>
+                                Aplicar
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="vi-card-body">
+
+                <!-- KPIs -->
+                <div class="vi-kpis">
+
+                    <div class="vi-kpiCard">
+                        <div class="lbl">Sueldos</div>
+                        <div id="kpiSueldos" class="val">0</div>
+                    </div>
+
+                    <div class="vi-kpiCard">
+                        <div class="lbl">Total</div>
+                        <div id="kpiTotal" class="val">$0</div>
+                    </div>
+
+                    <div class="vi-kpiCard">
+                        <div class="lbl">Pagado</div>
+                        <div id="kpiPagado" class="val">$0</div>
+                    </div>
+
+                    <div class="vi-kpiCard">
+                        <div class="lbl">Saldo</div>
+                        <div id="kpiSaldo" class="val">$0</div>
+                    </div>
+
+                </div>
+
+                <!-- BUSCAR SUELDO -->
+                <div class="vi-search mb-2">
+                    <i class="fa fa-search"></i>
+                    <input id="txtBuscarSueldo"
+                           class="form-control vi-input"
+                           placeholder="Buscar sueldo..." />
+                </div>
+
+                <!-- LISTA -->
+                <div id="sueldosList" class="vi-salesList"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- DataTables core / buttons -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+
+    <!-- Dependencias exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <!-- Buttons -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+    <!-- fixedHeader -->
+    <script src="https://cdn.datatables.net/fixedheader/3.2.2/js/dataTables.fixedHeader.min.js"></script>
+
+    <!-- select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- moment -->
+    <script src="~/js/utils/moment.js"></script>
+
+    <!-- charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Tu JS -->
+    <script src="~/js/PersonalSueldos.js?v=1.0"></script>
+}
