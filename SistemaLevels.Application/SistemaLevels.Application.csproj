@@ -21,6 +21,8 @@
     <Content Remove="wwwroot\js\PaisesMonedas.js" />
     <Content Remove="wwwroot\js\Personal.js" />
     <Content Remove="wwwroot\js\PersonalCuentaCorriente.js" />
+    <Content Remove="wwwroot\js\PersonalSueldos.js" />
+    <Content Remove="wwwroot\js\PersonalSueldosNuevoModif.js" />
     <Content Remove="wwwroot\js\Productoras.js" />
     <Content Remove="wwwroot\js\Representantes.js" />
     <Content Remove="wwwroot\js\Tareas.js" />
@@ -35,6 +37,8 @@
   <ItemGroup>
     <None Include="wwwroot\Imagenes\Clientes.png" />
     <None Include="wwwroot\js\Caja.js" />
+    <None Include="wwwroot\js\PersonalSueldosNuevoModif.js" />
+    <None Include="wwwroot\js\PersonalSueldos.js" />
     <None Include="wwwroot\js\PersonalCuentaCorriente.js" />
     <None Include="wwwroot\js\ClientesCuentaCorriente.js" />
     <None Include="wwwroot\js\ArtistasCuentaCorriente.js" />

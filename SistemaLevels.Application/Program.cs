@@ -107,25 +107,24 @@ builder.Services.AddScoped<ITiposComisionesService, TiposComisionesService>();
 builder.Services.AddScoped<IOpcionesBinariasRepository<OpcionesBinaria>, OpcionesBinariasRepository>();
 builder.Services.AddScoped<IOpcionesBinariasService, OpcionesBinariasService>();
 
-
-
 builder.Services.AddScoped<ILoginRepository<User>, LoginRepository>();
 builder.Services.AddScoped<ILoginService, LoginService>();
 
 builder.Services.AddScoped<IArtistasCuentaCorrienteRepository, ArtistasCuentaCorrienteRepository>();
 builder.Services.AddScoped<IArtistasCuentaCorrienteService, ArtistasCuentaCorrienteService>();
 
-
 builder.Services.AddScoped<IClientesCuentaCorrienteRepository, ClientesCuentaCorrienteRepository>();
 builder.Services.AddScoped<IClientesCuentaCorrienteService, ClientesCuentaCorrienteService>();
-
-
 
 builder.Services.AddScoped<IPersonalCuentaCorrienteRepository, PersonalCuentaCorrienteRepository>();
 builder.Services.AddScoped<IPersonalCuentaCorrienteService, PersonalCuentaCorrienteService>();
 
 builder.Services.AddScoped<ICajaRepository, CajaRepository>();
 builder.Services.AddScoped<ICajaService, CajaService>();
+
+builder.Services.AddScoped<IPersonalSueldosService, PersonalSueldosService>();
+builder.Services.AddScoped<IPersonalSueldosRepository<PersonalSueldo>, PersonalSueldosRepository>();
+
 
 
 builder.Services.AddControllersWithViews()

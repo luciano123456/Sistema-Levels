@@ -1,0 +1,364 @@
+﻿@{
+    ViewData["Title"] = "Sueldos - Nuevo / Modificar";
+    var id = (int)(ViewBag.Id ?? 0);
+    var idPersonal = (int)(ViewBag.IdPersonal ?? 0);
+}
+
+@section Estilos {
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
+     <link href="~/css/VentasNuevoModif.css?v=1.0" rel="stylesheet" />
+    <link href="~/css/PersonalSueldosNuevoModif.css?v=1.0" rel="stylesheet" />
+   
+}
+
+<div class="container-fluid mt-4 sueldonew">
+
+    <!-- HEADER -->
+    <div class="vn-card mb-3">
+        <div class="vn-card-head">
+            <div class="t">
+                <i class="fa fa-money"></i>
+                Sueldos
+            </div>
+
+            <div class="vn-actions">
+
+                <button class="btn btn-danger vn-btn" id="btnEliminarSueldo" type="button">
+                    <i class="fa fa-trash"></i> Eliminar sueldo
+                </button>
+
+                <button id="btnDraftSave" class="btn btn-outline-light vn-btn" type="button">
+                    <i class="fa fa-save"></i> Guardar borrador
+                </button>
+
+                <div class="vn-actions-secondary">
+                    <button id="btnDraftRestore" class="btn btn-info vn-btn" type="button">
+                        <i class="fa fa-refresh"></i> Restaurar borrador
+                    </button>
+
+                    <button class="btn btn-warning vn-btn" id="btnDraftClear" type="button">
+                        <i class="fa fa-trash"></i> Limpiar borrador
+                    </button>
+                </div>
+
+                <button class="btn btn-primary vn-btn-main" id="btnGuardarSueldo" type="button">
+                    <i class="fa fa-check" id="tituloSueldo"> Registrar sueldo</i>
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="vn-grid">
+
+        <!-- =======================
+             FORMULARIO
+        ======================= -->
+        <div class="vn-card">
+
+            <div class="vn-card-head vn-head-tabs">
+                <ul class="vn-head-nav">
+                    <li>
+                        <button class="vn-head-btn active" data-sec="datos" type="button">
+                            <i class="fa fa-info-circle"></i>
+                            Datos del sueldo
+                        </button>
+                    </li>
+
+                    <li>
+                        <button class="vn-head-btn" data-sec="pagos" type="button">
+                            <i class="fa fa-money"></i>
+                            Pagos <span id="cntPagos">(0)</span>
+                        </button>
+                    </li>
+
+                    <li>
+                        <button class="vn-head-btn" data-sec="notas" type="button">
+                            <i class="fa fa-sticky-note"></i>
+                            Notas
+                        </button>
+                    </li>
+
+                    <li>
+                        <button class="vn-head-btn" data-sec="auditoria" type="button">
+                            <i class="fa fa-shield"></i>
+                            Auditoría
+                        </button>
+                    </li>
+
+                    <li>
+                        <button class="vn-head-btn" data-sec="recibo" type="button">
+                            <i class="fa fa-file-text-o"></i>
+                            Recibo
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="p-3">
+
+                <input type="hidden" id="Sueldo_Id" value="@id" />
+                <input type="hidden" id="Sueldo_IdPersonal" value="@idPersonal" />
+
+                <!-- =====================
+                     DATOS
+                ===================== -->
+                <div class="vn-section active" id="sec-datos">
+
+                    <div id="errorCampos" class="rp-error-panel d-none mb-2">
+                        <div class="rp-error-icon">
+                            <i class="fa fa-exclamation-triangle"></i>
+                        </div>
+
+                        <div class="rp-error-content">
+                            <div class="rp-error-title">No se pudo guardar</div>
+                            <div class="rp-error-message"></div>
+                        </div>
+
+                        <button type="button"
+                                class="rp-error-close"
+                                onclick="cerrarErrorCamposLocal()">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+
+                    <div class="vn-subtitle">
+                        <div class="i"><i class="fa fa-info-circle"></i></div>
+                        <div class="txt">
+                            <div class="t1">Datos del sueldo</div>
+                            <div class="t2">Completá la información principal del sueldo</div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+                            <label class="form-label vn-label">Personal</label>
+                            <select id="IdPersonal" class="form-select vn-input"></select>
+                            <div class="invalid-feedback">Campo obligatorio</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label vn-label">Fecha</label>
+                            <input type="date" id="Fecha" class="form-control vn-input" />
+                            <div class="invalid-feedback">Campo obligatorio</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label vn-label">Moneda</label>
+                            <select id="IdMoneda" class="form-select vn-input"></select>
+                            <div class="invalid-feedback">Campo obligatorio</div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label vn-label">Concepto</label>
+                            <input id="Concepto" class="form-control vn-input" />
+                            <div class="invalid-feedback">Campo obligatorio</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label vn-label">Importe total</label>
+                            <input id="ImporteTotal" class="form-control vn-input Inputmiles" type="text" />
+                            <div class="invalid-feedback">Campo obligatorio</div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- =====================
+                     PAGOS
+                ===================== -->
+                <div class="vn-section" id="sec-pagos">
+
+                    <button class="btn btn-outline-light vn-btn mb-2" id="btnAddPago" type="button">
+                        <i class="fa fa-plus"></i> Agregar pago
+                    </button>
+
+                    <div class="vn-gridtable">
+                        <table class="table vn-table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Moneda</th>
+                                    <th>Cuenta</th>
+                                    <th>Importe</th>
+                                    <th>Cotización</th>
+                                    <th>Convertido</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+
+                            <tbody id="tbPagos"></tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+                <!-- =====================
+                     NOTAS
+                ===================== -->
+                <div class="vn-section" id="sec-notas">
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label vn-label">Nota personal</label>
+                            <textarea id="NotaPersonal" class="form-control vn-input" rows="4"></textarea>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label vn-label">Nota interna</label>
+                            <textarea id="NotaInterna" class="form-control vn-input" rows="4"></textarea>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- =====================
+                     AUDITORIA
+                ===================== -->
+                <div class="vn-section" id="sec-auditoria">
+                    <div id="audReg"></div>
+                    <div id="audMod"></div>
+                </div>
+
+                <!-- =====================
+                     RECIBO
+                ===================== -->
+                <div class="vn-section" id="sec-recibo">
+
+                    <div class="vn-subtitle" style="margin-top:0;">
+                        <div class="i"><i class="fa fa-file-pdf-o"></i></div>
+                        <div class="txt">
+                            <div class="t1">Recibo de sueldo</div>
+                            <div class="t2">Generá un PDF profesional listo para descargar o imprimir</div>
+                        </div>
+                    </div>
+
+                    <div class="vn-recibo-wrap">
+
+                        <div class="vn-recibo-preview" id="reciboPreview">
+                            <div class="rpv-head">
+                                <div class="rpv-title">RECIBO DE SUELDO</div>
+                                <div class="rpv-sub">Vista previa del comprobante</div>
+                            </div>
+
+                            <div class="rpv-grid">
+                                <div><strong>Personal:</strong> <span id="rvPersonal">-</span></div>
+                                <div><strong>Fecha:</strong> <span id="rvFecha">-</span></div>
+                                <div><strong>Moneda:</strong> <span id="rvMoneda">-</span></div>
+                                <div><strong>Concepto:</strong> <span id="rvConcepto">-</span></div>
+                            </div>
+
+                            <div class="rpv-total-box">
+                                <div class="rowx">
+                                    <span>Total sueldo</span>
+                                    <strong id="rvTotal">$ 0</strong>
+                                </div>
+                                <div class="rowx">
+                                    <span>Total pagado</span>
+                                    <strong id="rvPagado">$ 0</strong>
+                                </div>
+                                <div class="rowx saldo">
+                                    <span>Saldo pendiente</span>
+                                    <strong id="rvSaldo">$ 0</strong>
+                                </div>
+                            </div>
+
+                            <div class="rpv-pagos">
+                                <div class="rpv-pagos-title">Detalle de pagos</div>
+                                <div id="rvPagosDetalle"></div>
+                            </div>
+
+                            <div class="rpv-firmas">
+                                <div class="firma">
+                                    <div class="linea"></div>
+                                    <div class="txt">Firma del empleado</div>
+                                </div>
+                                <div class="firma">
+                                    <div class="linea"></div>
+                                    <div class="txt">Firma de la empresa</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <button class="btn btn-danger vn-btn" id="btnReciboPdf2" type="button">
+                                <i class="fa fa-file-pdf-o"></i> Descargar recibo PDF
+                            </button>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- =======================
+             RESUMEN FINANCIERO
+        ======================= -->
+        <div class="vn-card">
+
+            <div class="vn-card-head">
+                <div class="t">
+                    <i class="fa fa-line-chart"></i>
+                    Resumen financiero
+                </div>
+            </div>
+
+            <div class="p-3 vn-summary">
+
+                <div class="vn-stat">
+                    <div class="lbl">Importe total</div>
+                    <div class="val" id="sumImporte">$ 0</div>
+                </div>
+
+                <div class="vn-stat">
+                    <div class="lbl">Pagado</div>
+                    <div class="val" id="sumPagado">$ 0</div>
+                </div>
+
+                <div class="vn-stat">
+                    <div class="lbl">Saldo</div>
+                    <div class="val" id="sumSaldo">$ 0</div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<partial name="~/Views/Utils/Modals.cshtml" />
+
+@section Scripts {
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <!-- moment -->
+    <script src="~/js/utils/moment.js"></script>
+
+    <script>
+        window.SN_INIT = {
+            id: @id,
+            idPersonal: @idPersonal
+        };
+    </script>
+
+    <script src="~/js/PersonalSueldosNuevoModif.js?v=1.0"></script>
+
+}
