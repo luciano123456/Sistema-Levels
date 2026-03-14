@@ -190,6 +190,10 @@ public class VentasController : Controller
         {
             Id = v.Id,
 
+            // =============================
+            // DATOS PRINCIPALES
+            // =============================
+
             Fecha = v.Fecha,
             IdUbicacion = v.IdUbicacion,
             NombreEvento = v.NombreEvento,
@@ -212,6 +216,47 @@ public class VentasController : Controller
             DiasPrevios = v.DiasPrevios,
             FechaHasta = v.FechaHasta,
 
+            IdClienteCc = v.IdClienteCc,
+
+            // =============================
+            // CLIENTE
+            // =============================
+
+            Cliente = v.IdClienteNavigation?.Nombre ?? "",
+            DniCliente = v.IdClienteNavigation?.Dni ?? "",
+            CuitCliente = v.IdClienteNavigation?.NumeroDocumento ?? "",
+            DomicilioCliente = v.IdClienteNavigation?.Direccion ?? "",
+            TelefonoCliente = v.IdClienteNavigation?.Telefono ?? "",
+            EmailCliente = v.IdClienteNavigation?.Email ?? "",
+
+            // =============================
+            // PRODUCTORA
+            // =============================
+
+            Productora = v.IdProductoraNavigation?.Nombre ?? "",
+
+            // =============================
+            // UBICACION
+            // =============================
+
+            Ubicacion = v.IdUbicacionNavigation?.Descripcion ?? "",
+
+            // =============================
+            // MONEDA
+            // =============================
+
+            Moneda = v.IdMonedaNavigation?.Nombre ?? "",
+
+            // =============================
+            // ESTADO
+            // =============================
+
+            Estado = v.IdEstadoNavigation?.Nombre ?? "",
+
+            // =============================
+            // ARTISTAS
+            // =============================
+
             Artistas = v.VentasArtista.Select(a => new VMVentaArtista
             {
                 Id = a.Id,
@@ -220,9 +265,26 @@ public class VentasController : Controller
                 PorcComision = a.PorcComision,
                 TotalComision = a.TotalComision,
                 IdArtistaCc = a.IdArtistaCc,
-                Artista = a.IdArtistaNavigation != null ? a.IdArtistaNavigation.Nombre : "",
-                Representante = a.IdRepresentanteNavigation != null ? a.IdRepresentanteNavigation.Nombre : ""
+
+                Artista = a.IdArtistaNavigation?.NombreArtistico
+                          ?? a.IdArtistaNavigation?.Nombre
+                          ?? "",
+
+                Representante = a.IdRepresentanteNavigation?.Nombre ?? "",
+
+                DniArtista = a.IdArtistaNavigation?.Dni ?? "",
+                CuitArtista = a.IdArtistaNavigation?.NumeroDocumento ?? "",
+                DomicilioArtista = a.IdArtistaNavigation?.Direccion ?? "",
+
+                DniRepresentante = a.IdRepresentanteNavigation?.Dni ?? "",
+                CuitRepresentante = a.IdRepresentanteNavigation?.NumeroDocumento ?? "",
+                DomicilioRepresentante = a.IdRepresentanteNavigation?.Direccion ?? ""
+
             }).ToList(),
+
+            // =============================
+            // PERSONAL
+            // =============================
 
             Personal = v.VentasPersonals.Select(p => new VMVentaPersonal
             {
@@ -232,38 +294,55 @@ public class VentasController : Controller
                 IdTipoComision = p.IdTipoComision,
                 PorcComision = p.PorcComision,
                 TotalComision = p.TotalComision,
-                Personal = p.IdPersonalNavigation != null ? p.IdPersonalNavigation.Nombre : "",
-                Cargo = p.IdCargoNavigation != null ? p.IdCargoNavigation.Nombre : "",
-                TipoComision = p.IdTipoComisionNavigation != null ? p.IdTipoComisionNavigation.Nombre : ""
+
+                Personal = p.IdPersonalNavigation?.Nombre ?? "",
+                Cargo = p.IdCargoNavigation?.Nombre ?? "",
+                TipoComision = p.IdTipoComisionNavigation?.Nombre ?? ""
+
             }).ToList(),
 
-            Cobros = v.VentasCobros.Select(c => new VMVentaCobro
-            {
-                Id = c.Id,
-                Fecha = c.Fecha,
-                IdMoneda = c.IdMoneda,
-                IdCuenta = c.IdCuenta,
-                Importe = c.Importe,
-                Cotizacion = c.Cotizacion,
-                Conversion = c.Conversion,
-                NotaCliente = c.NotaCliente,
-                NotaInterna = c.NotaInterna,
-                IdClienteCc = c.IdClienteCc,
-                IdArtistaCc = c.IdArtistaCc,
-                IdCaja = c.IdCaja,
-                Moneda = c.IdMonedaNavigation != null ? c.IdMonedaNavigation.Nombre : "",
-                Cuenta = c.IdCuentaNavigation != null ? c.IdCuentaNavigation.Nombre : ""
-            }).OrderBy(x => x.Fecha).ToList(),
+            // =============================
+            // COBROS
+            // =============================
 
+            Cobros = v.VentasCobros
+                .Select(c => new VMVentaCobro
+                {
+                    Id = c.Id,
+                    Fecha = c.Fecha,
+                    IdMoneda = c.IdMoneda,
+                    IdCuenta = c.IdCuenta,
+
+                    Importe = c.Importe,
+                    Cotizacion = c.Cotizacion,
+                    Conversion = c.Conversion,
+
+                    NotaCliente = c.NotaCliente,
+                    NotaInterna = c.NotaInterna,
+
+                    IdClienteCc = c.IdClienteCc,
+                    IdArtistaCc = c.IdArtistaCc,
+                    IdCaja = c.IdCaja,
+
+                    Moneda = c.IdMonedaNavigation?.Nombre ?? "",
+                    Cuenta = c.IdCuentaNavigation?.Nombre ?? ""
+
+                })
+                .OrderBy(x => x.Fecha)
+                .ToList(),
+
+
+            IdUsuarioRegistra = v.IdUsuarioRegistra,
             FechaRegistra = v.FechaRegistra,
-            UsuarioRegistra = v.IdUsuarioRegistraNavigation != null ? v.IdUsuarioRegistraNavigation.Usuario : "",
+            UsuarioRegistra = v.IdUsuarioRegistraNavigation?.Usuario ?? "",
+
+            IdUsuarioModifica = v.IdUsuarioModifica,
             FechaModifica = v.FechaModifica,
-            UsuarioModifica = v.IdUsuarioModificaNavigation != null ? v.IdUsuarioModificaNavigation.Usuario : ""
+            UsuarioModifica = v.IdUsuarioModificaNavigation?.Usuario ?? ""
         };
 
         return Ok(vm);
     }
-
     /* ===============================
        INSERTAR
     =============================== */
