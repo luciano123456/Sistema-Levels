@@ -92,6 +92,27 @@
         return `VN_DRAFT_${userId}`;
     };
 
+    function getCotizacionUSD() {
+
+        if (!Array.isArray(VN?.combos?.monedas))
+            return 1;
+
+        const usd = VN.combos.monedas.find(m => {
+
+            const nom = String(m.Nombre || "").toUpperCase();
+            const desc = String(m.Descripcion || "").toUpperCase();
+
+            return (
+                nom.includes("USD") ||
+                nom.includes("DOLAR") ||
+                desc.includes("DOLAR")
+            );
+
+        });
+
+        return Number(usd?.Cotizacion || 1);
+    }
+
     /* =========================
        HELPERS
     ========================= */
@@ -182,6 +203,17 @@
             if (mode === "ok") status.classList.add("ok");
             if (mode === "err") status.classList.add("err");
         }
+    }
+
+    function fmtFechaHora(valor) {
+
+        if (!valor) return "";
+
+        const m = moment(valor);
+
+        if (!m.isValid()) return "";
+
+        return m.format("DD/MM/YYYY HH:mm");
     }
 
     async function cargarCuentasPorMoneda(idx, idMoneda) {
@@ -319,6 +351,808 @@
     - Usa: errorModal / exitoModal
     ========================================================= */
 
+
+    async function exportarResumen(tipo) {
+
+        const idVenta = Number(document.getElementById("Venta_Id")?.value || 0);
+
+        if (!idVenta) {
+            errorModal("Primero guardá la venta.");
+            return;
+        }
+
+        try {
+
+            const v = await vnFetchJson(`/Ventas/EditarInfo?id=${idVenta}`);
+
+            if (tipo === "cliente")
+                exportarResumenCliente(v);
+            else
+                exportarResumenComisiones(v);
+
+        }
+        catch (e) {
+
+            console.error(e);
+            errorModal("No se pudo generar el PDF.");
+
+        }
+
+    }
+
+    async function exportarResumenCliente(v) {
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF("p", "mm", "a4");
+
+        const logo = await cargarImagenBase64("/Imagenes/Logo_Negro.png");
+
+        const PAGE_W = 210;
+        const M = 6;
+        const X = M;
+        const W = PAGE_W - (M * 2);
+
+        const BLACK = [0, 0, 0];
+        const WHITE = [255, 255, 255];
+
+        const cobros = Array.isArray(v.Cobros) ? v.Cobros : [];
+        const artistas = Array.isArray(v.Artistas) ? v.Artistas : [];
+
+        let y = 5;
+
+        const cotUSD = getCotizacionUSD();
+
+        /* =========================
+           HELPERS
+        ========================= */
+
+        function money(n, dec = 2) {
+            return Number(n || 0).toLocaleString("es-AR", {
+                minimumFractionDigits: dec,
+                maximumFractionDigits: dec
+            });
+        }
+
+        function fmtFecha(valor) {
+
+            if (!valor) return "";
+
+            const m = moment(valor, [
+                "YYYY-MM-DD",
+                "YYYY-MM-DDTHH:mm:ss",
+                "DD/MM/YYYY",
+                "DD-MM-YYYY"
+            ], true);
+
+            if (!m.isValid()) return "";
+
+            return m.format("DD/MM/YYYY");
+        }
+
+
+
+        function txt(x, y, text, opt = {}) {
+
+            const {
+                size = 8,
+                bold = false,
+                align = "left",
+                color = [0, 0, 0]
+            } = opt;
+
+            doc.setFont("helvetica", bold ? "bold" : "normal");
+            doc.setFontSize(size);
+            doc.setTextColor(color[0], color[1], color[2]);
+
+            doc.text(String(text ?? ""), x, y, { align });
+
+        }
+
+        function rect(x, y, w, h, fill = null) {
+
+            if (fill) {
+
+                doc.setFillColor(fill[0], fill[1], fill[2]);
+                doc.rect(x, y, w, h, "F");
+
+            } else {
+
+                doc.rect(x, y, w, h);
+
+            }
+
+        }
+
+        function sectionBar(y, title) {
+
+            rect(X, y, W, 6, BLACK);
+
+            txt(X + 3, y + 4, title, {
+                size: 7,
+                bold: true,
+                color: WHITE
+            });
+
+        }
+
+        function cell(x, y, w, h, textValue = "", opt = {}) {
+
+            const { align = "left" } = opt;
+
+            rect(x, y, w, h);
+
+            let tx = x + 1.5;
+
+            if (align === "center") tx = x + w / 2;
+            if (align === "right") tx = x + w - 1.5;
+
+            txt(tx, y + 4, textValue, { size: 7, align });
+
+        }
+
+        /* =========================
+           DATOS DERIVADOS
+        ========================= */
+
+        const artistasTxt = artistas
+            .map(a => a.Artista)
+            .filter(Boolean)
+            .join(", ");
+
+        const representanteTxt = artistas
+            .map(a => a.Representante)
+            .filter(Boolean)
+            .join(", ");
+
+        const cobradoARS = cobros.reduce(
+            (a, x) => a + Number(x.Conversion || 0),
+            0
+        );
+
+        const cobradoUSD = cobradoARS / cotUSD;
+
+        /* =========================
+           BORDE
+        ========================= */
+
+        doc.rect(2, 2, 206, 292);
+
+        /* =========================
+           CABECERA
+        ========================= */
+
+        rect(X, y, W, 6, BLACK);
+
+        txt(PAGE_W / 2, y + 4, "DOCUMENTO NO VÁLIDO COMO FACTURA", {
+            align: "center",
+            size: 8,
+            color: WHITE
+        });
+
+        y += 6;
+
+        /* =========================
+           HEADER EMPRESA
+        ========================= */
+
+        rect(X, y, W, 28);
+
+        doc.addImage(logo, "PNG", X + 6, y + 5, 18, 12);
+
+        txt(X + 30, y + 8, "Levels", { bold: true });
+        txt(X + 30, y + 13, "Cuit: 20-35970758-5", { size: 7 });
+        txt(X + 30, y + 18, "Ingresos Brutos: 20359707585", { size: 7 });
+        txt(X + 30, y + 23, "Fecha de inicio actividad: 01/03/2021", { size: 7 });
+
+        txt(X + W - 18, y + 8, "VENTA N°", { align: "center", size: 11 });
+
+        txt(X + W - 18, y + 18, String(v.Id || ""), {
+            align: "center",
+            size: 18
+        });
+
+        y += 28;
+
+        /* =========================
+           INFORMACION
+        ========================= */
+
+        sectionBar(y, "Información de la venta");
+
+        y += 6;
+
+        rect(X, y, W, 38);
+
+        const duracion = v.Duracion
+            ? moment(v.Duracion).format("HH:mm")
+            : "";
+
+        const left = [
+            `Fecha: ${fmtFecha(v.Fecha)}`,
+            `Artista/s: ${artistasTxt}`,
+            `Representante: ${representanteTxt}`,
+            `Cliente: ${v.Cliente || ""}`,
+            `Productora: ${v.Productora || ""}`,
+            `Lugar: ${v.Ubicacion || ""}`,
+            `Ubicación: ${v.Ubicacion || ""}`,
+            `Espacio: ${v.NombreEvento || ""}`
+        ];
+
+        const right = [
+            `Nombre evento: ${v.NombreEvento || ""}`,
+            `Duración: ${duracion}`,
+            `Estado: ${v.Estado || ""}`,
+            `Moneda: ${v.Moneda || ""}`,
+            `Importe total: ${v.Moneda} ${money(v.ImporteTotal)}`,
+            `Importe abonado: ${v.Moneda} ${money(v.ImporteAbonado)}`,
+            `Saldo: ${v.Moneda} ${money(v.Saldo)}`,
+            `Cotización HOY: $${money(cotUSD)}`
+        ];
+
+        let ly = y + 5;
+
+        left.forEach(t => {
+            txt(X + 3, ly, t, { size: 7 });
+            ly += 4.5;
+        });
+
+        let ry = y + 5;
+
+        right.forEach(t => {
+            txt(X + 95, ry, t, { size: 7 });
+            ry += 4.5;
+        });
+
+        y += 43;
+
+        /* =========================
+           COBROS
+        ========================= */
+
+        sectionBar(y, "Cobros asociados");
+        y += 6;
+
+        const headerH = 6;
+        const rowH = 7;
+
+        const rows = cobros.length ? cobros : [{}];
+        const tableH = headerH + (rows.length * rowH);
+
+        rect(X, y, W, tableH);
+
+        const cw = [30, 60, 30, 30, 30];
+
+        const cx = [
+            X,
+            X + cw[0],
+            X + cw[0] + cw[1],
+            X + cw[0] + cw[1] + cw[2],
+            X + cw[0] + cw[1] + cw[2] + cw[3]
+        ];
+
+        cell(cx[0], y, cw[0], headerH, "Fecha", { align: "center" });
+        cell(cx[1], y, cw[1], headerH, "Cuenta", { align: "center" });
+        cell(cx[2], y, cw[2], headerH, "Importe", { align: "center" });
+        cell(cx[3], y, cw[3], headerH, "Cotización", { align: "center" });
+        cell(cx[4], y, cw[4], headerH, "Conversión", { align: "center" });
+
+        rows.forEach((c, i) => {
+
+            const yy = y + headerH + (i * rowH);
+
+            const fecha = c.Fecha ? moment(c.Fecha, "YYYY-MM-DD").format("DD/MM/YYYY") : "";
+            const cuenta = c.Cuenta || "";
+            const importe = c.Importe ? `${c.Moneda || ""} ${money(c.Importe)}` : "";
+            const cot = c.Cotizacion ? money(c.Cotizacion) : "";
+            const conv = c.Conversion ? money(c.Conversion) : "";
+
+            cell(cx[0], yy, cw[0], rowH, fecha);
+            cell(cx[1], yy, cw[1], rowH, cuenta);
+            cell(cx[2], yy, cw[2], rowH, importe, { align: "right" });
+            cell(cx[3], yy, cw[3], rowH, cot, { align: "right" });
+            cell(cx[4], yy, cw[4], rowH, conv, { align: "right" });
+
+        });
+
+        y += tableH + 6;
+
+        /* =========================
+           RESUMEN
+        ========================= */
+
+        sectionBar(y, "Resumen");
+        y += 6;
+
+        rect(X, y, W, 16);
+
+        txt(X + 3, y + 5, "Notas:", { size: 7 });
+
+        txt(X + W - 3, y + 5,
+            `Abonado ARS: $ ${money(cobradoARS)}`,
+            { align: "right", size: 7 }
+        );
+
+        txt(X + W - 3, y + 10,
+            `Abonado USD: USD ${money(cobradoUSD)}`,
+            { align: "right", size: 7 }
+        );
+
+        /* =========================
+           NOMBRE ARCHIVO
+        ========================= */
+
+        const fecha = moment(v.Fecha).isValid()
+            ? moment(v.Fecha).format("DD.MM.YYYY")
+            : moment().format("DD.MM.YYYY");
+
+        const cliente = (v.Cliente || "")
+            .toUpperCase()
+            .replace(/[^\w\s.]/gi, "")
+            .trim();
+
+        const ubicacion = (v.Ubicacion || "")
+            .toUpperCase()
+            .replace(/[^\w\s.]/gi, "")
+            .trim();
+
+        const nombre = `Resumen ${cliente}-${fecha}-${ubicacion}.pdf`;
+
+        doc.save(nombre);
+
+    }
+
+
+    async function exportarResumenComisiones(v) {
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF("p", "mm", "a4");
+
+        const PAGE_W = 210;
+        const M = 6;
+
+        const X = M;
+        const W = PAGE_W - (M * 2);
+
+        const BLACK = [0, 0, 0];
+        const WHITE = [255, 255, 255];
+
+        const logo = await cargarImagenBase64("/Imagenes/Logo_Negro.png");
+
+        const artistas = Array.isArray(v.Artistas) ? v.Artistas : [];
+        const personal = Array.isArray(v.Personal) ? v.Personal : [];
+        const cobros = Array.isArray(v.Cobros) ? v.Cobros : [];
+
+        const importeTotal = Number(v.ImporteTotal || 0);
+        const importeAbonado = Number(v.ImporteAbonado || 0);
+        const saldo = Number(v.Saldo || 0);
+
+        let y = 5;
+
+        /* =========================================
+           HELPERS
+        ========================================= */
+
+        function generarNombrePDF(v) {
+
+            const fecha = moment(v.Fecha).isValid()
+                ? moment(v.Fecha).format("DD-MM-YYYY")
+                : moment().format("DD-MM-YYYY");
+
+            const evento = (v.NombreEvento || "Evento")
+                .toUpperCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")   // quitar acentos
+                .replace(/[^A-Z0-9 ]/g, "")        // quitar símbolos
+                .trim()
+                .replace(/\s+/g, "_");
+
+            return `Resumen_comisiones-${fecha}-${evento}.pdf`;
+        }
+
+        function money(n, dec = 2) {
+            return Number(n || 0).toLocaleString("es-AR", {
+                minimumFractionDigits: dec,
+                maximumFractionDigits: dec
+            });
+        }
+
+        function money0(n) {
+            return Number(n || 0).toLocaleString("es-AR", {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function fmtFecha(valor) {
+
+            if (!valor) return "";
+
+            const d = new Date(valor);
+
+            if (isNaN(d.getTime()))
+                return String(valor);
+
+            const dd = String(d.getDate()).padStart(2, "0");
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const yy = d.getFullYear();
+
+            return `${dd}/${mm}/${yy}`;
+        }
+
+
+
+        function fmtDuracion(valor) {
+
+            if (!valor) return "";
+
+            const d = new Date(valor);
+
+            if (isNaN(d.getTime()))
+                return String(valor).slice(0, 5);
+
+            const hh = String(d.getHours()).padStart(2, "0");
+            const mm = String(d.getMinutes()).padStart(2, "0");
+
+            return `${hh}:${mm}`;
+        }
+
+        function txt(x, y, text, opt = {}) {
+
+            const {
+                size = 8,
+                bold = false,
+                align = "left",
+                color = [0, 0, 0]
+            } = opt;
+
+            doc.setFont("helvetica", bold ? "bold" : "normal");
+            doc.setFontSize(size);
+            doc.setTextColor(color[0], color[1], color[2]);
+
+            doc.text(String(text ?? ""), x, y, { align });
+        }
+
+        function rect(x, y, w, h, fill = null, lineWidth = 0.2) {
+
+            doc.setLineWidth(lineWidth);
+            doc.setDrawColor(0, 0, 0);
+
+            if (fill) {
+
+                doc.setFillColor(fill[0], fill[1], fill[2]);
+                doc.rect(x, y, w, h, "FD");
+
+            } else {
+
+                doc.rect(x, y, w, h);
+
+            }
+
+        }
+
+        function sectionBar(y, title) {
+
+            rect(X, y, W, 6, BLACK, 0.2);
+
+            txt(X + 3, y + 4, title, {
+                size: 7,
+                bold: true,
+                color: WHITE
+            });
+
+        }
+
+        function cell(x, y, w, h, textValue = "", opt = {}) {
+
+            const {
+                align = "left",
+                fontSize = 7
+            } = opt;
+
+            rect(x, y, w, h, null, 0.2);
+
+            let tx = x + 1.5;
+
+            if (align === "center")
+                tx = x + w / 2;
+
+            if (align === "right")
+                tx = x + w - 1.5;
+
+            txt(tx, y + 4, textValue, {
+                size: fontSize,
+                align
+            });
+        }
+
+        /* =========================================
+           COTIZACION USD
+        ========================================= */
+
+        function getCotizacionUSD() {
+
+            if (!Array.isArray(VN?.combos?.monedas))
+                return 1;
+
+            const usd = VN.combos.monedas.find(m => {
+
+                const n = String(m.Nombre || "").toUpperCase();
+
+                return (
+                    n.includes("USD") ||
+                    n.includes("DOLAR")
+                );
+
+            });
+
+            return Number(usd?.Cotizacion || 1);
+
+        }
+
+        const cotUSD = getCotizacionUSD();
+
+        /* =========================================
+           CALCULOS
+        ========================================= */
+
+        const cobradoARS = cobros.reduce(
+            (a, x) => a + Number(x.Conversion || 0),
+            0
+        );
+
+        const cobradoUSD = cobradoARS / cotUSD;
+
+        const comisionPersonalARS = personal.reduce(
+            (a, x) => a + Number(x.TotalComision || 0),
+            0
+        );
+
+        const comisionArtistaARS = artistas.reduce(
+            (a, x) => a + Number(x.TotalComision || 0),
+            0
+        );
+
+        const comisionPersonalUSD = comisionPersonalARS / cotUSD;
+        const comisionArtistaUSD = comisionArtistaARS / cotUSD;
+
+        const artistasTxt = artistas.map(a => a.Artista).filter(Boolean).join(", ");
+        const repTxt = artistas.map(a => a.Representante).filter(Boolean).join(", ");
+
+        /* =========================================
+           BORDE
+        ========================================= */
+
+        rect(2, 2, 206, 292, null, 0.3);
+
+        /* =========================================
+           TOP
+        ========================================= */
+
+        rect(X, y, W, 6, BLACK);
+
+        txt(PAGE_W / 2, y + 4, "DOCUMENTO NO VÁLIDO COMO FACTURA", {
+            align: "center",
+            size: 8,
+            color: WHITE
+        });
+
+        y += 6;
+
+        /* =========================================
+           HEADER
+        ========================================= */
+
+        rect(X, y, W, 28);
+
+        doc.addImage(logo, "PNG", X + 6, y + 5, 18, 12);
+
+        txt(X + 30, y + 8, "Levels", { bold: true });
+        txt(X + 30, y + 13, "CUIT: 20-35970758-5", { size: 7 });
+        txt(X + 30, y + 18, "Ingresos Brutos: 20359707585", { size: 7 });
+        txt(X + 30, y + 23, "Inicio actividad: 01/03/2021", { size: 7 });
+
+        txt(X + W - 18, y + 8, "VENTA N°", { align: "center", size: 11 });
+        txt(X + W - 18, y + 18, String(v.Id || ""), { align: "center", size: 18 });
+
+        y += 28;
+
+        /* =========================================
+           INFO VENTA
+        ========================================= */
+
+        sectionBar(y, "Información de venta");
+        y += 6;
+
+        rect(X, y, W, 38);
+
+        const left = [
+            `Fecha: ${fmtFecha(v.Fecha)}`,
+            `Artistas: ${artistasTxt}`,
+            `Representante: ${repTxt}`,
+            `Cliente: ${v.Cliente || ""}`,
+            `Productora: ${v.Productora || ""}`,
+            `Lugar: ${v.Ubicacion || ""}`,
+            `Espacio: ${v.NombreEvento || ""}`
+        ];
+
+        const right = [
+            `Evento: ${v.NombreEvento}`,
+            `Duración: ${fmtDuracion(v.Duracion)}`,
+            `Estado: ${v.Estado}`,
+            `Moneda: ${v.Moneda}`,
+            `Importe total: ${v.Moneda} ${money0(importeTotal)}`,
+            `Importe abonado: ${v.Moneda} ${money0(importeAbonado)}`,
+            `Saldo: ${v.Moneda} ${money0(saldo)}`,
+            `Cotización USD hoy: ${money(cotUSD, 2)}`
+        ];
+
+        let ly = y + 5;
+
+        left.forEach(t => {
+
+            txt(X + 3, ly, t, { size: 7 });
+            ly += 4.5;
+
+        });
+
+        let ry = y + 5;
+
+        right.forEach(t => {
+
+            txt(X + 95, ry, t, { size: 7 });
+            ry += 4.5;
+
+        });
+
+        y += 38 + 5;
+
+        /* =========================================
+           COBROS
+        ========================================= */
+
+        sectionBar(y, "Cobros asociados");
+        y += 6;
+
+        const headerH = 6;
+        const rowH = 7;
+
+        const rows = Math.max(cobros.length, 1);
+
+        const tableH = headerH + (rows * rowH);
+
+        rect(X, y, W, tableH);
+
+        const cw = [28, 55, 30, 30, 30];
+
+        const cx = [
+            X,
+            X + cw[0],
+            X + cw[0] + cw[1],
+            X + cw[0] + cw[1] + cw[2],
+            X + cw[0] + cw[1] + cw[2] + cw[3]
+        ];
+
+        cell(cx[0], y, cw[0], headerH, "Fecha", { align: "center" });
+        cell(cx[1], y, cw[1], headerH, "Cuenta", { align: "center" });
+        cell(cx[2], y, cw[2], headerH, "Importe", { align: "center" });
+        cell(cx[3], y, cw[3], headerH, "Cotización", { align: "center" });
+        cell(cx[4], y, cw[4], headerH, "Conversión", { align: "center" });
+
+        if (cobros.length === 0) {
+
+            cell(cx[0], y + headerH, cw[0], rowH, "-", { align: "center" });
+            cell(cx[1], y + headerH, cw[1], rowH, "Sin cobros", { align: "center" });
+
+        }
+        else {
+
+            cobros.forEach((c, i) => {
+
+                const yy = y + headerH + (i * rowH);
+
+                cell(cx[0], yy, cw[0], rowH, fmtFechaHora(c.Fecha));
+                cell(cx[1], yy, cw[1], rowH, c.Cuenta || "");
+                cell(cx[2], yy, cw[2], rowH, `${c.Moneda || ""} ${money0(c.Importe)}`);
+                cell(cx[3], yy, cw[3], rowH, money(c.Cotizacion));
+                cell(cx[4], yy, cw[4], rowH, money0(c.Conversion));
+
+            });
+
+        }
+
+        y += tableH;
+
+        /* =========================================
+           RESUMEN COBROS
+        ========================================= */
+
+        sectionBar(y, "Resumen de cobros");
+        y += 6;
+
+        rect(X, y, W, 16);
+
+        txt(X + W - 3, y + 5, `Abonado ARS: $ ${money0(cobradoARS)}`, { align: "right" });
+        txt(X + W - 3, y + 10, `Abonado USD: USD ${money0(cobradoUSD)}`, { align: "right" });
+
+        y += 16;
+
+        /* =========================================
+           COMISION PERSONAL
+        ========================================= */
+
+        sectionBar(y, "Resumen de comisiones");
+        y += 6;
+
+        const rowsP = Math.max(personal.length, 1);
+        const tablePH = 6 + rowsP * 7 + 10;
+
+        rect(X, y, W, tablePH);
+
+        const pw = [24, 82, 38, 38];
+
+        const px = [
+            X,
+            X + pw[0],
+            X + pw[0] + pw[1],
+            X + pw[0] + pw[1] + pw[2]
+        ];
+
+        cell(px[0], y, pw[0], 6, "% Comisión", { align: "center" });
+        cell(px[1], y, pw[1], 6, "Puesto", { align: "center" });
+        cell(px[2], y, pw[2], 6, "Total ARS", { align: "center" });
+        cell(px[3], y, pw[3], 6, "Total USD", { align: "center" });
+
+        personal.forEach((p, i) => {
+
+            const yy = y + 6 + (i * 7);
+
+            const ars = Number(p.TotalComision || 0);
+            const usd = ars / cotUSD;
+
+            cell(px[0], yy, pw[0], 7, `${p.PorcComision}%`, { align: "center" });
+            cell(px[1], yy, pw[1], 7, p.Cargo || "");
+            cell(px[2], yy, pw[2], 7, `$ ${money0(ars)}`);
+            cell(px[3], yy, pw[3], 7, `USD ${money0(usd)}`);
+
+        });
+
+        txt(X + W - 3, y + tablePH - 5, `Comisión ARS: $ ${money0(comisionPersonalARS)}`, { align: "right" });
+        txt(X + W - 3, y + tablePH - 1, `Comisión USD: USD ${money0(comisionPersonalUSD)}`, { align: "right" });
+
+        y += tablePH;
+
+        /* =========================================
+           COMISION ARTISTA
+        ========================================= */
+
+        sectionBar(y, "Resumen de comisión de artista");
+        y += 6;
+
+        const rowsA = Math.max(artistas.length, 1);
+        const tableAH = 6 + rowsA * 7 + 10;
+
+        rect(X, y, W, tableAH);
+
+        artistas.forEach((a, i) => {
+
+            const yy = y + 6 + (i * 7);
+
+            const ars = Number(a.TotalComision || 0);
+            const usd = ars / cotUSD;
+
+            cell(px[0], yy, pw[0], 7, `${a.PorcComision}%`, { align: "center" });
+            cell(px[1], yy, pw[1], 7, a.Artista || "");
+            cell(px[2], yy, pw[2], 7, `$ ${money0(ars)}`);
+            cell(px[3], yy, pw[3], 7, `USD ${money0(usd)}`);
+
+        });
+
+        txt(X + W - 3, y + tableAH - 5, `Comisión ARS: $ ${money0(comisionArtistaARS)}`, { align: "right" });
+        txt(X + W - 3, y + tableAH - 1, `Comisión USD: USD ${money0(comisionArtistaUSD)}`, { align: "right" });
+
+        doc.save(generarNombrePDF(v));
+
+    }
     async function exportarContrato(tipo) {
 
         try {
@@ -389,7 +1223,7 @@
             const container = document.createElement("div");
 
             container.style.padding = "40px";
-           
+
             container.style.left = "-9999px"
             container.style.top = "-9999px"
             container.style.background = "white";
@@ -440,126 +1274,262 @@
 
         return await r.arrayBuffer();
     }
+    async function fetchContratoTemplate(idTipoContrato, fallbackName) {
+        const r = await fetch(`/Contratos/Descargar?idTipoContrato=${idTipoContrato}&nombre=${encodeURIComponent(fallbackName)}`, {
+            method: "GET",
+            headers: { "Authorization": "Bearer " + (token || "") }
+        });
 
-    function buildContratoData(model) {
+        if (!r.ok) {
+            // 🔥 este error tiene que ir con errorModal
+            throw new Error("No existe plantilla para este tipo de contrato.");
+        }
 
-        // ===== selects (texto visible)
-        const NombreCliente = ($("#IdCliente").find(":selected")?.text() || "").trim();
-        const ProductoraCliente = ($("#IdProductora").find(":selected")?.text() || "").trim();
-        const Ubicacion = ($("#IdUbicacion").find(":selected")?.text() || "").trim();
-        const NombreMoneda = ($("#IdMoneda").find(":selected")?.text() || "").trim();
-        const TipoContrato = ($("#IdTipoContrato").find(":selected")?.text() || "").trim();
+        return await r.arrayBuffer();
+    }
 
-        // ===== fecha (día/mes/año)
-        const f = model?.Fecha ? new Date(model.Fecha) : null;
-        const Dia = f ? String(f.getDate()) : "";
-        const Mes = f ? f.toLocaleString("es-AR", { month: "long" }) : "";
-        const Año = f ? String(f.getFullYear()) : "";
+    function buildContratoData(v) {
 
-        const Fecha = f ? f.toLocaleDateString("es-AR") : "";
+        v = v || {}
 
-        // ===== duración HH:MM
-        const dur = (document.getElementById("Duracion")?.value || "00:00").trim();
-        const [hhRaw, mmRaw] = dur.split(":");
-        const DuracionHora = (hhRaw ?? "0").replace(/^0+/, "") || "0";
-        const DuracionMinuto = (mmRaw ?? "0").replace(/^0+/, "") || "0";
+        const safe = x => x == null ? "" : String(x)
+        const num = x => Number(x || 0)
 
-        // ===== exclusividad
-        // En tu contrato @Exclusividad está pegado al final del punto 1.1,
-        // por eso devolvemos un texto que ya trae el "extra".
-        let Exclusividad = "";
-        if (Number(model?.IdOpExclusividad || 0) === 1) Exclusividad = " con exclusividad.";
-        else if (Number(model?.IdOpExclusividad || 0) === 2) Exclusividad = "";
+        const money = n =>
+            num(n).toLocaleString("es-AR")
 
-        // ===== importes
-        const ImporteTotal = vnRound2(model?.ImporteTotal || 0);
-        const ImporteTotalMitad_1 = vnRound2(ImporteTotal / 2);
-        const ImporteTotalMitad_2 = vnRound2(ImporteTotal - ImporteTotalMitad_1); // evita centavos raros
+        /* =========================
+           FECHA
+        ========================= */
 
-        // ===== artista/representante (si tenés varios, tomo el primero)
-        const art0 = (VN.detalle.artistas || [])[0] || null;
+        let Dia = ""
+        let Mes = ""
+        let Año = ""
+        let FechaEvento = ""
 
-        const NombreArtista = art0 ? textById(VN.combos.artistas, art0.IdArtista) : "";
-        const NombreRepresentante = art0 ? textById(VN.combos.representantes, art0.IdRepresentante) : "";
+        if (v.Fecha) {
 
-        // ===== lugar/espacio (tu doc usa @Lugar y @Espacio)
-        // @Lugar suele ser "Ciudad/Provincia", @Espacio es el predio/venue
-        // Como en tu pantalla solo tenés Ubicación, lo mapeo ahí.
-        const Lugar = Ubicacion;
-        const Espacio = model?.Espacio || ""; // si no existe en tu VM, queda vacío
+            const f = new Date(v.Fecha)
 
-        // ===== nombre de archivo
-        const safe = (s) => String(s || "")
-            .trim()
-            .replace(/[\\/:*?"<>|]/g, "")     // inválidos Windows
-            .replace(/\s+/g, "_")
-            .slice(0, 80);
+            if (!isNaN(f)) {
 
-        const NombreArchivo =
-            `Contrato_${safe(NombreCliente || "Cliente")}_${(f ? `${Año}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}` : "sin_fecha")}`;
+                Dia = f.getDate()
+                Mes = f.toLocaleString("es-AR", { month: "long" })
+                Año = f.getFullYear()
+                FechaEvento = f.toLocaleDateString("es-AR")
 
-        // ===== devolvemos TODO lo que tu doc pide + extras útiles
+            }
+
+        }
+
+        /* =========================
+           DURACION
+        ========================= */
+
+        let DuracionHora = "0"
+        let DuracionMinuto = "00"
+
+        if (v.Duracion) {
+
+            const d = new Date(v.Duracion)
+
+            if (!isNaN(d)) {
+
+                DuracionHora = d.getHours()
+                DuracionMinuto = String(d.getMinutes()).padStart(2, "0")
+
+            }
+
+        }
+
+        /* =========================
+           ARTISTAS
+        ========================= */
+
+        const artistas = Array.isArray(v.Artistas) ? v.Artistas : []
+
+        const a1 = artistas[0] || {}
+        const a2 = artistas[1] || {}
+
+        /* =========================
+           PERSONAL
+        ========================= */
+
+        const personal = Array.isArray(v.Personal) ? v.Personal : []
+
+        const p1 = personal[0] || {}
+        const p2 = personal[1] || {}
+
+        /* =========================
+           IMPORTES
+        ========================= */
+
+        const importeTotal = num(v.ImporteTotal)
+
+        const mitad1 = Math.floor(importeTotal / 2)
+        const mitad2 = importeTotal - mitad1
+
+        const totalCobrado = num(v.ImporteAbonado)
+        const saldo = num(v.Saldo)
+
+        /* =========================
+           CLIENTE
+        ========================= */
+
+        const clienteNombre = safe(v.Cliente)
+
+        /* =========================
+           MONEDA
+        ========================= */
+
+        const moneda = safe(v.Moneda)
+
+        /* =========================
+           ARCHIVO
+        ========================= */
+
+        const nombreArchivo =
+
+            (safe(v.NombreEvento) || safe(clienteNombre) || "Contrato")
+                .replace(/[^\w\s-]/gi, "")
+                .replace(/\s+/g, "_")
+
+        /* =========================
+           DATA
+        ========================= */
+
         const data = {
 
-            // --- util
-            NombreArchivo,
+            /* CLIENTE */
 
-            // --- contrato: cliente
-            NombreCliente,
-            DniCliente: model?.DniCliente || "",
-            CuitCliente: model?.CuitCliente || "",
-            DomicilioCliente: model?.DomicilioCliente || "",
-            ProductoraCliente,
+            Cliente: clienteNombre,
+            NombreCliente: clienteNombre,
 
-            // --- contrato: artista + productora/manager
-            NombreArtista,
-            DniArtista: model?.DniArtista || "",
-            DomicilioArtista: model?.DomicilioArtista || "",
-            CuitArtista: model?.CuitArtista || "",
-            DatosArtista2: model?.DatosArtista2 || "",
+            DniCliente: safe(v.DniCliente),
+            CuitCliente: safe(v.CuitCliente),
+            DomicilioCliente: safe(v.DomicilioCliente),
+            TelefonoCliente: safe(v.TelefonoCliente),
+            EmailCliente: safe(v.EmailCliente),
 
-            NombreRepresentante,
-            DniRepresentante: model?.DniRepresentante || "",
-            DomicilioRepresentante: model?.DomicilioRepresentante || "",
-            CuitRepresentante: model?.CuitRepresentante || "",
+            ProductoraCliente: safe(v.Productora),
 
-            // --- fecha / show
+            FirmaDNICliente: safe(v.DniCliente),
+            FirmaNombreCliente: clienteNombre,
+
+            /* EVENTO */
+
+            NombreEvento: safe(v.NombreEvento),
+
+            Ubicacion: safe(v.Ubicacion),
+            Lugar: safe(v.Ubicacion),
+            Espacio: safe(v.NombreEvento),
+
             Dia,
             Mes,
             Año,
-            Fecha,
+            FechaEvento,
 
-            Lugar,
-            Espacio,
-            Ubicacion,
-            NombreEvento: model?.NombreEvento || "",
+            /* SHOW */
 
             DuracionHora,
             DuracionMinuto,
-            Exclusividad,
 
-            // --- dinero
-            ImporteTotal,
-            ImporteTotalMitad_1,
-            ImporteTotalMitad_2,
+            Exclusividad:
+                v.IdOpExclusividad
+                    ? " con exclusividad artística según lo pactado entre las partes."
+                    : "",
 
-            NombreMoneda_1: NombreMoneda,
-            NombreMoneda_2: NombreMoneda,
-            NombreMoneda_3: NombreMoneda,
+            /* MONEDA */
 
-            // --- extras (por si querés mostrar/validar)
-            TipoContrato,
-            DiasPrevios: model?.DiasPrevios ?? "",
-            FechaHasta: model?.FechaHasta ? new Date(model.FechaHasta).toLocaleString("es-AR") : ""
-        };
+            Moneda: moneda,
 
-        // ✅ opcional: espejo con @... por si después configurás delimiters raro
-        // (Docxtemplater NO reemplaza @Campo por defecto)
-        // data["@NombreCliente"] = data.NombreCliente; // etc...
+            NombreMoneda_1: moneda,
+            NombreMoneda_2: moneda,
+            NombreMoneda_3: moneda,
 
-        return data;
+            /* IMPORTES */
+
+            ImporteTotal: importeTotal,
+            ImporteTotalTexto: money(importeTotal),
+
+            Mitad: mitad1,
+
+            Mitad_1: mitad1,
+            Mitad_2: mitad2,
+
+            ImporteTotalMitad_1: mitad1,
+            ImporteTotalMitad_2: mitad2,
+
+            MitadTexto_1: money(mitad1),
+            MitadTexto_2: money(mitad2),
+
+            TotalCobrado: totalCobrado,
+            Saldo: saldo,
+
+            /* ARTISTA 1 */
+
+            NombreArtista: safe(a1.Artista),
+            NombreArtista1: safe(a1.Artista),
+
+            DniArtista: safe(a1.DniArtista),
+            CuitArtista: safe(a1.CuitArtista),
+            DomicilioArtista: safe(a1.DomicilioArtista),
+
+            FirmaDNIArtista1: safe(a1.DniArtista),
+
+            /* ARTISTA 2 */
+
+            NombreArtista2: safe(a2.Artista),
+
+            DniArtista2: safe(a2.DniArtista),
+            CuitArtista2: safe(a2.CuitArtista),
+            DomicilioArtista2: safe(a2.DomicilioArtista),
+
+            FirmaDNIArtista2: safe(a2.DniArtista),
+
+            /* REPRESENTANTE 1 */
+
+            NombreRepresentante: safe(a1.Representante),
+            NombreRepresentante1: safe(a1.Representante),
+
+            DniRepresentante: safe(a1.DniRepresentante),
+            CuitRepresentante: safe(a1.CuitRepresentante),
+            DomicilioRepresentante: safe(a1.DomicilioRepresentante),
+
+            FirmaDNIRepresentante: safe(a1.DniRepresentante),
+            FirmaDNIRepresentante1: safe(a1.DniRepresentante),
+
+            FirmaNombreRepresentante: safe(a1.Representante),
+
+            /* REPRESENTANTE 2 */
+
+            NombreRepresentante2: safe(a2.Representante),
+
+            DniRepresentante2: safe(a2.DniRepresentante),
+            CuitRepresentante2: safe(a2.CuitRepresentante),
+            DomicilioRepresentante2: safe(a2.DomicilioRepresentante),
+
+            FirmaDNIRepresentante2: safe(a2.DniRepresentante),
+
+            /* PERSONAL */
+
+            NombrePersonal1: safe(p1.Personal),
+            CargoPersonal1: safe(p1.Cargo),
+
+            NombrePersonal2: safe(p2.Personal),
+            CargoPersonal2: safe(p2.Cargo),
+
+            /* CONTROL */
+
+            IdVenta: safe(v.Id),
+
+            NombreArchivo: nombreArchivo
+
+        }
+
+        return data
+
     }
-
     function textById(list, id) {
         id = Number(id || 0);
         if (!id) return "";
@@ -569,40 +1539,40 @@
 
     function renderDocxFromTemplate(arrayBuffer, data) {
 
-        const zip = new PizZip(arrayBuffer);
+        const zip = new PizZip(arrayBuffer)
 
-        // Archivos DOCX donde puede haber texto
-        const xmlFiles = Object.keys(zip.files).filter(f =>
-            f.startsWith("word/") && f.endsWith(".xml")
-        );
+        Object.keys(zip.files)
+            .filter(f => f.startsWith("word/") && f.endsWith(".xml"))
+            .forEach(file => {
 
-        xmlFiles.forEach(file => {
+                let xml = zip.file(file).asText()
 
-            let xml = zip.file(file).asText();
+                // 🔧 UNIR TEXTO PARTIDO POR WORD
+                xml = xml.replace(/<\/w:t>\s*<w:t[^>]*>/g, "")
 
-            // 🔹 Word rompe texto en varios nodos
-            xml = xml.replace(/<\/w:t>\s*<w:t[^>]*>/g, "");
+                // 🔧 limpiar nbsp
+                xml = xml.replace(/\u00A0/g, " ")
 
-            // 🔹 Convertir @Campo -> {Campo}
-            xml = xml.replace(/@([A-Za-z0-9_]+)/g, "{$1}");
+                // 🔧 convertir @Campo → {Campo}
+                xml = xml.replace(/@([A-Za-z0-9_]+)/g, "{$1}")
 
-            zip.file(file, xml);
+                zip.file(file, xml)
 
-        });
+            })
 
         const doc = new docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,
             nullGetter: () => ""
-        });
+        })
 
-        doc.render(data);
+        doc.render(data)
 
         return doc.getZip().generate({
             type: "blob",
-            mimeType:
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        });
+            mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        })
+
     }
     /* =========================
        INIT
@@ -610,6 +1580,8 @@
     document.addEventListener("DOMContentLoaded", async () => {
         try {
             initDuracionMask();
+            actualizarVisibilidadContrato();
+            actualizarVisibilidadResumenes();
            
             initSecciones()
             bindUI();
@@ -704,6 +1676,13 @@
             localStorage.removeItem(DRAFT_KEY());
             vnToastOk("Borrador eliminado.");
         });
+
+
+        document.getElementById("btnResumenComisiones")
+            ?.addEventListener("click", () => exportarResumen("comisiones"));
+
+        document.getElementById("btnResumenCliente")
+            ?.addEventListener("click", () => exportarResumen("cliente"));
 
         // adds
         document.getElementById("btnAddArtista")?.addEventListener("click", () => {
@@ -1011,6 +1990,8 @@
 
         renderDetalle();
         recalcularTotales();
+        actualizarVisibilidadContrato();
+        actualizarVisibilidadResumenes();
 
         VN.flags.dirty = false;
         vnSetSaving(false, "Listo", "ok");
@@ -1158,6 +2139,9 @@
             // Auditoría
             // =========================
             setAuditoria(v);
+
+            actualizarVisibilidadContrato();
+            actualizarVisibilidadResumenes();
 
             VN.flags.dirty = false;
             vnSetSaving(false, "Listo", "ok");
@@ -2337,4 +3321,162 @@ document.addEventListener("input", function (e) {
 
     try { input.setSelectionRange(newPos, newPos); } catch { }
 });
+
+
+function actualizarVisibilidadContrato() {
+
+    const btn = document.getElementById("btnContrato");
+    if (!btn) return;
+
+    const idVenta = Number(document.getElementById("Venta_Id")?.value || 0);
+
+    if (idVenta > 0)
+        btn.style.display = "block";
+    else
+        btn.style.display = "none";
+
+}
+
+function vnGetSelectedText(id) {
+    const el = document.getElementById(id);
+    if (!el) return "";
+
+    const opt = el.options?.[el.selectedIndex];
+    return (opt?.text || "").trim();
+}
+
+function vnEscapeRegExp(text) {
+    return String(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+
+function debugPlaceholders(arrayBuffer) {
+
+    const zip = new PizZip(arrayBuffer);
+
+    const placeholders = new Set();
+
+    Object.keys(zip.files)
+        .filter(f => f.startsWith("word/") && f.endsWith(".xml"))
+        .forEach(file => {
+
+            let xml = zip.file(file).asText();
+
+            // unir textos partidos
+            xml = xml.replace(/<\/w:t>\s*<w:t[^>]*>/g, "");
+
+            const matches = xml.match(/@([A-Za-z0-9_]+)/g);
+
+            if (matches) {
+                matches.forEach(m => placeholders.add(m));
+            }
+
+        });
+
+    console.log("PLACEHOLDERS EN DOCX:");
+    console.table([...placeholders]);
+
+}
+
+function debugContratoTemplate(arrayBuffer, data) {
+
+    const zip = new PizZip(arrayBuffer)
+
+    const placeholders = new Set()
+
+    Object.keys(zip.files)
+        .filter(f => f.startsWith("word/") && f.endsWith(".xml"))
+        .forEach(file => {
+
+            let xml = zip.file(file).asText()
+
+            // unir placeholders partidos por Word
+            xml = xml.replace(/<\/w:t>\s*<w:t[^>]*>/g, "")
+
+            // buscar @Campos
+            const matches = xml.match(/@([A-Za-z0-9_]+)/g)
+
+            if (matches) {
+
+                matches.forEach(m =>
+                    placeholders.add(m.replace("@", ""))
+                )
+
+            }
+
+        })
+
+    const docxFields = [...placeholders]
+    const dataFields = Object.keys(data)
+
+    const faltanEnData = docxFields.filter(f => !dataFields.includes(f))
+    const noUsadosEnDocx = dataFields.filter(f => !docxFields.includes(f))
+
+    console.log("===================================")
+    console.log("CAMPOS DETECTADOS EN DOCX")
+    console.table(docxFields)
+
+    console.log("===================================")
+    console.log("CAMPOS EN DATA (buildContratoData)")
+    console.table(dataFields)
+
+    console.log("===================================")
+    console.log("❌ CAMPOS QUE DOCX PIDE Y JS NO ENVÍA")
+    console.table(faltanEnData)
+
+    console.log("===================================")
+    console.log("⚠ CAMPOS QUE JS ENVÍA PERO DOCX NO USA")
+    console.table(noUsadosEnDocx)
+
+}
+
+function actualizarVisibilidadResumenes() {
+
+    const sec = document.querySelector('[data-sec="resumenes"]')?.parentElement;
+    const panel = document.getElementById("sec-resumenes");
+
+    const idVenta = Number(document.getElementById("Venta_Id")?.value || 0);
+
+    if (!sec || !panel) return;
+
+    if (idVenta > 0) {
+        sec.style.display = "block";
+    } else {
+        sec.style.display = "none";
+        panel.style.display = "none";
+    }
+}
+
+function cargarImagenBase64(url) {
+
+    return new Promise((resolve, reject) => {
+
+        const img = new Image();
+
+        img.crossOrigin = "Anonymous";
+
+        img.onload = function () {
+
+            const canvas = document.createElement("canvas");
+
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            const ctx = canvas.getContext("2d");
+
+            ctx.drawImage(img, 0, 0);
+
+            const dataURL = canvas.toDataURL("image/png");
+
+            resolve(dataURL);
+
+        };
+
+        img.onerror = reject;
+
+        img.src = url;
+
+    });
+
+}
 

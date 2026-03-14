@@ -18,8 +18,8 @@ namespace SistemaLevels.Application.Models.ViewModels
         public int IdEstado { get; set; }
 
         public decimal ImporteTotal { get; set; }
-        public decimal ImporteAbonado { get; set; } // se recalcula desde cobros
-        public decimal Saldo { get; set; }          // se recalcula desde cobros
+        public decimal ImporteAbonado { get; set; }
+        public decimal Saldo { get; set; }
 
         public string? NotaInterna { get; set; }
         public string? NotaCliente { get; set; }
@@ -29,25 +29,63 @@ namespace SistemaLevels.Application.Models.ViewModels
         public int? DiasPrevios { get; set; }
         public DateTime? FechaHasta { get; set; }
 
-        // CC (se deja null)
         public int? IdPresupuesto { get; set; }
         public int? IdClienteCc { get; set; }
 
-        // textos (para grilla)
+        // =============================
+        // CLIENTE
+        // =============================
+
         public string? Cliente { get; set; }
+        public string? DniCliente { get; set; }
+        public string? CuitCliente { get; set; }
+        public string? DomicilioCliente { get; set; }
+        public string? TelefonoCliente { get; set; }
+        public string? EmailCliente { get; set; }
+
+        // =============================
+        // PRODUCTORA
+        // =============================
+
         public string? Productora { get; set; }
-        public string? Moneda { get; set; }
-        public string? Estado { get; set; }
+
+        // =============================
+        // UBICACION
+        // =============================
+
         public string? Ubicacion { get; set; }
+
+        // =============================
+        // MONEDA
+        // =============================
+
+        public string? Moneda { get; set; }
+
+        // =============================
+        // ESTADO
+        // =============================
+
+        public string? Estado { get; set; }
+
+        // =============================
+        // CONTRATO
+        // =============================
+
         public string? TipoContrato { get; set; }
         public string? Exclusividad { get; set; }
 
-        // Detalles
+        // =============================
+        // DETALLES
+        // =============================
+
         public List<VMVentaArtista> Artistas { get; set; } = new();
         public List<VMVentaPersonal> Personal { get; set; } = new();
         public List<VMVentaCobro> Cobros { get; set; } = new();
 
-        // Auditoría
+        // =============================
+        // AUDITORIA
+        // =============================
+
         public int IdUsuarioRegistra { get; set; }
         public DateTime FechaRegistra { get; set; }
         public string? UsuarioRegistra { get; set; }
@@ -62,6 +100,7 @@ namespace SistemaLevels.Application.Models.ViewModels
         public int Id { get; set; }
         public int IdArtista { get; set; }
         public int IdRepresentante { get; set; }
+
         public decimal PorcComision { get; set; }
         public decimal TotalComision { get; set; }
 
@@ -69,13 +108,23 @@ namespace SistemaLevels.Application.Models.ViewModels
 
         public string? Artista { get; set; }
         public string? Representante { get; set; }
+
+        public string? DniArtista { get; set; }
+        public string? CuitArtista { get; set; }
+        public string? DomicilioArtista { get; set; }
+
+        public string? DniRepresentante { get; set; }
+        public string? CuitRepresentante { get; set; }
+        public string? DomicilioRepresentante { get; set; }
     }
+
     public class VMVentaPersonal
     {
         public int Id { get; set; }
         public int IdPersonal { get; set; }
         public int IdCargo { get; set; }
         public int IdTipoComision { get; set; }
+
         public decimal PorcComision { get; set; }
         public decimal TotalComision { get; set; }
 
@@ -92,21 +141,19 @@ namespace SistemaLevels.Application.Models.ViewModels
 
         public DateTime Fecha { get; set; }
         public int IdMoneda { get; set; }
-        public int IdCuenta { get; set; } // obligatorio si hay cobro
-        public decimal Importe { get; set; }
+        public int IdCuenta { get; set; }
 
-        public decimal Cotizacion { get; set; }  // si no usás, 1
-        public decimal Conversion { get; set; }  // si no usás, Importe
+        public decimal Importe { get; set; }
+        public decimal Cotizacion { get; set; }
+        public decimal Conversion { get; set; }
 
         public string? NotaCliente { get; set; }
         public string? NotaInterna { get; set; }
 
-        // CC/caja (dejar null)
         public int? IdClienteCc { get; set; }
         public int? IdArtistaCc { get; set; }
         public int? IdCaja { get; set; }
 
-        // textos
         public string? Moneda { get; set; }
         public string? Cuenta { get; set; }
     }

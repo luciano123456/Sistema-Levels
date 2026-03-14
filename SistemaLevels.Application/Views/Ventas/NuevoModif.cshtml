@@ -107,6 +107,13 @@
                     </li>
 
                     <li>
+                        <button class="vn-head-btn" data-sec="resumenes" type="button">
+                            <i class="fa fa-file-pdf-o"></i>
+                            Resúmenes
+                        </button>
+                    </li>
+
+                    <li>
                         <button class="vn-head-btn" data-sec="auditoria" type="button">
                             <i class="fa fa-shield"></i>
                             Auditoría
@@ -413,6 +420,56 @@
 
                 </div>
 
+                <div class="vn-section" id="sec-resumenes">
+
+                    <div class="vn-subtitle">
+                        <div class="i"><i class="fa fa-file-pdf-o"></i></div>
+                        <div class="txt">
+                            <div class="t1">Resúmenes de la venta</div>
+                            <div class="t2">Exportá documentos financieros de la operación</div>
+                        </div>
+                    </div>
+
+                    <div class="vn-resumen-grid">
+
+                        <div class="vn-resumen-card" id="btnResumenComisiones">
+                            <div class="icon">
+                                <i class="fa fa-line-chart"></i>
+                            </div>
+
+                            <div class="content">
+                                <div class="title">Resumen de comisiones</div>
+                                <div class="desc">
+                                    Detalle de comisiones por artista y personal
+                                </div>
+                            </div>
+
+                            <div class="action">
+                                <i class="fa fa-download"></i>
+                            </div>
+                        </div>
+
+                        <div class="vn-resumen-card" id="btnResumenCliente">
+                            <div class="icon">
+                                <i class="fa fa-user"></i>
+                            </div>
+
+                            <div class="content">
+                                <div class="title">Resumen cliente</div>
+                                <div class="desc">
+                                    Información financiera para el cliente
+                                </div>
+                            </div>
+
+                            <div class="action">
+                                <i class="fa fa-download"></i>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
                 <!-- =====================
                      AUDITORIA
                 ===================== -->
@@ -551,6 +608,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <script src="https://unpkg.com/mammoth/mammoth.browser.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- moment -->
+    <script src="~/js/utils/moment.js"></script>
 
     <script>
         window.VN_INIT = {
