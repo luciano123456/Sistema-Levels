@@ -20,7 +20,9 @@ namespace SistemaLevels.BLL.Service
             Artista model,
             List<int> personalIds)
         {
-            if (string.IsNullOrWhiteSpace(model.Nombre))
+            if (string.IsNullOrWhiteSpace(model.Nombre) &&
+                string.IsNullOrWhiteSpace(model.Dni) &&
+                string.IsNullOrWhiteSpace(model.NumeroDocumento))
             {
                 return ServiceResult.Error(
                     "Debe completar los campos obligatorios.",
@@ -54,6 +56,15 @@ namespace SistemaLevels.BLL.Service
             Artista model,
             List<int> personalIds)
         {
+            if (string.IsNullOrWhiteSpace(model.Nombre) &&
+                string.IsNullOrWhiteSpace(model.Dni) &&
+                string.IsNullOrWhiteSpace(model.NumeroDocumento))
+            {
+                return ServiceResult.Error(
+                    "Debe completar los campos obligatorios.",
+                    "validacion");
+            }
+
             var dup = await _repo.BuscarDuplicado(
                 model.Id,
                 model.Nombre,
@@ -100,6 +111,8 @@ namespace SistemaLevels.BLL.Service
                 return ServiceResult.Error("Error inesperado.");
             }
         }
+
+        /* ================= OBTENER ================= */
 
         public Task<Artista?> Obtener(int id)
             => _repo.Obtener(id);

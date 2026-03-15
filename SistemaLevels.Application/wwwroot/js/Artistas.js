@@ -1,11 +1,11 @@
 ﻿let gridArtistas;
+let artistasModal;
 
 // ===============================
 // RELACION PERSONAL
 // ===============================
 
 let personalCache = [];
-
 let personalSeleccionado = [];
 let personalAutomatico = [];
 let personalDesdePersonal = [];
@@ -15,20 +15,21 @@ let exportTipo = null;
 /**
  * Columnas:
  * 0 Acciones
- * 1 Nombre (TEXT)
- * 2 NombreArtistico (TEXT)
- * 3 Productora (SELECT2 remoto)
- * 4 Representante (SELECT2 remoto)
- * 5 País (SELECT2 remoto)
- * 6 Provincia (SELECT2 remoto)
- * 7 Tipo Doc (SELECT2 remoto)
- * 8 Nro Doc (TEXT)
- * 9 Condición IVA (SELECT2 remoto)
- * 10 Moneda (SELECT2 remoto)
- * 11 Precio (TEXT)
- * 12 Teléfono (TEXT)
- * 13 Email (TEXT)
+ * 1 Nombre
+ * 2 NombreArtistico
+ * 3 Productora
+ * 4 Representante
+ * 5 Pais
+ * 6 Provincia
+ * 7 TipoDoc
+ * 8 NumeroDoc
+ * 9 CondicionIva
+ * 10 Moneda
+ * 11 Precio
+ * 12 Telefono
+ * 13 Email
  */
+
 const columnConfig = [
     { index: 1, filterType: 'text' },
     { index: 2, filterType: 'text' },
@@ -42,71 +43,38 @@ const columnConfig = [
     { index: 10, filterType: 'select', fetchDataFunc: listaMonedasFilter },
     { index: 11, filterType: 'text' },
     { index: 12, filterType: 'text' },
-    { index: 13, filterType: 'text' },
+    { index: 13, filterType: 'text' }
 ];
 
 $(document).ready(() => {
 
+
+
+    // Instancia modal (el partial ya está en el HTML)
+    artistasModal = new ArtistasModal(document.body, {
+        token: token,
+        onSaved: () => listaArtistas(),
+        onDeleted: () => listaArtistas()
+    });
+
+    window.verArtista = (id) => artistasModal.abrirVer(id);
+    window.editarArtista = (id) => artistasModal.abrirEditar(id);
+    window.eliminarArtista = (id) => artistasModal.eliminar(id);
+    window.verFicha = (id) => artistasModal.abrirVer(id);
+
     listaArtistas();
 
-    // Validación campo a campo (igual patrón)
-    document.querySelectorAll("#modalEdicion input, #modalEdicion select, #modalEdicion textarea").forEach(el => {
-        el.setAttribute("autocomplete", "off");
-        el.addEventListener("input", () => validarCampoIndividual(el));
-        el.addEventListener("change", () => validarCampoIndividual(el));
-        el.addEventListener("blur", () => validarCampoIndividual(el));
-    });
-
-    // País -> depende tipo doc + condición IVA + provincias
-    $("#cmbPais").on("change", async function () {
-        const idPais = $(this).val();
-
-        const tipoDocActual = $("#cmbTipoDocumento").val();
-        const ivaActual = $("#cmbCondicionIva").val();
-        const provinciaActual = $("#cmbProvincia").val();
-        const monedaActual = $("#cmbMoneda").val();
-
-        await listaTiposDocumento(idPais);
-        await listaCondicionesIva(idPais);
-        await listaProvincias(idPais);
-     
-        if (tipoDocActual) {
-            $("#cmbTipoDocumento").val(tipoDocActual);
-            refreshSelect2("#cmbTipoDocumento");
-        }
-
-        if (ivaActual) {
-            $("#cmbCondicionIva").val(ivaActual);
-            refreshSelect2("#cmbCondicionIva");
-        }
-
-        if (provinciaActual) {
-            $("#cmbProvincia").val(provinciaActual);
-            refreshSelect2("#cmbProvincia");
-        }
-
-    });
-
-
-
-    // Inicializa select2 modal (dropdownParent modal)
-    
-
-    // Select2: forzar validación cuando selecciona o limpia
-    $("#modalEdicion").on("select2:select select2:clear change", "select", function () {
-        validarCampoIndividual(this);
-    });
-
 });
+
 
 /* =========================
    SELECT2 HELPERS
 ========================= */
 
 function ensureSelect2($el, options) {
+
     if (!$el || !$el.length) return;
 
-    // si ya existe select2, no lo toques
     if ($el.data('select2')) return;
 
     $el.select2(Object.assign({
@@ -114,345 +82,28 @@ function ensureSelect2($el, options) {
         allowClear: true,
         placeholder: "Seleccionar"
     }, options || {}));
+
 }
-
-function inicializarSelect2Modal() {
-
-    const $modal = $('#modalEdicion');
-
-    $modal.find("select").each(function () {
-
-        const $el = $(this);
-
-        if ($el.data('select2')) return;
-
-        $el.select2({
-            width: '100%',
-            dropdownParent: $modal,
-            allowClear: true,
-            placeholder: "Seleccionar"
-        });
-    });
-}
-
-
-
-$('#modalEdicion').on('shown.bs.modal', function () {
-    inicializarSelect2Modal();
-});
-
 
 function inicializarSelect2Filtro($select) {
+
     ensureSelect2($select, {
         dropdownParent: $(document.body),
         minimumResultsForSearch: 0,
         allowClear: true,
         placeholder: "Todos"
     });
+
 }
+
 
 /* =========================
    CRUD
 ========================= */
 
-function guardarArtista() {
-    if (!validarCampos()) return false;
-
-    const id = $("#txtId").val();
-
-    const modelo = {
-        Id: id !== "" ? parseInt(id, 10) : 0,
-
-        Nombre: $("#txtNombre").val(),
-        NombreArtistico: $("#txtNombreArtistico").val(),
-
-        IdProductora: $("#cmbProductora").val() ? parseInt($("#cmbProductora").val(), 10) : null,
-
-
-        IdPais: $("#cmbPais").val() ? parseInt($("#cmbPais").val(), 10) : null,
-        IdProvincia: $("#cmbProvincia").val() ? parseInt($("#cmbProvincia").val(), 10) : null,
-
-        IdTipoDocumento: $("#cmbTipoDocumento").val() ? parseInt($("#cmbTipoDocumento").val(), 10) : null,
-        NumeroDocumento: $("#txtNumeroDocumento").val(),
-
-        IdCondicionIva: $("#cmbCondicionIva").val() ? parseInt($("#cmbCondicionIva").val(), 10) : null,
-
-        Dni: $("#txtDni").val(),
-        Telefono: $("#txtTelefono").val(),
-        TelefonoAlternativo: $("#txtTelefonoAlternativo").val(),
-
-        Email: $("#txtEmail").val(),
-
-        Direccion: $("#txtDireccion").val(),
-        Localidad: $("#txtLocalidad").val(),
-        EntreCalles: $("#txtEntreCalles").val(),
-        CodigoPostal: $("#txtCodigoPostal").val(),
-
-        FechaNacimiento: $("#dtpFechaNacimiento").val() ? $("#dtpFechaNacimiento").val() : null,
-
-        IdMoneda: $("#cmbMoneda").val() ? parseInt($("#cmbMoneda").val(), 10) : null,
-        PrecioUnitario: toDecimal($("#txtPrecioUnitario").val()),
-        PrecioNegMax: toDecimal($("#txtPrecioNegMax").val()),
-        PrecioNegMin: toDecimal($("#txtPrecioNegMin").val()),
-
-        PersonalIds: personalSeleccionado,
-    };
-
-    const url = id === "" ? "/Artistas/Insertar" : "/Artistas/Actualizar";
-    const method = id === "" ? "POST" : "PUT";
-
-    fetch(url, {
-        method,
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(modelo)
-    })
-        .then(r => r.json())
-        .then(data => {
-
-            if (!data || data.valor === undefined) {
-                mostrarErrorCampos("Respuesta inválida del servidor.");
-                return;
-            }
-
-            if (!data.valor) {
-
-                const msg =
-                    (data.mensaje && String(data.mensaje).trim() !== "")
-                        ? data.mensaje
-                        : (data.tipo === "validacion"
-                            ? "Debes completar los campos requeridos."
-                            : "No se pudo guardar.");
-
-                mostrarErrorCampos(
-                    msg,
-                    data.idReferencia ?? null,
-                    data.tipo ?? null
-                );
-
-                return;
-            }
-
-            cerrarErrorCampos();
-            $('#modalEdicion').modal('hide');
-            exitoModal(data.mensaje || "Guardado correctamente");
-            listaArtistas();
-        })
-        .catch(() => {
-            mostrarErrorCampos("Error inesperado.");
-        });
-}
-
-async function nuevaArtista() {
-
-    limpiarModal();
-    setModalSoloLectura(false);
-
-    personalSeleccionado = [];
-    personalAutomatico = [];
-    personalDesdePersonal = [];
-
-    await Promise.all([
-        listaProductoras(),
-        listaPaises(),
-        listaMonedas(),
-        cargarPersonalChecklist(true)
-    ]);
-
-    resetSelect("cmbProvincia", "Seleccionar");
-    resetSelect("cmbTipoDocumento", "Seleccionar");
-    resetSelect("cmbCondicionIva", "Seleccionar");
-
-    renderChecklistPersonal();
-    activarBuscadorPersonal();
-
-    abrirModalEdicion();
-
-    $("#btnGuardar").html(`<i class="fa fa-check"></i> Registrar`);
-    $("#modalEdicionLabel").text("Nuevo Artista");
-
-    $("#infoAuditoria").addClass("d-none");
-    $("#infoRegistro").html("");
-    $("#infoModificacion").html("");
-
-
-    $("#chkAsociacionAutomatica")
-        .prop("checked", true)
-        .prop("disabled", true);
-}
-
-
-async function mostrarModal(modelo) {
-
-    limpiarModal();
-    setModalSoloLectura(false);
-
-    $("#txtId").val(modelo.Id || "");
-
-    $("#txtNombre").val(modelo.Nombre || "");
-    $("#txtNombreArtistico").val(modelo.NombreArtistico || "");
-
-    $("#txtTelefono").val(modelo.Telefono || "");
-    $("#txtTelefonoAlternativo").val(modelo.TelefonoAlternativo || "");
-    $("#txtDni").val(modelo.Dni || "");
-
-    $("#txtNumeroDocumento").val(modelo.NumeroDocumento || "");
-    $("#txtEmail").val(modelo.Email || "");
-
-    $("#txtDireccion").val(modelo.Direccion || "");
-    $("#txtLocalidad").val(modelo.Localidad || "");
-    $("#txtEntreCalles").val(modelo.EntreCalles || "");
-    $("#txtCodigoPostal").val(modelo.CodigoPostal || "");
-
-    $("#dtpFechaNacimiento").val(normalizarDateInput(modelo.FechaNacimiento));
-
-    $("#txtPrecioUnitario").val(modelo.PrecioUnitario ?? "");
-    $("#txtPrecioNegMax").val(modelo.PrecioNegMax ?? "");
-    $("#txtPrecioNegMin").val(modelo.PrecioNegMin ?? "");
-
-
-    $("#chkAsociacionAutomatica")
-        .prop("checked", true)
-        .prop("disabled", true);
-
-    await listaProductoras();
-    await listaPaises();
-
-    if (modelo.IdPais != null) {
-
-        $("#cmbPais").val(modelo.IdPais).trigger("change.select2");
-
-        await listaTiposDocumento(modelo.IdPais);
-        await listaCondicionesIva(modelo.IdPais);
-        await listaProvincias(modelo.IdPais);
-        await listaMonedas();
-    }
-
-    if (modelo.IdProductora != null)
-        $("#cmbProductora").val(modelo.IdProductora).trigger("change.select2");
-
-
-    if (modelo.IdTipoDocumento != null)
-        $("#cmbTipoDocumento").val(modelo.IdTipoDocumento).trigger("change.select2");
-
-    if (modelo.IdCondicionIva != null)
-        $("#cmbCondicionIva").val(modelo.IdCondicionIva).trigger("change.select2");
-
-    if (modelo.IdProvincia != null)
-        $("#cmbProvincia").val(modelo.IdProvincia).trigger("change.select2");
-
-    if (modelo.IdMoneda != null)
-        $("#cmbMoneda").val(modelo.IdMoneda).trigger("change.select2");
-
-    /* =============================
-       ⭐ RELACION PERSONAL (FIX REAL)
-    ============================= */
-
-    personalSeleccionado = modelo.PersonalIds || [];
-    personalAutomatico = modelo.PersonalAutomaticosIds || [];
-    personalDesdePersonal = modelo.PersonalDesdePersonalIds || [];
-
-    // 🔥 IGUAL QUE CLIENTES
-    await cargarPersonalChecklist(true);
-
-    renderChecklistPersonal();
-    activarBuscadorPersonal();
-
-    /* =============================
-       AUDITORIA
-    ============================= */
-
-    let textoAuditoria = "";
-
-    if (modelo.UsuarioModifica && modelo.FechaModifica) {
-        textoAuditoria = `
-            <i class="fa fa-edit"></i>
-            Última modificación por 
-            <strong>${modelo.UsuarioModifica}</strong> 
-            el <strong>${formatearFecha(modelo.FechaModifica)}</strong>
-        `;
-        $("#infoModificacion").html(textoAuditoria);
-        $("#infoRegistro").html("");
-    }
-    else if (modelo.UsuarioRegistra && modelo.FechaRegistra) {
-        textoAuditoria = `
-            <i class="fa fa-user"></i>
-            Registrado por 
-            <strong>${modelo.UsuarioRegistra}</strong> 
-            el <strong>${formatearFecha(modelo.FechaRegistra)}</strong>
-        `;
-        $("#infoRegistro").html(textoAuditoria);
-        $("#infoModificacion").html("");
-    }
-
-    if (textoAuditoria !== "")
-        $("#infoAuditoria").removeClass("d-none");
-    else
-        $("#infoAuditoria").addClass("d-none");
-
-    abrirModalEdicion();
-
-    $("#btnGuardar").html(`<i class="fa fa-check"></i> Guardar`);
-    $("#modalEdicionLabel").text("Editar Artista");
-}
-
-const editarArtista = id => {
-
-    fetch("/Artistas/EditarInfo?id=" + id, {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(r => {
-            if (!r.ok) throw new Error("Ha ocurrido un error.");
-            return r.json();
-        })
-        .then(dataJson => {
-            if (dataJson) mostrarModal(dataJson);
-            else throw new Error("Ha ocurrido un error.");
-        })
-        .catch(_ => errorModal("Ha ocurrido un error."));
-};
-
-async function eliminarArtista(id) {
-
-    const confirmado = await confirmarModal("¿Desea eliminar este artista?");
-    if (!confirmado) return;
-
-    try {
-        const response = await fetch("/Artistas/Eliminar?id=" + id, {
-            method: "DELETE",
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) throw new Error("Error al eliminar el Artista.");
-
-        const dataJson = await response.json();
-        if (dataJson.valor) {
-            listaArtistas();
-            exitoModal("Artista eliminado correctamente");
-        } else {
-            errorModal("No se pudo eliminar.");
-        }
-    } catch (e) {
-        console.error("Ha ocurrido un error:", e);
-        errorModal("Ha ocurrido un error.");
-    }
-}
-
-/* =========================
-   LISTA + DATATABLE
-========================= */
-
 async function listaArtistas() {
-    let paginaActual = gridArtistas != null ? gridArtistas.page() : 0;
+
+    let paginaActual = gridArtistas ? gridArtistas.page() : 0;
 
     const response = await fetch(`/Artistas/Lista`, {
         method: 'GET',
@@ -462,49 +113,64 @@ async function listaArtistas() {
         }
     });
 
-    if (!response.ok) throw new Error(`Error en la solicitud: ${response.statusText}`);
+    if (!response.ok)
+        throw new Error(`Error en la solicitud`);
 
     const data = await response.json();
+
     await configurarDataTable(data);
 
-    if (paginaActual > 0) {
+    if (paginaActual > 0)
         gridArtistas.page(paginaActual).draw('page');
-    }
+
 }
+
+
+/* =========================
+   DATATABLE
+========================= */
 
 async function configurarDataTable(data) {
 
     if (!gridArtistas) {
 
         const $thead = $('#grd_Artistas thead');
+
         if ($thead.find('tr.filters').length === 0) {
             $thead.find('tr').first().clone(true).addClass('filters').appendTo($thead);
         }
 
         gridArtistas = $('#grd_Artistas').DataTable({
+
             data: data,
+
             language: {
                 sLengthMenu: "Mostrar MENU registros",
                 url: "//cdn.datatables.net/plug-ins/2.0.7/i18n/es-MX.json"
             },
+
             scrollX: true,
             scrollCollapse: true,
 
             columns: [
+
                 {
                     data: "Id",
                     title: '',
                     width: "1%",
                     render: function (data) {
+
                         return renderAccionesGrid(data, {
-                            ver: "verFicha",
+                            ver: "verArtista",
                             editar: "editarArtista",
                             eliminar: "eliminarArtista"
                         });
+
                     },
                     orderable: false,
-                    searchable: false,
+                    searchable: false
                 },
+
                 { data: 'Nombre' },
                 { data: 'NombreArtistico' },
                 { data: 'Productora' },
@@ -515,91 +181,99 @@ async function configurarDataTable(data) {
                 { data: 'NumeroDocumento' },
                 { data: 'CondicionIva' },
                 { data: 'Moneda' },
+
                 {
                     data: 'PrecioUnitario',
                     render: function (data) {
-                        if (data == null || data === "") return "";
+
+                        if (data == null || data === "")
+                            return "";
+
                         const n = Number(data);
-                        if (Number.isNaN(n)) return data;
-                        return n.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                        if (Number.isNaN(n))
+                            return data;
+
+                        return n.toLocaleString("es-AR", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+
                     }
                 },
+
                 { data: 'Telefono' },
-                { data: 'Email' },
+                { data: 'Email' }
+
             ],
 
             dom: 'Bfrtip',
+
             buttons: [
+
                 {
                     text: 'Excel',
                     action: () => abrirModalExportacion(gridArtistas, 'excel', 'Artistas')
                 },
+
                 {
                     text: 'PDF',
                     action: () => abrirModalExportacion(gridArtistas, 'pdf', 'Artistas')
                 },
+
                 {
                     text: 'Imprimir',
                     action: () => abrirModalExportacion(gridArtistas, 'print', 'Artistas')
                 },
+
                 'pageLength'
+
             ],
 
             orderCellsTop: true,
             fixedHeader: true,
 
             initComplete: async function () {
+
                 const api = this.api();
 
                 for (const config of columnConfig) {
 
                     const cell = $('.filters th').eq(config.index);
+
                     if (!cell.length) continue;
 
-                    // ✅ SIEMPRE vaciamos la celda del filtro
                     cell.empty();
 
-                    if (config.filterType === 'select' || config.filterType === 'select_local') {
+                    if (config.filterType === 'select') {
 
                         const $select = $(`
-                            <select class="rp-filter-select" style="width:100%">
-                                <option value="">Todos</option>
-                            </select>
-                        `).appendTo(cell);
+<select class="rp-filter-select" style="width:100%">
+<option value="">Todos</option>
+</select>
+`).appendTo(cell);
 
-                        if (config.filterType === 'select') {
-                            const datos = await config.fetchDataFunc();
-                            (datos || []).forEach(item => {
-                                $select.append(`<option value="${item.Id}">${item.Nombre}</option>`);
-                            });
-                        } else {
-                            const uniques = new Set();
-                            api.column(config.index).data().each(v => {
-                                const txt = (v ?? "").toString().trim();
-                                if (txt) uniques.add(txt);
-                            });
+                        const datos = await config.fetchDataFunc();
 
-                            [...uniques].sort().forEach(txt => {
-                                $select.append(`<option value="${txt}">${txt}</option>`);
-                            });
-                        }
+                        (datos || []).forEach(item => {
 
-                        // ✅ select2
-                        inicializarSelect2Filtro($select);
+                            $select.append(`
+<option value="${item.Id}">${item.Nombre}</option>
+`);
 
-                        // ✅ al limpiar, limpiar filtro SIEMPRE
-                        $select.on('select2:clear', function () {
-                            api.column(config.index).search('').draw(false);
                         });
 
-                        // ✅ cambio normal (incluye value vacío)
+                        inicializarSelect2Filtro($select);
+
                         $select.on('change', function () {
 
                             const value = $(this).val();
 
                             if (!value) {
+
                                 api.column(config.index).search('').draw(false);
                                 return;
+
                             }
 
                             const text = $(this).find('option:selected').text();
@@ -607,630 +281,270 @@ async function configurarDataTable(data) {
                             api.column(config.index)
                                 .search('^' + escapeRegex(text) + '$', true, false)
                                 .draw(false);
+
                         });
 
-                    } else {
-                        // TEXT
-                        const $input = $(`<input class="rp-filter-input" type="text" placeholder="Buscar...">`)
+                    }
+                    else {
+
+                        const $input = $(`
+<input class="rp-filter-input" type="text" placeholder="Buscar...">
+`)
                             .appendTo(cell)
                             .on('keyup change', function () {
-                                api.column(config.index).search(this.value).draw(false);
+
+                                api.column(config.index)
+                                    .search(this.value)
+                                    .draw(false);
+
                             });
+
                     }
+
                 }
 
-                // Col 0 sin filtro
                 $('.filters th').eq(0).html('');
 
                 configurarOpcionesColumnas();
+
                 actualizarKpis(data);
 
-             
-
             }
+
         });
 
-    } else {
-        gridArtistas.clear().rows.add(data).draw();
-        actualizarKpis(data);
     }
+    else {
+
+        gridArtistas.clear().rows.add(data).draw();
+
+        actualizarKpis(data);
+
+    }
+
 }
+
 
 /* =========================
-   COMBOS MODAL
+   FILTROS DATA
 ========================= */
 
-function resetSelect(id, placeholder) {
-    const el = document.getElementById(id);
-    if (!el) return;
+async function listaProductorasFilter() {
 
-    el.innerHTML = "";
-    el.append(new Option(placeholder || "Seleccionar", ""));
-}
-
-
-
-async function listaProductoras() {
     const response = await fetch(`/Productoras/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
     });
 
     const data = await response.json();
 
-    resetSelect("cmbProductora", "Seleccionar");
-    const select = document.getElementById("cmbProductora");
-    (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
+    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 
-    
 }
 
+async function listaRepresentantesFilter() {
 
-async function listaMonedas() {
+    const response = await fetch(`/Personal/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
 
-    resetSelect("cmbMoneda", "Seleccionar");
+    const data = await response.json();
+
+    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
+
+}
+
+async function listaMonedasFilter() {
 
     const response = await fetch(`/PaisesMoneda/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
     });
 
     const data = await response.json();
-    const select = document.getElementById("cmbMoneda");
 
-    (data || []).forEach(x => {
-        select.append(new Option(x.Nombre, x.Id));
-    });
+    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
+
 }
-async function listaPaises() {
+
+async function listaPaisesFilter() {
+
     const response = await fetch(`/Paises/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
     });
 
-    const data = await response.json();
+    return await response.json();
 
-    resetSelect("cmbPais", "Seleccionar");
-    const select = document.getElementById("cmbPais");
-    (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    
 }
 
-async function listaTiposDocumento(idPaisSeleccionado = null) {
+async function listaTiposDocumentoFilter() {
+
     const response = await fetch(`/PaisesTiposDocumentos/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
     });
 
     const data = await response.json();
 
-    resetSelect("cmbTipoDocumento", "Seleccionar");
-    const select = document.getElementById("cmbTipoDocumento");
+    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 
-    (data || [])
-        .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
-        .forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    
 }
 
-async function listaCondicionesIva(idPaisSeleccionado = null) {
+async function listaCondicionesIvaFilter() {
+
     const response = await fetch(`/PaisesCondicionesIVA/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
     });
 
     const data = await response.json();
 
-    resetSelect("cmbCondicionIva", "Seleccionar");
-    const select = document.getElementById("cmbCondicionIva");
+    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 
-    (data || [])
-        .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
-        .forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    
 }
 
-async function listaProvincias(idPaisSeleccionado = null) {
+async function listaProvinciasFilter() {
 
-    resetSelect("cmbProvincia", "Seleccionar");
-
-    // Si no hay país → no cargar provincias
-    if (!idPaisSeleccionado) {
-        
-        return;
-    }
-
-    const response = await fetch(`/PaisesProvincia/ListaPais?idPais=${idPaisSeleccionado}`, {
+    const response = await fetch(`/PaisesProvincia/Lista`, {
         headers: { 'Authorization': 'Bearer ' + token }
     });
 
     const data = await response.json();
-    const select = document.getElementById("cmbProvincia");
 
-    (data || []).forEach(x => {
-        select.append(new Option(x.Nombre, x.Id));
-    });
+    return (data || []).map(x => ({
+        Id: x.Id,
+        Nombre: x.Nombre,
+        IdPais: x.IdCombo
+    }));
 
-    
 }
 
-/* =========================
-   FILTROS - DATOS (para selects)
-========================= */
-
-async function listaProductorasFilter() {
-    const response = await fetch(`/Productoras/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
-    const data = await response.json();
-    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
-}
-
-async function listaRepresentantesFilter() {
-    const response = await fetch(`/Personal/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
-    const data = await response.json();
-    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
-}
-
-async function listaMonedasFilter() {
-    const response = await fetch(`/PaisesMoneda/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
-    const data = await response.json();
-    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
-}
-
-async function listaPaisesFilter() {
-    const response = await fetch(`/Paises/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
-    return await response.json();
-}
-
-async function listaTiposDocumentoFilter() {
-    const response = await fetch(`/PaisesTiposDocumentos/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
-    const data = await response.json();
-    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
-}
-
-async function listaCondicionesIvaFilter() {
-    const response = await fetch(`/PaisesCondicionesIVA/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
-    const data = await response.json();
-    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
-}
-
-async function listaProvinciasFilter() {
-    const response = await fetch(`/PaisesProvincia/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
-    const data = await response.json();
-    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre, IdPais: x.IdCombo }));
-}
 
 /* =========================
    CONFIG COLUMNAS
 ========================= */
 
 function configurarOpcionesColumnas() {
+
     const grid = $('#grd_Artistas').DataTable();
+
     const columnas = grid.settings().init().columns;
+
     const container = $('#configColumnasMenu');
 
     const storageKey = `Artistas_Columnas`;
+
     const savedConfig = JSON.parse(localStorage.getItem(storageKey)) || {};
 
     container.empty();
 
     columnas.forEach((col, index) => {
+
         if (col.data && col.data !== "Id") {
 
-            const isChecked = savedConfig[`col_${index}`] !== undefined ? savedConfig[`col_${index}`] : true;
+            const isChecked =
+                savedConfig[`col_${index}`] !== undefined
+                    ? savedConfig[`col_${index}`]
+                    : true;
+
             grid.column(index).visible(isChecked);
 
-            const name = $('#grd_Artistas thead tr').first().find('th').eq(index).text();
+            const name = $('#grd_Artistas thead tr')
+                .first()
+                .find('th')
+                .eq(index)
+                .text();
 
             container.append(`
-                <li class="rp-dd-item">
-                    <label class="rp-dd-label">
-                        <input type="checkbox" class="toggle-column" data-column="${index}" ${isChecked ? 'checked' : ''}>
-                        <span>${name}</span>
-                    </label>
-                </li>
-            `);
+<li class="rp-dd-item">
+<label class="rp-dd-label">
+<input type="checkbox" class="toggle-column" data-column="${index}" ${isChecked ? 'checked' : ''}>
+<span>${name}</span>
+</label>
+</li>
+`);
+
         }
+
     });
 
     $('.toggle-column').on('change', function () {
-        const columnIdx = parseInt($(this).data('column'), 10);
+
+        const columnIdx = parseInt($(this).data('column'));
+
         const isChecked = $(this).is(':checked');
 
         savedConfig[`col_${columnIdx}`] = isChecked;
+
         localStorage.setItem(storageKey, JSON.stringify(savedConfig));
 
         grid.column(columnIdx).visible(isChecked);
+
     });
+
 }
+
 
 /* =========================
-   VALIDACIONES
-========================= */
-
-
-function limpiarModal() {
-    const formulario = document.querySelector("#modalEdicion");
-    if (!formulario) return;
-
-    formulario.querySelectorAll("input, select, textarea").forEach(el => {
-        if (el.tagName === "SELECT") el.selectedIndex = 0;
-        else el.value = "";
-
-        el.classList.remove("is-invalid", "is-valid");
-    });
-
-    $("#errorCampos").addClass("d-none");
-}
-
-function validarCampoIndividual(el) {
-
-    // modo solo lectura
-    if (document.querySelector("#modalEdicion")
-        ?.getAttribute("data-sololectura") === "1")
-        return true;
-
-    const camposObligatorios = [
-        "txtNombre",
-        "txtNombreArtistico",
-        "txtNumeroDocumento",
-        "txtDni",
-        "cmbPais"
-    ];
-
-    if (!camposObligatorios.includes(el.id))
-        return;
-
-    const valor = (el.value ?? "").toString().trim();
-
-    const esValido =
-        valor !== "" &&
-        valor !== null &&
-        valor !== "Seleccionar";
-
-    setEstadoCampo(el, esValido);
-
-    verificarErroresGenerales();
-}
-function verificarErroresGenerales() {
-    const errorMsg = document.getElementById("errorCampos");
-    if (!errorMsg) return;
-
-    const hayInvalidos = document.querySelectorAll("#modalEdicion .is-invalid").length > 0;
-    if (!hayInvalidos) errorMsg.classList.add("d-none");
-}
-
-function validarCampos() {
-
-    // modo ver
-    if (document.querySelector("#modalEdicion")
-        ?.getAttribute("data-sololectura") === "1")
-        return true;
-
-    const campos = [
-        { selector: "#txtNombre", nombre: "Nombre completo" },
-        { selector: "#txtNombreArtistico", nombre: "Nombre artístico" },
-        { selector: "#cmbPais", nombre: "Pais" },
-        { selector: "#txtNumeroDocumento", nombre: "Número documento" },
-        { selector: "#txtDni", nombre: "DNI" }
-    ];
-
-    let errores = [];
-
-    campos.forEach(c => {
-
-        const el = document.querySelector(c.selector);
-        if (!el) return;
-
-        const valor = (el.value ?? "").toString().trim();
-
-        const esValido =
-            valor !== "" &&
-            valor !== null &&
-            valor !== "Seleccionar";
-
-        setEstadoCampo(el, esValido);
-
-        if (!esValido)
-            errores.push(c.nombre);
-    });
-
-    if (errores.length > 0) {
-
-        mostrarErrorCampos(
-            `Debes completar los campos requeridos:<br>
-             <strong>${errores.join(", ")}</strong>`,
-            null,
-            "validacion"
-        );
-
-        return false;
-    }
-
-    cerrarErrorCampos();
-    return true;
-}
-/* =========================
-   KPI + helpers
+   KPIs
 ========================= */
 
 function actualizarKpis(data) {
+
     const cant = Array.isArray(data) ? data.length : 0;
+
     $('#kpiCantArtistas').text(cant);
+
 }
+
+
+/* =========================
+   HELPERS
+========================= */
 
 function escapeRegex(text) {
     return (text || "").replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function formatearFecha(fecha) {
-    try {
-        const d = new Date(fecha);
-        return d.toLocaleString("es-AR");
-    } catch {
-        return fecha;
-    }
-}
-
 function toDecimal(val) {
+
     if (val == null) return 0;
+
     const s = (val + "").trim();
+
     if (!s) return 0;
+
     const n = Number(s.replace(",", "."));
+
     return Number.isFinite(n) ? n : 0;
+
 }
 
 function normalizarDateInput(fecha) {
+
     if (!fecha) return "";
+
     try {
+
         const d = new Date(fecha);
+
         if (isNaN(d.getTime())) return "";
-        // yyyy-MM-dd
+
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
-        return `${yyyy}-${mm}-${dd}`;
-    } catch {
-        return "";
-    }
-}
 
+        return `${yyyy}-${mm}-${dd}`;
+
+    } catch {
+
+        return "";
+
+    }
+
+}
 
 function refreshSelect2(id) {
+
     const $el = $(id);
-    if ($el.data('select2')) {
+
+    if ($el.data('select2'))
         $el.trigger('change.select2');
-    }
-}
 
-
-
-const verFicha = id => {
-
-    fetch("/Artistas/EditarInfo?id=" + id, {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(r => r.json())
-        .then(async dataJson => {
-
-            if (!dataJson) throw new Error();
-
-            await mostrarModal(dataJson);
-
-            abrirModalEdicion();   // ✅ abrir UNA sola vez
-
-            setModalSoloLectura(true);
-
-            $("#modalEdicionLabel").text("Ver Artista");
-        })
-        .catch(_ => errorModal("Ha ocurrido un error."));
-};
-
-
-$(document).on('hidden.bs.modal', '.modal', function () {
-
-    // esperar un tick para que bootstrap termine
-    setTimeout(() => {
-
-        const modalesAbiertos = $('.modal.show').length;
-
-        if (modalesAbiertos === 0) {
-
-            // no queda ningún modal → restaurar scroll real
-            $('body')
-                .removeClass('modal-open')
-                .css({
-                    overflow: '',
-                    paddingRight: ''
-                });
-
-            $('.modal-backdrop').remove();
-        }
-
-    }, 150);
-});
-
-/* =========================================================
-PERSONAL CHECKLIST (ARTISTA ⇄ PERSONAL)
-========================================================= */
-async function cargarPersonalChecklist(force = false) {
-
-    if (!force && personalCache.length > 0)
-        return;
-
-    const res = await fetch("/Personal/Lista", {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    if (!res.ok) {
-        console.error("No se pudo cargar Personal");
-        personalCache = [];
-        return;
-    }
-
-    personalCache = await res.json() || [];
-}
-function renderChecklistPersonal() {
-
-    const cont = document.getElementById("listaPersonal");
-    if (!cont) return;
-
-    cont.innerHTML = "";
-
-    /* ==========================================
-       CLASIFICAR
-    ========================================== */
-
-    const asignados = [];
-    const disponibles = [];
-
-    (personalCache || []).forEach(p => {
-
-        const id = parseInt(p.Id);
-
-        const estaAsignado =
-            (personalSeleccionado || []).includes(id) ||
-            (personalAutomatico || []).includes(id) ||
-            (personalDesdePersonal || []).includes(id);
-
-        if (estaAsignado)
-            asignados.push(p);
-        else
-            disponibles.push(p);
-    });
-
-    /* ==========================================
-       ORDEN ALFABETICO
-    ========================================== */
-
-    const ordenar = (a, b) =>
-        (a.Nombre || "").localeCompare(b.Nombre || "");
-
-    asignados.sort(ordenar);
-    disponibles.sort(ordenar);
-
-    /* ==========================================
-       RENDER GRUPOS
-    ========================================== */
-
-    const renderGrupo = (titulo, lista, claseGrupo) => {
-
-        if (!lista.length) return;
-
-        cont.insertAdjacentHTML("beforeend", `
-            <div class="rp-check-group ${claseGrupo}">
-                <div class="rp-check-group-title">
-                    ${titulo}
-                    <span class="rp-check-count">(${lista.length})</span>
-                </div>
-            </div>
-        `);
-
-        lista.forEach(p => {
-
-            const id = parseInt(p.Id);
-
-            const esManual = (personalSeleccionado || []).includes(id);
-            const esAuto = (personalAutomatico || []).includes(id);
-            const esDesde = (personalDesdePersonal || []).includes(id);
-
-            let checked = "";
-            let disabled = "";
-            let badge = "";
-            let claseExtra = "";
-
-            if (esManual) {
-                checked = "checked";
-                badge = `<span class="rp-badge manual">Manual</span>`;
-                claseExtra = "manual";
-            }
-            else if (esAuto) {
-                checked = "checked";
-                disabled = "disabled";
-                badge = `<span class="rp-badge auto">Automático</span>`;
-                claseExtra = "auto";
-            }
-            else if (esDesde) {
-                checked = "checked";
-                disabled = "disabled";
-                badge = `<span class="rp-badge cli">Automático</span>`;
-                claseExtra = "cli";
-            }
-
-            cont.insertAdjacentHTML("beforeend", `
-                <label class="rp-check-item ${claseExtra}">
-                    <input type="checkbox"
-                           value="${id}"
-                           ${checked}
-                           ${disabled}
-                           onchange="togglePersonal(${id})">
-
-                    <span class="rp-check-text">
-                        ${p.Nombre}
-                        ${badge}
-                    </span>
-                </label>
-            `);
-        });
-    };
-
-    /* ==========================================
-       RENDER FINAL
-    ========================================== */
-
-    renderGrupo(
-        `<i class="fa fa-check-circle"></i> Asignados`,
-        asignados,
-        "grupo-asignados"
-    );
-
-    renderGrupo(
-        `<i class="fa fa-list"></i> Disponibles`,
-        disponibles,
-        "grupo-disponibles"
-    );
-
-    actualizarContadorPersonal();
-}
-function togglePersonal(id) {
-
-    id = parseInt(id);
-
-    if (personalAutomatico.includes(id)) return;
-    if (personalDesdePersonal.includes(id)) return;
-
-    if (personalSeleccionado.includes(id))
-        personalSeleccionado =
-            personalSeleccionado.filter(x => x !== id);
-    else
-        personalSeleccionado.push(id);
-
-    renderChecklistPersonal();
-}
-
-function actualizarContadorPersonal() {
-
-    $("#cntPersonal").text(
-        `(${personalSeleccionado.length +
-        personalAutomatico.length +
-        personalDesdePersonal.length})`
-    );
-}
-
-function activarBuscadorPersonal() {
-
-    const input = document.getElementById("txtBuscarPersonal");
-    if (!input) return;
-
-    input.oninput = function () {
-
-        const texto = this.value.toLowerCase();
-
-        document.querySelectorAll("#listaPersonal .rp-check-item")
-            .forEach(el => {
-                const nombre = el.innerText.toLowerCase();
-                el.style.display = nombre.includes(texto) ? "" : "none";
-            });
-    };
 }

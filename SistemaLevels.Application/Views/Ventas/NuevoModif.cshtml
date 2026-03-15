@@ -229,10 +229,25 @@
                      ARTISTAS
                 ===================== -->
                 <div class="vn-section" id="sec-artistas">
+                    <div class="d-flex gap-2 flex-wrap align-items-center mb-2">
 
-                    <button class="btn btn-outline-light vn-btn mb-2" id="btnAddArtista" type="button">
-                        <i class="fa fa-plus"></i> Agregar artista
-                    </button>
+                        <button class="btn btn-outline-light vn-btn"
+                                id="btnAddArtista"
+                                type="button">
+                            <i class="fa fa-plus me-1"></i>
+                            Agregar artista
+                        </button>
+
+                        <button class="btn btn-success"
+                                id="btnCrearArtista"
+                                type="button">
+                            <i class="fa fa-user-plus me-1"></i>
+                            Crear artista
+                        </button>
+
+                    </div>
+
+                   
 
                     <div class="vn-gridtable">
                         <table class="table vn-table">
@@ -589,7 +604,10 @@
     </div>
 </div>
 
+
+<div id="modalArtistaHost"></div>
 <partial name="~/Views/Utils/Modals.cshtml" />
+<partial name="~/Views/Entities/M_Artistas.cshtml" />
 
 @section Scripts {
 

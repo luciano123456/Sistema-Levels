@@ -1,17 +1,4 @@
-﻿/* =========================================================
-   VentasNuevoModif.js — NUEVO / MODIFICAR (Pantalla PRO sin listas)
-   - Cliente por Select2 (lista completa /Ventas/ListaClientes)
-   - Tabs: Artistas / Personal / Cobros / Notas / Auditoría
-   - Comisiones:
-       * Artistas: % o total fijo (si editás total, recalcula %)
-       * Personal: tipo_comision:
-           - IdTipoComision=1 => % (calcula total)
-           - IdTipoComision=2 => fijo (total fijo; % se calcula informativo)
-   - Totales live:
-       ImporteTotal - TotalComisiones - Cobrado(Conversion) = Saldo
-   - Draft PRO (autosave + restore)
-   - Compatible con tu Controller/VM/Repository
-========================================================= */
+﻿let modalArtistaVentas = null;
 
 (function () {
     "use strict";
@@ -1579,6 +1566,7 @@
     ========================= */
     document.addEventListener("DOMContentLoaded", async () => {
         try {
+            await initModalArtistaVentas();
             initDuracionMask();
             actualizarVisibilidadContrato();
             actualizarVisibilidadResumenes();
@@ -3134,6 +3122,57 @@
             vnToastErr("No se pudo restaurar el borrador.");
         }
     }
+
+    async function initModalArtistaVentas() {
+
+        const root = document.querySelector('[data-artista-modal]');
+
+        modalArtistaVentas = new ArtistasModal(root, {
+
+            token: token,
+
+            onSaved: async (data, modelo) => {
+
+                try {
+                    const artistas = await vnFetchJson(API.artistas);
+
+                    VN.combos.artistas = artistas || [];
+                    renderArtistas();
+
+                    vnToastOk("Artista creado correctamente");
+
+                }
+                catch (e) {
+
+                    console.error("Error recargando artistas", e);
+
+                }
+
+            }
+
+        });
+
+        window.verFicha = (id) => modalArtistaVentas.abrirVer(id);
+
+    }
+
+
+    document.addEventListener("click", async function (e) {
+
+        if (e.target.closest("#btnCrearArtista")) {
+
+            if (!modalArtistaVentas) {
+                console.error("Modal artista no inicializado");
+                return;
+            }
+
+            await modalArtistaVentas.abrirNuevo();
+
+        }
+
+    });
+
+
 
 })();
 
