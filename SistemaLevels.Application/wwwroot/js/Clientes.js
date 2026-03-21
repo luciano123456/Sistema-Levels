@@ -1,16 +1,5 @@
-﻿/* =========================================================
-   CLIENTES.JS  (CLON 1:1 de ARTISTAS.JS)
-   - Misma estructura / helpers / validaciones / datatable
-   - Solo cambian: endpoints + columnas + combos reales
-========================================================= */
-
-let gridClientes;
-
-let productorasCache = [];
-let productorasSeleccionadas = [];
-
-let productorasAutomaticas = [];
-let productorasDesdeProductora = [];
+﻿let gridClientes;
+let clienteModal;
 
 /**
  * Columnas:
@@ -18,79 +7,74 @@ let productorasDesdeProductora = [];
  * 1 Nombre (TEXT)
  * 2 Productora (SELECT2 remoto)
  * 3 País (SELECT2 remoto)
- * 4 Provincia (SELECT2 remoto)
- * 5 Tipo Doc (SELECT2 remoto)
- * 6 Nro Doc (TEXT)
- * 7 Condición IVA (SELECT2 remoto)
- * 8 Teléfono (TEXT)
- * 9 Email (TEXT)
+ * 4 Dni (TEXT)
+ * 5 Provincia (SELECT local)
+ * 6 Tipo Doc (SELECT2 remoto)
+ * 7 Nro Doc (TEXT)
+ * 8 Condición IVA (SELECT2 remoto)
+ * 9 Teléfono (TEXT)
+ * 10 Email (TEXT)
  */
-
 const columnConfig = [
     { index: 1, filterType: 'text' },
     { index: 2, filterType: 'select', fetchDataFunc: listaProductorasFilter },
     { index: 3, filterType: 'select', fetchDataFunc: listaPaisesFilter },
     { index: 4, filterType: 'text' },
-    { index: 5, filterType: 'select', fetchDataFunc: listaProvinciasFilter },
+    { index: 5, filterType: 'select_local' },
     { index: 6, filterType: 'select', fetchDataFunc: listaTiposDocumentoFilter },
     { index: 7, filterType: 'text' },
     { index: 8, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter },
     { index: 9, filterType: 'text' },
-    { index: 10, filterType: 'text' },
+    { index: 10, filterType: 'text' }
 ];
 
 $(document).ready(() => {
 
-    $("#txtBuscarProductora").on("input", aplicarFiltroProductorasChecklist);
+    clienteModal = new ClienteModal(document.body, {
+        token: token,
 
-    // Ejecutar SOLO una vez (igual que Artistas)
-    $(document).off("click.select2fix").on(
-        "click.select2fix",
-        ".select2-container--default .select2-selection--single",
-        function () {
+        onSaved: async () => {
+            await listaClientes();
+        },
+
+        onDeleted: async () => {
+            await listaClientes();
+        }
+    });
+
+    window.verCliente = (id) => clienteModal.abrirVer(id);
+    window.editarCliente = (id) => clienteModal.abrirEditar(id);
+    window.eliminarCliente = (id) => clienteModal.eliminar(id);
+    window.verFicha = (id) => clienteModal.abrirVer(id);
+    window.nuevoCliente = () => clienteModal.abrirNuevo();
+
+    // UX select2 abierta al click
+    $(document)
+        .off("click.select2fix.clientes")
+        .on("click.select2fix.clientes", ".select2-container--default .select2-selection--single", function () {
             const $select = $(this).closest(".select2-container").prev("select");
             if ($select.length) {
                 if ($select.data("select2") && $select.data("select2").isOpen()) return;
                 $select.select2("open");
             }
-        }
-    );
+        });
+
+    // limpiar pegado raro
+    $(document).on("paste", "input[type=text], textarea", function (e) {
+        e.preventDefault();
+
+        let texto = (e.originalEvent || e).clipboardData.getData('text');
+
+        texto = texto
+            .replace(/[“”]/g, '"')
+            .replace(/[‘’]/g, "'")
+            .replace(/\u00A0/g, ' ')
+            .trim();
+
+        document.execCommand("insertText", false, texto);
+    });
 
     listaClientes();
-
-    // Validación campo a campo (igual patrón)
-    document.querySelectorAll("#modalEdicion input, #modalEdicion select, #modalEdicion textarea").forEach(el => {
-        el.setAttribute("autocomplete", "off");
-        el.addEventListener("input", () => validarCampoIndividual(el));
-        el.addEventListener("change", () => validarCampoIndividual(el));
-        el.addEventListener("blur", () => validarCampoIndividual(el));
-    });
-
-    // País -> depende tipo doc + condición IVA + provincias
-    $("#cmbPais").on("change", async function () {
-        const idPais = $(this).val();
-
-        const tipoDocActual = $("#cmbTipoDocumento").val();
-        const ivaActual = $("#cmbCondicionIva").val();
-        const provinciaActual = $("#cmbProvincia").val();
-
-        await listaTiposDocumento(idPais);
-        await listaCondicionesIva(idPais);
-        await listaProvincias(idPais);
-
-        if (tipoDocActual) $("#cmbTipoDocumento").val(tipoDocActual).trigger("change");
-        if (ivaActual) $("#cmbCondicionIva").val(ivaActual).trigger("change");
-        if (provinciaActual) $("#cmbProvincia").val(provinciaActual).trigger("change");
-    });
-
-    // Inicializa select2 modal (dropdownParent modal)
-    inicializarSelect2Modal();
-
-    // Select2: forzar validación cuando selecciona o limpia
-    $("#modalEdicion").on("select2:select select2:clear change", "select", function () {
-        validarCampoIndividual(this);
-    });
-
 });
 
 /* =========================
@@ -100,27 +84,13 @@ $(document).ready(() => {
 function ensureSelect2($el, options) {
     if (!$el || !$el.length) return;
 
-    if ($el.data('select2')) {
-        $el.select2('destroy');
-    }
+    if ($el.data('select2')) return;
 
     $el.select2(Object.assign({
         width: '100%',
         allowClear: true,
-        placeholder: "Todos"
+        placeholder: "Seleccionar"
     }, options || {}));
-}
-
-function inicializarSelect2Modal() {
-    const opts = {
-        width: '100%',
-        dropdownParent: $('#modalEdicion')
-    };
-
-    ensureSelect2($("#cmbPais"), opts);
-    ensureSelect2($("#cmbProvincia"), opts);
-    ensureSelect2($("#cmbTipoDocumento"), opts);
-    ensureSelect2($("#cmbCondicionIva"), opts);
 }
 
 function inicializarSelect2Filtro($select) {
@@ -130,309 +100,6 @@ function inicializarSelect2Filtro($select) {
         allowClear: true,
         placeholder: "Todos"
     });
-}
-
-/* =========================
-   CRUD
-========================= */
-
-function guardarCliente() {
-
-    if (!validarCampos()) return false;
-
-    const id = $("#txtId").val();
-
-    const asociacionAutomatica =
-        $("#chkAsociacionAutomatica").is(":checked") ? 1 : 0;
-
-    // ✅ SIEMPRE enviar manuales
-    const productorasEnviar = productorasSeleccionadas;
-
-    const modelo = {
-        Id: id !== "" ? parseInt(id, 10) : 0,
-
-        Nombre: $("#txtNombre").val(),
-        Telefono: $("#txtTelefono").val(),
-        TelefonoAlternativo: $("#txtTelefonoAlternativo").val(),
-        Email: $("#txtEmail").val(),
-
-        Dni: $("#txtDni").val(),
-
-        AsociacionAutomatica: asociacionAutomatica,
-        ProductorasIds: productorasEnviar,
-
-        IdPais: $("#cmbPais").val() ? parseInt($("#cmbPais").val(), 10) : null,
-        IdProvincia: $("#cmbProvincia").val() ? parseInt($("#cmbProvincia").val(), 10) : null,
-
-        IdTipoDocumento: $("#cmbTipoDocumento").val()
-            ? parseInt($("#cmbTipoDocumento").val(), 10)
-            : null,
-
-        NumeroDocumento: $("#txtNumeroDocumento").val(),
-
-        IdCondicionIva: $("#cmbCondicionIva").val()
-            ? parseInt($("#cmbCondicionIva").val(), 10)
-            : null,
-
-        Direccion: $("#txtDireccion").val(),
-        Localidad: $("#txtLocalidad").val(),
-        EntreCalles: $("#txtEntreCalles").val(),
-        CodigoPostal: $("#txtCodigoPostal").val()
-    };
-
-    const url = id === "" ? "/Clientes/Insertar" : "/Clientes/Actualizar";
-    const method = id === "" ? "POST" : "PUT";
-
-    fetch(url, {
-        method: method,
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(modelo)
-    })
-        .then(r => {
-            if (!r.ok) throw new Error(r.statusText);
-            return r.json();
-        })
-        .then(data => {
-
-            // ===============================
-            // ERROR DE NEGOCIO (ServiceResult)
-            // ===============================
-            if (!data.valor) {
-
-                mostrarErrorCampos(
-                    data.mensaje,
-                    data.idReferencia,
-                    data.tipo
-                );
-
-                return;
-            }
-
-            // ===============================
-            // OK
-            // ===============================
-            cerrarErrorCampos();
-
-            $('#modalEdicion').modal('hide');
-
-            exitoModal(
-                data.mensaje ||
-                (id === ""
-                    ? "Cliente registrado correctamente"
-                    : "Cliente modificado correctamente")
-            );
-
-            listaClientes();
-        })
-        .catch(err => {
-            console.error(err);
-            errorModal("Ha ocurrido un error.");
-        });
-}
-function nuevoCliente() {
-    limpiarModal();
-
-    setModalSoloLectura(false);
-
-
-    productorasSeleccionadas = [];
-
-    // cargar combos base
-    Promise.all([
-        
-        listaPaises(),
-        cargarProductorasChecklist()
-    ])
-        .then(() => {
-            // combos dependientes vacíos
-            resetSelect("cmbProvincia", "Seleccionar");
-            resetSelect("cmbTipoDocumento", "Seleccionar");
-            resetSelect("cmbCondicionIva", "Seleccionar");
-
-            inicializarSelect2Modal();
-            renderChecklistProductoras();
-        });
-
-    $('#modalEdicion').modal('show');
-
-    $("#btnGuardar").html(`<i class="fa fa-check"></i> Registrar`);
-    $("#modalEdicionLabel").text("Nuevo Cliente");
-
-    $("#infoAuditoria").addClass("d-none");
-    $("#infoRegistro").html("");
-    $("#infoModificacion").html("");
-
-    $("#chkAsociacionAutomatica")
-        .prop("checked", true)
-        .prop("disabled", true);
-
-
-}
-
-async function mostrarModal(modelo) {
-    limpiarModal();
-
-    setModalSoloLectura(false);
-
-    $("#txtId").val(modelo.Id || "");
-
-    $("#txtNombre").val(modelo.Nombre || "");
-
-    $("#txtTelefono").val(modelo.Telefono || "");
-    $("#txtTelefonoAlternativo").val(modelo.TelefonoAlternativo || "");
-    $("#txtDni").val(modelo.Dni || "");
-
-    $("#txtNumeroDocumento").val(modelo.NumeroDocumento || "");
-    $("#txtEmail").val(modelo.Email || "");
-
-    $("#txtDireccion").val(modelo.Direccion || "");
-    $("#txtLocalidad").val(modelo.Localidad || "");
-    $("#txtEntreCalles").val(modelo.EntreCalles || "");
-    $("#txtCodigoPostal").val(modelo.CodigoPostal || "");
-
-    $("#chkAsociacionAutomatica")
-        .prop("checked", true)
-        .prop("disabled", true);
-
-    await listaPaises();
-
-    await cargarProductorasChecklist();
-
-    // primero setear país
-    if (modelo.IdPais != null) {
-        $("#cmbPais").val(modelo.IdPais).trigger("change.select2");
-
-        await listaTiposDocumento(modelo.IdPais);
-        await listaCondicionesIva(modelo.IdPais);
-        await listaProvincias(modelo.IdPais);
-    } else {
-        resetSelect("cmbTipoDocumento", "Seleccionar");
-        resetSelect("cmbCondicionIva", "Seleccionar");
-        resetSelect("cmbProvincia", "Seleccionar");
-    }
-
-
-    if (modelo.IdPais != null) {
-        $("#cmbPais").val(modelo.IdPais).trigger("change.select2");
-        await listaTiposDocumento(modelo.IdPais);
-        await listaCondicionesIva(modelo.IdPais);
-    } else {
-        resetSelect("cmbTipoDocumento", "Seleccionar");
-        resetSelect("cmbCondicionIva", "Seleccionar");
-    }
-
-    if (modelo.IdTipoDocumento != null) $("#cmbTipoDocumento").val(modelo.IdTipoDocumento).trigger("change.select2");
-    if (modelo.IdCondicionIva != null) $("#cmbCondicionIva").val(modelo.IdCondicionIva).trigger("change.select2");
-    if (modelo.IdProvincia != null) $("#cmbProvincia").val(modelo.IdProvincia).trigger("change.select2");
-
-    inicializarSelect2Modal();
-
-    // ===== PRODUCTORAS MANUALES DEL CLIENTE =====
-    // backend ya devuelve SOLO ClienteManual
-
-    productorasSeleccionadas =
-        modelo.ProductorasManualIds || [];
-
-    productorasAutomaticas =
-        modelo.ProductorasAutomaticasIds || [];
-
-    productorasDesdeProductora =
-        modelo.ProductorasDesdeProductoraIds || [];
-
-    renderChecklistProductoras();
-
-
-    // Auditoría (igual que Artistas)
-    let textoAuditoria = "";
-
-    if (modelo.UsuarioModifica && modelo.FechaModifica) {
-        textoAuditoria = `
-            <i class="fa fa-edit"></i>
-            Última modificación por 
-            <strong>${modelo.UsuarioModifica}</strong> 
-            el <strong>${formatearFecha(modelo.FechaModifica)}</strong>
-        `;
-        $("#infoModificacion").html(textoAuditoria);
-        $("#infoRegistro").html("");
-    } else if (modelo.UsuarioRegistra && modelo.FechaRegistra) {
-        textoAuditoria = `
-            <i class="fa fa-user"></i>
-            Registrado por 
-            <strong>${modelo.UsuarioRegistra}</strong> 
-            el <strong>${formatearFecha(modelo.FechaRegistra)}</strong>
-        `;
-        $("#infoRegistro").html(textoAuditoria);
-        $("#infoModificacion").html("");
-    }
-
-    if (textoAuditoria !== "") $("#infoAuditoria").removeClass("d-none");
-    else $("#infoAuditoria").addClass("d-none");
-
-    $('#modalEdicion').modal('show');
-
-    $("#btnGuardar").html(`<i class="fa fa-check"></i> Guardar`);
-    $("#modalEdicionLabel").text("Editar Cliente");
-}
-
-const editarCliente = id => {
-    
-
-    fetch("/Clientes/EditarInfo?id=" + id, {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(r => {
-            if (!r.ok) throw new Error("Ha ocurrido un error.");
-            return r.json();
-        })
-        .then(dataJson => {
-            if (dataJson) mostrarModal(dataJson);
-            else throw new Error("Ha ocurrido un error.");
-        })
-        .catch(_ => errorModal("Ha ocurrido un error."));
-};
-
-async function eliminarCliente(id) {
-    
-
-    const confirmado = await confirmarModal("¿Desea eliminar este cliente?");
-    if (!confirmado) return;
-
-    try {
-        const response = await fetch("/Clientes/Eliminar?id=" + id, {
-            method: "DELETE",
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) throw new Error("Error al eliminar el Cliente.");
-
-        const dataJson = await response.json();
-        if (!dataJson.valor) {
-
-            mostrarErrorCampos(
-                dataJson.mensaje,
-                dataJson.idReferencia,
-                dataJson.tipo
-            );
-
-            return;
-        }
-
-        listaClientes();
-        exitoModal(dataJson.mensaje);
-    } catch (e) {
-        console.error("Ha ocurrido un error:", e);
-        errorModal("Ha ocurrido un error.");
-    }
 }
 
 /* =========================
@@ -485,7 +152,7 @@ async function configurarDataTable(data) {
                     width: "1%",
                     render: function (data) {
                         return renderAccionesGrid(data, {
-                            ver: "verFicha",
+                            ver: "verCliente",
                             editar: "editarCliente",
                             eliminar: "eliminarCliente"
                         });
@@ -493,7 +160,6 @@ async function configurarDataTable(data) {
                     orderable: false,
                     searchable: false,
                 },
-               
                 { data: 'Nombre' },
                 { data: 'Productora' },
                 { data: 'Pais' },
@@ -508,18 +174,9 @@ async function configurarDataTable(data) {
 
             dom: 'Bfrtip',
             buttons: [
-                {
-                    text: 'Excel',
-                    action: () => abrirModalExportacion(gridClientes, 'excel', 'Clientes')
-                },
-                {
-                    text: 'PDF',
-                    action: () => abrirModalExportacion(gridClientes, 'pdf', 'Clientes')
-                },
-                {
-                    text: 'Imprimir',
-                    action: () => abrirModalExportacion(gridClientes, 'print', 'Clientes')
-                },
+                { text: 'Excel', action: () => abrirModalExportacion(gridClientes, 'excel', 'Clientes') },
+                { text: 'PDF', action: () => abrirModalExportacion(gridClientes, 'pdf', 'Clientes') },
+                { text: 'Imprimir', action: () => abrirModalExportacion(gridClientes, 'print', 'Clientes') },
                 'pageLength'
             ],
 
@@ -534,7 +191,6 @@ async function configurarDataTable(data) {
                     const cell = $('.filters th').eq(config.index);
                     if (!cell.length) continue;
 
-                    // ✅ SIEMPRE vaciamos la celda del filtro
                     cell.empty();
 
                     if (config.filterType === 'select' || config.filterType === 'select_local') {
@@ -562,17 +218,13 @@ async function configurarDataTable(data) {
                             });
                         }
 
-                        // ✅ select2
                         inicializarSelect2Filtro($select);
 
-                        // ✅ al limpiar, limpiar filtro SIEMPRE
                         $select.on('select2:clear', function () {
                             api.column(config.index).search('').draw(false);
                         });
 
-                        // ✅ cambio normal (incluye value vacío)
                         $select.on('change', function () {
-
                             const value = $(this).val();
 
                             if (!value) {
@@ -588,8 +240,7 @@ async function configurarDataTable(data) {
                         });
 
                     } else {
-                        // TEXT
-                        const $input = $(`<input class="rp-filter-input" type="text" placeholder="Buscar...">`)
+                        $('<input class="rp-filter-input" type="text" placeholder="Buscar...">')
                             .appendTo(cell)
                             .on('keyup change', function () {
                                 api.column(config.index).search(this.value).draw(false);
@@ -597,7 +248,6 @@ async function configurarDataTable(data) {
                     }
                 }
 
-                // Col 0 sin filtro
                 $('.filters th').eq(0).html('');
 
                 configurarOpcionesColumnas();
@@ -612,122 +262,38 @@ async function configurarDataTable(data) {
 }
 
 /* =========================
-   COMBOS MODAL
-========================= */
-
-function resetSelect(id, placeholder) {
-    const el = document.getElementById(id);
-    if (!el) return;
-
-    el.innerHTML = "";
-    el.append(new Option(placeholder || "Seleccionar", "", true, true));
-}
-
-
-
-async function listaPaises() {
-    const response = await fetch(`/Paises/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-
-    resetSelect("cmbPais", "Seleccionar");
-    const select = document.getElementById("cmbPais");
-    (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    inicializarSelect2Modal();
-}
-
-async function listaTiposDocumento(idPaisSeleccionado = null) {
-    const response = await fetch(`/PaisesTiposDocumentos/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-
-    resetSelect("cmbTipoDocumento", "Seleccionar");
-    const select = document.getElementById("cmbTipoDocumento");
-
-    (data || [])
-        .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
-        .forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    inicializarSelect2Modal();
-}
-
-async function listaCondicionesIva(idPaisSeleccionado = null) {
-    const response = await fetch(`/PaisesCondicionesIVA/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-
-    resetSelect("cmbCondicionIva", "Seleccionar");
-    const select = document.getElementById("cmbCondicionIva");
-
-    (data || [])
-        .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
-        .forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    inicializarSelect2Modal();
-}
-
-async function listaProvincias(idPaisSeleccionado = null) {
-
-    resetSelect("cmbProvincia", "Seleccionar");
-
-    // Si no hay país → no cargar provincias
-    if (!idPaisSeleccionado) {
-        inicializarSelect2Modal();
-        return;
-    }
-
-    const response = await fetch(`/PaisesProvincia/ListaPais?idPais=${idPaisSeleccionado}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-    const select = document.getElementById("cmbProvincia");
-
-    (data || []).forEach(x => {
-        select.append(new Option(x.Nombre, x.Id));
-    });
-
-    inicializarSelect2Modal();
-}
-
-/* =========================
-   FILTROS - DATOS (para selects)
+   FILTROS - DATOS
 ========================= */
 
 async function listaProductorasFilter() {
-    const response = await fetch(`/Productoras/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
+    const response = await fetch(`/Productoras/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
     const data = await response.json();
     return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 }
 
 async function listaPaisesFilter() {
-    const response = await fetch(`/Paises/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
+    const response = await fetch(`/Paises/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
     return await response.json();
 }
 
 async function listaTiposDocumentoFilter() {
-    const response = await fetch(`/PaisesTiposDocumentos/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
+    const response = await fetch(`/PaisesTiposDocumentos/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
     const data = await response.json();
     return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
 }
 
 async function listaCondicionesIvaFilter() {
-    const response = await fetch(`/PaisesCondicionesIVA/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
+    const response = await fetch(`/PaisesCondicionesIVA/Lista`, {
+        headers: { 'Authorization': 'Bearer ' + token }
+    });
     const data = await response.json();
     return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre }));
-}
-
-async function listaProvinciasFilter() {
-    const response = await fetch(`/PaisesProvincia/Lista`, { headers: { 'Authorization': 'Bearer ' + token } });
-    const data = await response.json();
-    return (data || []).map(x => ({ Id: x.Id, Nombre: x.Nombre, IdPais: x.IdCombo }));
 }
 
 /* =========================
@@ -747,7 +313,10 @@ function configurarOpcionesColumnas() {
     columnas.forEach((col, index) => {
         if (col.data && col.data !== "Id") {
 
-            const isChecked = savedConfig[`col_${index}`] !== undefined ? savedConfig[`col_${index}`] : true;
+            const isChecked = savedConfig[`col_${index}`] !== undefined
+                ? savedConfig[`col_${index}`]
+                : true;
+
             grid.column(index).visible(isChecked);
 
             const name = $('#grd_Clientes thead tr').first().find('th').eq(index).text();
@@ -755,7 +324,10 @@ function configurarOpcionesColumnas() {
             container.append(`
                 <li class="rp-dd-item">
                     <label class="rp-dd-label">
-                        <input type="checkbox" class="toggle-column" data-column="${index}" ${isChecked ? 'checked' : ''}>
+                        <input type="checkbox"
+                               class="toggle-column"
+                               data-column="${index}"
+                               ${isChecked ? 'checked' : ''}>
                         <span>${name}</span>
                     </label>
                 </li>
@@ -763,7 +335,7 @@ function configurarOpcionesColumnas() {
         }
     });
 
-    $('.toggle-column').on('change', function () {
+    $('.toggle-column').off('change').on('change', function () {
         const columnIdx = parseInt($(this).data('column'), 10);
         const isChecked = $(this).is(':checked');
 
@@ -775,116 +347,7 @@ function configurarOpcionesColumnas() {
 }
 
 /* =========================
-   VALIDACIONES
-========================= */
-
-
-
-function limpiarModal() {
-    const formulario = document.querySelector("#modalEdicion");
-    if (!formulario) return;
-
-    formulario.querySelectorAll("input, select, textarea").forEach(el => {
-        if (el.tagName === "SELECT") el.selectedIndex = 0;
-        else el.value = "";
-
-        el.classList.remove("is-invalid", "is-valid");
-    });
-
-    $("#errorCampos").addClass("d-none");
-}
-
-function validarCampoIndividual(el) {
-
-    // modo solo lectura
-    if (document.querySelector("#modalEdicion")
-        ?.getAttribute("data-sololectura") === "1")
-        return true;
-
-    const camposObligatorios = [
-        "txtNombre",
-        "txtDni",
-        "txtEmail"
-    ];
-
-    if (!camposObligatorios.includes(el.id))
-        return;
-
-    const valor = (el.value ?? "").toString().trim();
-
-    const esValido =
-        valor !== "" &&
-        valor !== null &&
-        valor !== "Seleccionar";
-
-    setEstadoCampo(el, esValido);
-
-    verificarErroresGenerales();
-}
-
-function verificarErroresGenerales() {
-    const errorMsg = document.getElementById("errorCampos");
-    if (!errorMsg) return;
-
-    const hayInvalidos = document.querySelectorAll("#modalEdicion .is-invalid").length > 0;
-    if (!hayInvalidos) errorMsg.classList.add("d-none");
-}
-
-function validarCampos() {
-
-    if (document.querySelector("#modalEdicion")
-        ?.getAttribute("data-sololectura") === "1")
-        return true;
-
-    const campos = [
-        { selector: "#txtNombre", nombre: "Nombre" },
-        { selector: "#txtDni", nombre: "DNI" },
-        { selector: "#txtEmail", nombre: "Correo electrónico" }
-    ];
-
-    let errores = [];
-
-    campos.forEach(c => {
-
-        const el = document.querySelector(c.selector);
-        if (!el) return;
-
-        const valor = (el.value ?? "").toString().trim();
-
-        const esValido = valor !== "";
-
-        setEstadoCampo(el, esValido);
-
-        if (!esValido)
-            errores.push(c.nombre);
-    });
-
-    // ⭐ VALIDACIÓN PRODUCTORAS
-    const totalProductoras =
-        (productorasSeleccionadas?.length || 0) +
-        (productorasAutomaticas?.length || 0) +
-        (productorasDesdeProductora?.length || 0);
-
-    if (totalProductoras === 0)
-        errores.push("Productora");
-
-    if (errores.length > 0) {
-
-        mostrarErrorCampos(
-            `Debes completar los campos requeridos:<br>
-             <strong>${errores.join(", ")}</strong>`,
-            null,
-            "validacion"
-        );
-
-        return false;
-    }
-
-    cerrarErrorCampos();
-    return true;
-}
-/* =========================
-   KPI + helpers
+   KPI + HELPERS
 ========================= */
 
 function actualizarKpis(data) {
@@ -918,7 +381,6 @@ function normalizarDateInput(fecha) {
     try {
         const d = new Date(fecha);
         if (isNaN(d.getTime())) return "";
-        // yyyy-MM-dd
         const yyyy = d.getFullYear();
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         const dd = String(d.getDate()).padStart(2, '0');
@@ -927,233 +389,3 @@ function normalizarDateInput(fecha) {
         return "";
     }
 }
-
-
-async function cargarProductorasChecklist() {
-
-    const res = await fetch("/Productoras/Lista", {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    productorasCache = await res.json();
-
-    renderChecklistProductoras();
-}
-
-function renderChecklistProductoras() {
-
-    const cont = document.getElementById("listaProductoras");
-    if (!cont) return;
-
-    cont.innerHTML = "";
-
-    /* ==========================================
-       CLASIFICAR
-    ========================================== */
-
-    const asignadas = [];
-    const disponibles = [];
-
-    productorasCache.forEach(p => {
-
-        const id = parseInt(p.Id);
-
-        const estaAsignada =
-            productorasSeleccionadas.includes(id) ||
-            productorasAutomaticas.includes(id) ||
-            productorasDesdeProductora.includes(id);
-
-        if (estaAsignada)
-            asignadas.push(p);
-        else
-            disponibles.push(p);
-    });
-
-    // orden alfabético
-    asignadas.sort((a, b) =>
-        (a.Nombre || "").localeCompare(b.Nombre || "")
-    );
-
-    disponibles.sort((a, b) =>
-        (a.Nombre || "").localeCompare(b.Nombre || "")
-    );
-
-    /* ==========================================
-       RENDER HELPERS
-    ========================================== */
-
-    const renderGrupo = (titulo, lista, claseGrupo) => {
-
-        if (!lista.length) return;
-
-        cont.insertAdjacentHTML("beforeend", `
-            <div class="rp-check-group ${claseGrupo}">
-                <div class="rp-check-group-title">
-                    ${titulo}
-                    <span class="rp-check-count">(${lista.length})</span>
-                </div>
-            </div>
-        `);
-
-        lista.forEach(p => {
-
-            const id = parseInt(p.Id);
-
-            const esManual =
-                productorasSeleccionadas.includes(id);
-
-            const esAuto =
-                productorasAutomaticas.includes(id);
-
-            const esDesdeProd =
-                productorasDesdeProductora.includes(id);
-
-            let checked = "";
-            let disabled = "";
-            let badge = "";
-            let claseExtra = "";
-
-            if (esManual) {
-                checked = "checked";
-                badge = `<span class="rp-badge manual">Manual</span>`;
-                claseExtra = "manual";
-            }
-            else if (esAuto) {
-                checked = "checked";
-                disabled = "disabled";
-                badge = `<span class="rp-badge auto">Automático</span>`;
-                claseExtra = "auto";
-            }
-            else if (esDesdeProd) {
-                checked = "checked";
-                disabled = "disabled";
-                badge = `<span class="rp-badge prod">Automático</span>`;
-                claseExtra = "prod";
-            }
-
-            cont.insertAdjacentHTML("beforeend", `
-                <label class="rp-check-item ${claseExtra}">
-                    <input type="checkbox"
-                           value="${id}"
-                           ${checked}
-                           ${disabled}
-                           onchange="toggleProductora(${id})">
-
-                    <span class="rp-check-text">
-                        ${p.Nombre}
-                        ${badge}
-                    </span>
-                </label>
-            `);
-        });
-    };
-
-    /* ==========================================
-       RENDER FINAL
-    ========================================== */
-
-    renderGrupo(
-        `<i class="fa fa-check-circle"></i> Asignadas`,
-        asignadas,
-        "grupo-asignadas"
-    );
-
-    renderGrupo(
-        `<i class="fa fa-list"></i> Disponibles`,
-        disponibles,
-        "grupo-disponibles"
-    );
-
-    actualizarContadorProductoras();
-}
-
-function toggleProductora(id) {
-
-    id = parseInt(id);
-
-    if (productorasAutomaticas.includes(id)) return;
-    if (productorasDesdeProductora.includes(id)) return;
-
-    if (productorasSeleccionadas.includes(id)) {
-        productorasSeleccionadas =
-            productorasSeleccionadas.filter(x => x !== id);
-    } else {
-        productorasSeleccionadas.push(id);
-    }
-
-    // ⭐ CLAVE — reconstruir estado real
-    renderChecklistProductoras();
-}
-
-$("#chkAsociacionAutomatica").on("change", function () {
-    const automatico = $(this).is(":checked");
-    const cont = document.getElementById("listaProductoras");
-    if (!cont) return;
-
-    // Solo efecto visual suave, NO bloquear clicks
-    cont.style.opacity = automatico ? "0.85" : "1";
-});
-
-function actualizarContadorProductoras() {
-
-    const total =
-        (productorasSeleccionadas?.length || 0) +
-        (productorasAutomaticas?.length || 0) +
-        (productorasDesdeProductora?.length || 0);
-
-    $("#cntProductoras").text(`(${total})`);
-}
-
-function aplicarFiltroProductorasChecklist() {
-
-    const q = ($("#txtBuscarProductora").val() || "").toLowerCase();
-
-    document.querySelectorAll("#listaProductoras .rp-check-item")
-        .forEach(el => {
-
-            const txt = el.innerText.toLowerCase();
-            el.style.display = txt.includes(q) ? "" : "none";
-        });
-}
-
-const verFicha = id => {
-
-    fetch("/Clientes/EditarInfo?id=" + id, {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(r => {
-            if (!r.ok) throw new Error("Ha ocurrido un error.");
-            return r.json();
-        })
-        .then(async dataJson => {
-
-            if (!dataJson) throw new Error("Ha ocurrido un error.");
-
-            await mostrarModal(dataJson);
-
-            // ⭐ función global (site.js)
-            setModalSoloLectura(true);
-
-            $("#modalEdicionLabel").text("Ver Cliente");
-        })
-        .catch(_ => errorModal("Ha ocurrido un error."));
-};
-
-$(document).on("paste", "input[type=text], textarea", function (e) {
-
-    e.preventDefault();
-
-    let texto = (e.originalEvent || e).clipboardData.getData('text');
-
-    texto = texto
-        .replace(/[“”]/g, '"')
-        .replace(/[‘’]/g, "'")
-        .replace(/\u00A0/g, ' ')
-        .trim();
-
-    document.execCommand("insertText", false, texto);
-});
