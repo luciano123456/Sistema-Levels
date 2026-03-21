@@ -1,0 +1,256 @@
+﻿<!-- MISMO ESTILO CLIENTES -->
+<link href="~/css/productora.css?v=1.0" rel="stylesheet" />
+<link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
+<link href="~/css/M_Generico.css" rel="stylesheet" />
+
+@* =========================================================
+   M_Productora.cshtml
+   Modal genérico reutilizable de Productora
+   ========================================================= *@
+
+<div class="modal fade productora-modal-root"
+     data-productora-modal="productora"
+     tabindex="-1"
+     data-bs-backdrop="static"
+     data-bs-keyboard="false">
+
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+
+        <div class="modal-content">
+
+            <div class="modal-header colorEncabezado">
+
+                <h5 class="modal-title fw-bold" id="modalEdicionLabel">
+                    Nueva Productora
+                </h5>
+
+                <button type="button"
+                        class="btn-close"
+                        data-bs-dismiss="modal"></button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div id="errorCampos" class="rp-error-panel d-none mb-2">
+
+                    <div class="rp-error-icon">
+                        <i class="fa fa-exclamation-triangle"></i>
+                    </div>
+
+                    <div class="rp-error-content">
+                        <div class="rp-error-title">No se pudo guardar</div>
+                        <div class="rp-error-message"></div>
+                    </div>
+
+                    <button type="button"
+                            class="rp-error-close"
+                            onclick="cerrarErrorCamposProductora()">
+                        <i class="fa fa-times"></i>
+                    </button>
+
+                </div>
+
+                <!-- NAV TABS -->
+                <ul class="nav rp-tabs-modern mb-3" id="productoraTabs">
+
+                    <li class="nav-item">
+                        <button class="nav-link active"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tabDatosProductora"
+                                type="button">
+                            <i class="fa fa-building"></i>
+                            Datos de la Productora
+                        </button>
+                    </li>
+
+                    <li class="nav-item">
+                        <button class="nav-link"
+                                data-bs-toggle="tab"
+                                data-bs-target="#tabClientesProductora"
+                                id="tabClientesBtn"
+                                type="button">
+                            <i class="fa fa-users"></i>
+                            Clientes asignados
+                            <span id="cntClientes" class="rp-tab-count">(0)</span>
+                        </button>
+                    </li>
+
+                </ul>
+
+                <div class="tab-content">
+
+                    <!-- TAB DATOS -->
+                    <div class="tab-pane fade show active" id="tabDatosProductora">
+
+                        <form class="row g-3">
+
+                            <input type="text" id="txtId" hidden>
+                            <input type="hidden" id="txtSoloLectura" value="0" />
+
+                            <div class="col-md-4">
+                                <label class="form-label">Nombre</label>
+                                <input id="txtNombre" class="form-control" required>
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">País</label>
+                                <select id="cmbPais" class="form-control"></select>
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Provincia</label>
+                                <select id="cmbProvincia" class="form-control"></select>
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Dni</label>
+                                <input id="txtDni" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo Documento</label>
+                                <select id="cmbTipoDocumento" class="form-control"></select>
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Número Documento</label>
+                                <input id="txtNumeroDocumento" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Condición IVA</label>
+                                <select id="cmbCondicionIva" class="form-control"></select>
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Teléfono</label>
+                                <input id="txtTelefono" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Teléfono Alternativo</label>
+                                <input id="txtTelefonoAlternativo" class="form-control">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Dirección</label>
+                                <input id="txtDireccion" class="form-control">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Localidad</label>
+                                <input id="txtLocalidad" class="form-control">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Entre Calles</label>
+                                <input id="txtEntreCalles" class="form-control">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Código Postal</label>
+                                <input id="txtCodigoPostal" class="form-control">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">Email</label>
+                                <input id="txtEmail" class="form-control">
+                                <div class="invalid-feedback">Campo obligatorio</div>
+                            </div>
+
+                        </form>
+
+                    </div>
+
+                    <!-- TAB CLIENTES -->
+                    <div class="tab-pane fade" id="tabClientesProductora">
+
+                        <div id="listaClientesWrapper">
+
+                            <div class="mb-3">
+                                <input type="text"
+                                       id="txtBuscarCliente"
+                                       class="form-control"
+                                       placeholder="Buscar cliente...">
+                            </div>
+
+                            <div class="rp-checklist-box">
+                                <div id="listaClientes" class="rp-checklist"></div>
+                            </div>
+
+                            <div class="col-md-12 mb-3 mt-3">
+                                <div class="rp-auto-card">
+
+                                    <div class="rp-auto-left">
+                                        <div class="rp-auto-icon">
+                                            <i class="fa fa-link"></i>
+                                        </div>
+
+                                        <div class="rp-auto-text">
+                                            <div class="rp-auto-title">
+                                                Asociación automática de clientes
+                                            </div>
+                                            <div class="rp-auto-desc">
+                                                Al activar esta opción, todos los clientes vinculados a esta productora
+                                                se asociarán automáticamente en el sistema.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <label class="rp-switch">
+                                        <input type="checkbox" id="chkAsociacionAutomatica">
+                                        <span class="rp-slider"></span>
+                                    </label>
+
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- AUDITORÍA -->
+                <div class="rp-auditoria d-none mt-3" id="infoAuditoria">
+                    <div id="infoRegistro"></div>
+                    <div id="infoModificacion"></div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                        type="button">
+                    <i class="fa fa-arrow-left"></i>
+                    Volver
+                </button>
+
+                <button id="btnGuardar"
+                        class="btn btn-primary"
+                        type="button"
+                        onclick="guardarProductora()">
+                    <i class="fa fa-check"></i>
+                    Registrar
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script src="~/js/entities/M_Productoras.js"></script>

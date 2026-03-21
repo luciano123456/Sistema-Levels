@@ -105,15 +105,24 @@ async function abrirConfiguracion(_nombreConfiguracion, _controllerConfiguracion
 
         cancelarModificarConfiguracion();
 
-        $('#txtNombreConfiguracion').on('input', function () {
-            validarCamposConfiguracion()
+        $('#txtNombreConfiguracion').off('input').on('input', function () {
+            validarCamposConfiguracion();
         });
 
-
-        $('#cmbConfiguracion').on('change', function () {
-            validarCamposConfiguracion()
+        $('#cmbConfiguracion').off('change').on('change', function () {
+            validarCamposConfiguracion();
         });
 
+        $('#txtBuscarConfiguracion').off('input').on('input', function () {
+            filtrarConfiguraciones();
+        });
+
+        document.getElementById("modalConfiguracionLabel").innerText = "Configuracion de " + nombreConfiguracion;
+
+        const buscador = document.getElementById("txtBuscarConfiguracion");
+        if (buscador) {
+            buscador.value = "";
+        }
 
         document.getElementById("modalConfiguracionLabel").innerText = "Configuracion de " + nombreConfiguracion;
     } catch (ex) {
@@ -123,7 +132,7 @@ async function abrirConfiguracion(_nombreConfiguracion, _controllerConfiguracion
 }
 
 async function editarConfiguracion(id) {
-    fetch(controllerConfiguracion + "/EditarInfo?id=" + id, {
+    fetch("/" + controllerConfiguracion + "/EditarInfo?id=" + id, {
         method: "GET",
         headers: {
             "Content-Type": "application/json",
@@ -163,6 +172,12 @@ async function editarConfiguracion(id) {
 async function llenarConfiguraciones() {
 
     try {
+
+        const buscador = document.getElementById("txtBuscarConfiguracion");
+        if (buscador) {
+            buscador.value = "";
+        }
+
         let configuraciones = await listaConfiguracion();
 
         if (comboNombre != null) {
@@ -190,7 +205,7 @@ async function llenarConfiguraciones() {
             listaVacia = false;
             configuraciones.forEach((configuracion, index) => {
 
-                nombreConfig = configuracion.Nombre;
+                let nombreConfig = configuracion.Nombre;
 
                 if (configuracion.NombreCombo != null) {
                     nombreConfig += " - " + configuracion.NombreCombo;
@@ -198,7 +213,7 @@ async function llenarConfiguraciones() {
 
                 var indexado = configuracion.Id
                 $("#configuracion-list").append(`
-    <div class="rp-list-item">
+    <div class="rp-list-item" data-texto="${escapeHtml(nombreConfig).toLowerCase()}">
         <div class="rp-item-left">
             <div class="rp-item-icon">
                 <i class="fa fa-tag"></i>
@@ -239,7 +254,7 @@ async function eliminarConfiguracion(id) {
 
     if (resultado) {
         try {
-            const response = await fetch(controllerConfiguracion + "/Eliminar?id=" + id, {
+            const response = await fetch("/" + controllerConfiguracion + "/Eliminar?id=" + id, {
                 method: "DELETE",
                 headers: {
                     'Authorization': 'Bearer ' + token,
@@ -266,7 +281,7 @@ async function eliminarConfiguracion(id) {
 
 
 async function llenarComboConfiguracion() {
-    const res = await fetch(`${comboController}/Lista`, {
+    const res = await fetch(`/${comboController}/Lista`, {
         headers: {
             'Authorization': 'Bearer ' + token,
             'Content-Type': 'application/json'
@@ -309,7 +324,7 @@ function guardarCambiosConfiguracion() {
             "Nombre": $("#txtNombreConfiguracion").val(),
         };
 
-        const url = idConfiguracion === "" ? controllerConfiguracion + "/Insertar" : controllerConfiguracion + "/Actualizar";
+        const url = idConfiguracion === "" ? "/" + controllerConfiguracion + "/Insertar" : "/" + controllerConfiguracion + "/Actualizar";
         const method = idConfiguracion === "" ? "POST" : "PUT";
 
         fetch(url, {
@@ -596,4 +611,40 @@ function escapeHtml(s) {
 
 function escapeJs(s) {
     return String(s ?? "").replaceAll("\\", "\\\\").replaceAll("'", "\\'");
+}
+
+function filtrarConfiguraciones() {
+    const input = document.getElementById("txtBuscarConfiguracion");
+    const lista = document.getElementById("configuracion-list");
+
+    if (!input || !lista) return;
+
+    const texto = input.value.trim().toLowerCase();
+    const items = lista.querySelectorAll(".rp-list-item");
+
+    let visibles = 0;
+
+    items.forEach(item => {
+        const textoItem = (item.getAttribute("data-texto") || "").toLowerCase();
+        const coincide = textoItem.includes(texto);
+
+        item.style.display = coincide ? "" : "none";
+
+        if (coincide) visibles++;
+    });
+
+    const lblListaVacia = document.getElementById("lblListaVacia");
+
+    if (items.length > 0 && visibles === 0) {
+        lblListaVacia.innerText = `No se encontraron resultados para "${input.value}".`;
+        lblListaVacia.style.color = 'red';
+        lblListaVacia.removeAttribute("hidden");
+    } else if (listaVacia === true) {
+        lblListaVacia.innerText = `La lista de ${nombreConfiguracion} esta vacia.`;
+        lblListaVacia.style.color = 'red';
+        lblListaVacia.removeAttribute("hidden");
+    } else {
+        lblListaVacia.innerText = "";
+        lblListaVacia.setAttribute("hidden", "hidden");
+    }
 }
