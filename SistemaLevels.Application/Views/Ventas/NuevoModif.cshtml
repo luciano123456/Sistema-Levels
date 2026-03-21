@@ -272,9 +272,22 @@
                 ===================== -->
                 <div class="vn-section" id="sec-personal">
 
-                    <button class="btn btn-outline-light vn-btn mb-2" id="btnAddPersonal" type="button">
-                        <i class="fa fa-plus"></i> Agregar personal
-                    </button>
+                    <div class="d-flex gap-2 flex-wrap align-items-center mb-2">
+
+                        <button class="btn btn-outline-light vn-btn"
+                                id="btnAddPersonal"
+                                type="button">
+                            <i class="fa fa-plus"></i> Agregar personal
+                        </button>
+
+                        <button class="btn btn-success"
+                                id="btnCrearPersonal"
+                                type="button">
+                            <i class="fa fa-user-plus me-1"></i>
+                            Crear personal
+                        </button>
+
+                    </div>
 
                     <div class="vn-gridtable">
                         <table class="table vn-table">
@@ -606,8 +619,10 @@
 
 
 <div id="modalArtistaHost"></div>
+<div id="modalPersonalHost"></div>
 <partial name="~/Views/Utils/Modals.cshtml" />
 <partial name="~/Views/Entities/M_Artistas.cshtml" />
+<partial name="~/Views/Entities/M_Personal.cshtml" />
 
 @section Scripts {
 

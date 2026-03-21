@@ -1,4 +1,5 @@
 ﻿let modalArtistaVentas = null;
+let modalPersonalVentas = null;
 
 (function () {
     "use strict";
@@ -1567,6 +1568,7 @@
     document.addEventListener("DOMContentLoaded", async () => {
         try {
             await initModalArtistaVentas();
+            await initModalPersonalVentas();
             initDuracionMask();
             actualizarVisibilidadContrato();
             actualizarVisibilidadResumenes();
@@ -3156,6 +3158,39 @@
 
     }
 
+    async function initModalPersonalVentas() {
+
+        const root = document.querySelector('[data-personal-modal]');
+
+        modalPersonalVentas = new PersonalModal(root, {
+
+            token: token,
+
+            onSaved: async (data, modelo) => {
+
+                try {
+                    const personal = await vnFetchJson(API.personal);
+
+                    VN.combos.personal = personal || [];
+                    renderPersonal();
+
+                    vnToastOk("Personal creado correctamente");
+
+                }
+                catch (e) {
+
+                    console.error("Error recargando personal", e);
+
+                }
+
+            }
+
+        });
+
+        window.verFicha = (id) => modalPersonalVentas.abrirVer(id);
+
+    }
+
 
     document.addEventListener("click", async function (e) {
 
@@ -3167,6 +3202,17 @@
             }
 
             await modalArtistaVentas.abrirNuevo();
+
+        }
+
+        if (e.target.closest("#btnCrearPersonal")) {
+
+            if (!modalPersonalVentas) {
+                console.error("Modal personal no inicializado");
+                return;
+            }
+
+            await modalPersonalVentas.abrirNuevo();
 
         }
 
