@@ -155,19 +155,54 @@ namespace SistemaLevels.DAL.Repository
 
         public async Task<bool> Eliminar(int id)
         {
-            var entity = await _db.Personals.FindAsync(id);
-            if (entity == null) return false;
+            using var trx = await _db.Database.BeginTransactionAsync();
 
-            var relaciones = await _db.PersonalesArtistas
-                .Where(x => x.IdPersonal == id)
-                .ToListAsync();
+            try
+            {
+                var entity = await _db.Personals
+                    .FirstOrDefaultAsync(x => x.Id == id);
 
-            _db.PersonalesArtistas.RemoveRange(relaciones);
+                if (entity == null)
+                    return false;
 
-            _db.Personals.Remove(entity);
+                /* =========================
+                   ELIMINAR ROLES
+                ========================= */
 
-            await _db.SaveChangesAsync();
-            return true;
+                var roles = await _db.PersonalRolesAsignados
+                    .Where(x => x.IdPersonal == id)
+                    .ToListAsync();
+
+                if (roles.Any())
+                    _db.PersonalRolesAsignados.RemoveRange(roles);
+
+                /* =========================
+                   ELIMINAR ARTISTAS
+                ========================= */
+
+                var artistas = await _db.PersonalesArtistas
+                    .Where(x => x.IdPersonal == id)
+                    .ToListAsync();
+
+                if (artistas.Any())
+                    _db.PersonalesArtistas.RemoveRange(artistas);
+
+                /* =========================
+                   ELIMINAR PERSONAL
+                ========================= */
+
+                _db.Personals.Remove(entity);
+
+                await _db.SaveChangesAsync();
+                await trx.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await trx.RollbackAsync();
+                return false;
+            }
         }
 
         /* =====================================================

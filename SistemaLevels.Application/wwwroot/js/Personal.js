@@ -1,18 +1,6 @@
 ﻿let gridPersonal;
-let rolesCatalogo = [];
-
+let personalModal;
 let filtrosPersonalActivos = false;
-
-/* =========================================================
-   RELACION PERSONAL ⇄ ARTISTAS (igual que Artistas)
-========================================================= */
-
-let artistasCache = [];
-
-let artistasSeleccionado = [];       // manual (origen 1)
-let artistasDesdeArtista = [];       // viene desde Artista (origen 2) => bloqueado
-let artistasAutomatico = [];         // automático (origen 3) => bloqueado
-
 
 /**
  * Columnas:
@@ -34,49 +22,33 @@ const columnConfig = [
     { index: 5, filterType: 'text' }, // Nro Doc
     { index: 6, filterType: 'select', fetchDataFunc: listaCondicionesIvaFilter }, // Condición IVA
     { index: 7, filterType: 'text' }, // Teléfono
-    { index: 8, filterType: 'text' }, // Email
+    { index: 8, filterType: 'text' }  // Email
 ];
 
 $(document).ready(() => {
 
+    personalModal = new PersonalModal(document.body, {
+
+        token: token,
+
+        onSaved: () => {
+            listaPersonal();   // refresca la tabla
+        },
+
+        onDeleted: () => {
+            listaPersonal();   // refresca cuando eliminás
+        }
+
+    });
+
+
+    window.verPersonal = (id) => personalModal.abrirVer(id);
+    window.editarPersonal = (id) => personalModal.abrirEditar(id);
+    window.eliminarPersonal = (id) => personalModal.eliminar(id);
+    window.verFicha = (id) => personalModal.abrirVer(id);
+    window.nuevoPersonal = () => personalModal.abrirNuevo();
+
     listaPersonal();
-
-    // Validación campo a campo
-    document.querySelectorAll("#modalEdicion input, #modalEdicion select, #modalEdicion textarea").forEach(el => {
-        el.setAttribute("autocomplete", "off");
-        el.addEventListener("input", () => validarCampoIndividual(el));
-        el.addEventListener("change", () => validarCampoIndividual(el));
-        el.addEventListener("blur", () => validarCampoIndividual(el));
-    });
-
-    // País -> depende tipo doc y condición IVA
-    $("#cmbPais").on("change", async function () {
-        const idPais = $(this).val();
-
-        const tipoDocActual = $("#cmbTipoDocumento").val();
-        const ivaActual = $("#cmbCondicionIva").val();
-
-        await listaTiposDocumento(idPais);
-        await listaCondicionesIva(idPais);
-
-        if (tipoDocActual) {
-            $("#cmbTipoDocumento").val(tipoDocActual);
-            refreshSelect2("#cmbTipoDocumento");
-        }
-        if (ivaActual) {
-            $("#cmbCondicionIva").val(ivaActual);
-            refreshSelect2("#cmbCondicionIva");
-        }
-    });
-
-    // Inicializa select2 modal (dropdownParent modal)
-    inicializarSelect2Modal();
-
-    // Select2: forzar validación cuando selecciona o limpia
-    $("#modalEdicion").on("select2:select select2:clear change", "select", function () {
-        validarCampoIndividual(this);
-    });
-
     inicializarFiltrosPersonal();
 });
 
@@ -87,29 +59,13 @@ $(document).ready(() => {
 function ensureSelect2($el, options) {
     if (!$el || !$el.length) return;
 
-    // en Personal vos estabas destruyendo siempre; lo dejo como lo tenías
-    if ($el.data('select2')) {
-        $el.select2('destroy');
-    }
+    if ($el.data('select2')) return;
 
     $el.select2(Object.assign({
         width: '100%',
         allowClear: true,
-        placeholder: "Todos"
-    }, options || {}));
-}
-
-function inicializarSelect2Modal() {
-    const opts = {
-        width: '100%',
-        dropdownParent: $('#modalEdicion'),
-        allowClear: true,
         placeholder: "Seleccionar"
-    };
-
-    ensureSelect2($("#cmbPais"), opts);
-    ensureSelect2($("#cmbTipoDocumento"), opts);
-    ensureSelect2($("#cmbCondicionIva"), opts);
+    }, options || {}));
 }
 
 function inicializarSelect2Filtro($select) {
@@ -119,319 +75,6 @@ function inicializarSelect2Filtro($select) {
         allowClear: true,
         placeholder: "Todos"
     });
-}
-
-/* =========================
-   CRUD
-========================= */
-
-function guardarPersonal() {
-
-    // VALIDACIÓN FRONT
-    if (!validarCampos())
-        return false;
-
-    const id = $("#txtId").val();
-
-    const fnRaw = $("#txtFechaNacimiento").val();
-    const fechaNacimiento =
-        fnRaw && fnRaw.trim() !== "" ? fnRaw : null;
-
-    const rolesIds = getRolesSeleccionadosIds();
-
-    // ⭐ IMPORTANTE: ahora manda SOLO los manuales, igual que Artistas.PersonalIds
-    const artistasIds = artistasSeleccionado || [];
-
-    const modelo = {
-        Id: id !== "" ? parseInt(id, 10) : 0,
-
-        Nombre: $("#txtNombre").val(),
-        Dni: $("#txtDni").val(),
-
-        IdPais: $("#cmbPais").val() || null,
-        IdTipoDocumento: $("#cmbTipoDocumento").val() || null,
-        NumeroDocumento: $("#txtNumeroDocumento").val(),
-
-        Direccion: $("#txtDireccion").val(),
-        Telefono: $("#txtTelefono").val(),
-        Email: $("#txtEmail").val(),
-
-        FechaNacimiento: fechaNacimiento,
-
-        IdCondicionIva: $("#cmbCondicionIva").val() || null,
-
-        RolesIds: rolesIds,
-        ArtistasIds: artistasIds
-    };
-
-    const esNuevo = id === "";
-
-    const url = esNuevo
-        ? "/Personal/Insertar"
-        : "/Personal/Actualizar";
-
-    const method = esNuevo ? "POST" : "PUT";
-
-    fetch(url, {
-        method,
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json;charset=utf-8'
-        },
-        body: JSON.stringify(modelo)
-    })
-        .then(async r => {
-            if (!r.ok) throw new Error("Error HTTP");
-            return await r.json();
-        })
-        .then(data => {
-
-            if (!data.valor) {
-
-                let tipoError = data.tipo;
-
-                if (!tipoError) {
-                    if (data.idReferencia) tipoError = "duplicado";
-                    else if (data.mensaje?.toLowerCase().includes("no se puede")) tipoError = "relacion";
-                    else tipoError = "validacion";
-                }
-
-                mostrarErrorCampos(
-                    data.mensaje,
-                    data.idReferencia,
-                    tipoError
-                );
-
-                return;
-            }
-
-            cerrarErrorCampos();
-            $('#modalEdicion').modal('hide');
-
-            exitoModal(
-                data.mensaje ||
-                (esNuevo
-                    ? "Personal registrado correctamente"
-                    : "Personal modificado correctamente")
-            );
-
-            listaPersonal();
-        })
-        .catch(err => {
-            console.error("Error:", err);
-            mostrarErrorCampos("Ha ocurrido un error inesperado al guardar.");
-        });
-}
-
-function nuevoPersonal() {
-
-
-
-    limpiarModal();
-    setModalSoloLectura(false);
-
-    // ⭐ reset relación artistas (igual que Artistas)
-    artistasSeleccionado = [];
-    artistasAutomatico = [];
-    artistasDesdeArtista = [];
-
-    Promise.all([
-        listaPaises(),
-        listaRoles(),
-        cargarArtistasChecklist(true)   // ⭐ carga cache artistas
-    ])
-        .then(() => {
-            evaluarPestaniaArtistas();
-
-            resetSelect("cmbTipoDocumento", "Seleccionar");
-            resetSelect("cmbCondicionIva", "Seleccionar");
-
-            inicializarSelect2Modal();
-
-            // ⭐ render checklist artistas (aunque pestaña esté oculta, no molesta)
-            renderChecklistArtistas();
-            activarBuscadorArtistas();
-            actualizarContadoresTabs();
-        });
-
-    $('#modalEdicion').modal('show');
-
-    $("#btnGuardar")
-        .attr("onclick", "guardarPersonal()")
-        .html(`<i class="fa fa-check"></i> Registrar`);
-
-    $("#modalEdicionLabel").text("Nuevo Personal");
-
-    $("#infoAuditoria").addClass("d-none");
-    $("#infoRegistro").html("");
-    $("#infoModificacion").html("");
-}
-
-async function mostrarModal(modelo) {
-
-
-
-    limpiarModal();
-    setModalSoloLectura(false);
-
-    // abrir en pestaña datos
-    const tabDatos = document.querySelector('#personalTabs button[data-bs-target="#tabDatos"]');
-    if (tabDatos) {
-        const tab = new bootstrap.Tab(tabDatos);
-        tab.show();
-    }
-
-    $("#txtId").val(modelo.Id || "");
-    $("#txtNombre").val(modelo.Nombre || "");
-    $("#txtDni").val(modelo.Dni || "");
-
-    $("#txtNumeroDocumento").val(modelo.NumeroDocumento || "");
-    $("#txtDireccion").val(modelo.Direccion || "");
-    $("#txtTelefono").val(modelo.Telefono || "");
-    $("#txtEmail").val(modelo.Email || "");
-
-    if (modelo.FechaNacimiento) {
-        try {
-            const d = new Date(modelo.FechaNacimiento);
-            const yyyy = d.getFullYear();
-            const mm = String(d.getMonth() + 1).padStart(2, '0');
-            const dd = String(d.getDate()).padStart(2, '0');
-            $("#txtFechaNacimiento").val(`${yyyy}-${mm}-${dd}`);
-        } catch {
-            $("#txtFechaNacimiento").val("");
-        }
-    } else {
-        $("#txtFechaNacimiento").val("");
-    }
-
-    await Promise.all([
-        listaPaises(),
-        listaRoles(),
-        cargarArtistasChecklist(true)
-    ]);
-
-    if (modelo.IdPais != null) {
-        $("#cmbPais").val(modelo.IdPais).trigger("change.select2");
-        await listaTiposDocumento(modelo.IdPais);
-        await listaCondicionesIva(modelo.IdPais);
-    }
-
-    if (modelo.IdTipoDocumento != null) {
-        $("#cmbTipoDocumento").val(modelo.IdTipoDocumento).trigger("change.select2");
-    }
-
-    if (modelo.IdCondicionIva != null) {
-        $("#cmbCondicionIva").val(modelo.IdCondicionIva).trigger("change.select2");
-    }
-
-    // roles
-    if (modelo.RolesIds) {
-        $("#listaRoles input[type=checkbox]").each(function () {
-            const id = parseInt($(this).val(), 10);
-            $(this).prop("checked", modelo.RolesIds.includes(id));
-        });
-    }
-
-    // ⭐⭐⭐ RELACION ARTISTAS (IGUAL QUE ARTISTAS)
-    // Backend debe devolver estas 3 listas:
-    // ArtistasIds (manual), ArtistasDesdeArtistaIds (origen 2), ArtistasAutomaticosIds (origen 3)
-    artistasSeleccionado = modelo.ArtistasIds || [];
-    artistasDesdeArtista = modelo.ArtistasDesdeArtistaIds || [];
-    artistasAutomatico = modelo.ArtistasAutomaticosIds || [];
-
-    evaluarBloqueArtistas();
-    renderChecklistArtistas();
-    activarBuscadorArtistas();
-    actualizarContadoresTabs();
-
-    // Auditoría
-    let textoAuditoria = "";
-
-    if (modelo.UsuarioModifica && modelo.FechaModifica) {
-        textoAuditoria = `
-            <i class="fa fa-edit"></i>
-            Última modificación por 
-            <strong>${modelo.UsuarioModifica}</strong> 
-            el <strong>${formatearFecha(modelo.FechaModifica)}</strong>
-        `;
-        $("#infoModificacion").html(textoAuditoria);
-        $("#infoRegistro").html("");
-    } else if (modelo.UsuarioRegistra && modelo.FechaRegistra) {
-        textoAuditoria = `
-            <i class="fa fa-user"></i>
-            Registrado por 
-            <strong>${modelo.UsuarioRegistra}</strong> 
-            el <strong>${formatearFecha(modelo.FechaRegistra)}</strong>
-        `;
-        $("#infoRegistro").html(textoAuditoria);
-        $("#infoModificacion").html("");
-    }
-
-    if (textoAuditoria !== "") $("#infoAuditoria").removeClass("d-none");
-    else $("#infoAuditoria").addClass("d-none");
-
-    $("#chkAsociacionAutomatica")
-        .prop("checked", true)
-        .prop("disabled", true);
-
-    $('#modalEdicion').modal('show');
-
-    $("#btnGuardar")
-        .attr("onclick", "guardarPersonal()")
-        .html(`<i class="fa fa-check"></i> Guardar`);
-
-    $("#modalEdicionLabel").text("Editar Personal");
-}
-
-const editarPersonal = id => {
-    fetch("/Personal/EditarInfo?id=" + id, {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(r => {
-            if (!r.ok) throw new Error("Ha ocurrido un error.");
-            return r.json();
-        })
-        .then(dataJson => {
-            if (dataJson) mostrarModal(dataJson);
-            else throw new Error("Ha ocurrido un error.");
-        })
-        .catch(_ => errorModal("Ha ocurrido un error."));
-};
-
-async function eliminarPersonal(id) {
-
-    const confirmado = await confirmarModal("¿Desea eliminar este registro de personal?");
-    if (!confirmado) return;
-
-    try {
-        const response = await fetch("/Personal/Eliminar?id=" + id, {
-            method: "DELETE",
-            headers: {
-                'Authorization': 'Bearer ' + token,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) throw new Error("Error HTTP");
-
-        const data = await response.json();
-
-        if (!data.valor) {
-            mostrarErrorCampos(data.mensaje, data.idReferencia);
-            return;
-        }
-
-        listaPersonal();
-        exitoModal(data.mensaje || "Personal eliminado correctamente");
-
-    } catch (e) {
-        console.error("Ha ocurrido un error:", e);
-        errorModal("Ha ocurrido un error.");
-    }
 }
 
 /* =========================
@@ -484,7 +127,7 @@ async function configurarDataTable(data) {
                     width: "1%",
                     render: function (data) {
                         return renderAccionesGrid(data, {
-                            ver: "verFicha",
+                            ver: "verPersonal",
                             editar: "editarPersonal",
                             eliminar: "eliminarPersonal"
                         });
@@ -571,7 +214,6 @@ async function configurarDataTable(data) {
                 configurarOpcionesColumnas();
                 actualizarKpis(data);
 
-                // fuerza click para abrir select2
                 $(document).on("click", ".select2-container--default .select2-selection--single", function () {
                     const $select = $(this).closest(".select2-container").prev("select");
                     if ($select.length) {
@@ -590,66 +232,7 @@ async function configurarDataTable(data) {
 }
 
 /* =========================
-   COMBOS MODAL
-========================= */
-
-function resetSelect(id, placeholder) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.innerHTML = "";
-    el.append(new Option(placeholder || "Seleccionar", ""));
-}
-
-async function listaPaises() {
-    const response = await fetch(`/Paises/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-
-    resetSelect("cmbPais", "Seleccionar");
-    const select = document.getElementById("cmbPais");
-    (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    inicializarSelect2Modal();
-}
-
-async function listaTiposDocumento(idPaisSeleccionado = null) {
-    const response = await fetch(`/PaisesTiposDocumentos/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-
-    resetSelect("cmbTipoDocumento", "Seleccionar");
-    const select = document.getElementById("cmbTipoDocumento");
-
-    (data || [])
-        .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
-        .forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    inicializarSelect2Modal();
-}
-
-async function listaCondicionesIva(idPaisSeleccionado = null) {
-    const response = await fetch(`/PaisesCondicionesIVA/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-
-    resetSelect("cmbCondicionIva", "Seleccionar");
-    const select = document.getElementById("cmbCondicionIva");
-
-    (data || [])
-        .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
-        .forEach(x => select.append(new Option(x.Nombre, x.Id)));
-
-    inicializarSelect2Modal();
-}
-
-/* =========================
-   FILTROS - DATOS (para selects)
+   FILTROS - DATOS (para selects de la grilla)
 ========================= */
 
 async function listaPaisesFilter() {
@@ -702,7 +285,7 @@ function configurarOpcionesColumnas() {
         }
     });
 
-    $('.toggle-column').on('change', function () {
+    $('.toggle-column').off('change').on('change', function () {
         const columnIdx = parseInt($(this).data('column'), 10);
         const isChecked = $(this).is(':checked');
 
@@ -714,96 +297,7 @@ function configurarOpcionesColumnas() {
 }
 
 /* =========================
-   VALIDACIONES
-========================= */
-
-function limpiarModal() {
-    const formulario = document.querySelector("#modalEdicion");
-    if (!formulario) return;
-
-    formulario.querySelectorAll("input, select, textarea").forEach(el => {
-        if (el.tagName === "SELECT") el.selectedIndex = 0;
-        else el.value = "";
-
-        el.classList.remove("is-invalid", "is-valid");
-
-        if (el.tagName === "SELECT" && $(el).data("select2")) {
-            const { $selection, $container } = getSelect2Selection(el);
-            $selection.removeClass("is-invalid is-valid");
-            $container.removeClass("is-invalid is-valid");
-        }
-    });
-
-    $("#errorCampos").addClass("d-none");
-}
-
-function validarCampoIndividual(el) {
-    const camposObligatorios = [
-        "txtNombre",
-        "cmbPais",
-        "txtDni",
-        "txtNumeroDocumento"
-    ];
-
-    if (!camposObligatorios.includes(el.id)) return;
-
-    const valor = (el.value ?? "").toString().trim();
-
-    const esValido =
-        valor !== "" &&
-        valor !== "Seleccionar" &&
-        valor !== null;
-
-    setEstadoCampo(el, esValido);
-    verificarErroresGenerales();
-}
-
-function verificarErroresGenerales() {
-    const errorMsg = document.getElementById("errorCampos");
-    if (!errorMsg) return;
-
-    const hayInvalidos = document.querySelectorAll("#modalEdicion .is-invalid").length > 0;
-    if (!hayInvalidos) errorMsg.classList.add("d-none");
-}
-
-function validarCampos() {
-    const campos = [
-        { selector: "#txtNombre", nombre: "Nombre" },
-        { selector: "#cmbPais", nombre: "País" },
-        { selector: "#txtDni", nombre: "DNI" },
-        { selector: "#txtNumeroDocumento", nombre: "Número Documento" }
-    ];
-
-    let errores = [];
-
-    campos.forEach(c => {
-        const el = document.querySelector(c.selector);
-        if (!el) return;
-
-        const valor = (el.value ?? "").toString().trim();
-        const esValido = valor !== "" && valor !== "Seleccionar";
-
-        setEstadoCampo(el, esValido);
-
-        if (!esValido) errores.push(c.nombre);
-    });
-
-    if (errores.length > 0) {
-        mostrarErrorCampos(
-            `Debes completar los campos requeridos:<br>
-             <strong>${errores.join(", ")}</strong>`,
-            null,
-            "validacion"
-        );
-        return false;
-    }
-
-    cerrarErrorCampos();
-    return true;
-}
-
-/* =========================
-   KPI + helpers
+   KPI + HELPERS
 ========================= */
 
 function actualizarKpis(data) {
@@ -829,319 +323,25 @@ function refreshSelect2(id) {
     if ($el.data('select2')) $el.trigger('change.select2');
 }
 
-/* =========================
-ROLES
-========================= */
-
-async function listaRoles() {
-    const response = await fetch(`/PersonalRol/Lista`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    const data = await response.json();
-    rolesCatalogo = data || [];
-
-    const container = $("#listaRoles");
-    container.empty();
-
-    rolesCatalogo.forEach(x => {
-        container.append(`
-            <label class="rp-check-item">
-                <input type="checkbox" value="${x.Id}">
-                <span>${x.Nombre}</span>
-            </label>
-        `);
-    });
-
-    $("#listaRoles input").on("change", function () {
-        evaluarBloqueArtistas();
-        actualizarContadoresTabs();
-    });
-
-    actualizarContadoresTabs();
+function getSelect2Selection(el) {
+    const $el = $(el);
+    const $container = $el.next('.select2-container');
+    const $selection = $container.find('.select2-selection');
+    return { $container, $selection };
 }
 
-function getRolesSeleccionadosIds() {
-    const ids = [];
-    document
-        .querySelectorAll("#listaRoles input[type=checkbox]:checked")
-        .forEach(chk => ids.push(parseInt(chk.value, 10)));
-    return ids;
-}
+function setEstadoCampo(el, esValido) {
+    if (!el) return;
 
-function evaluarPestaniaArtistas() {
-    const rolesIds = getRolesSeleccionadosIds();
+    el.classList.remove("is-invalid", "is-valid");
+    el.classList.add(esValido ? "is-valid" : "is-invalid");
 
-    //const rolRepresentante = rolesCatalogo.find(r =>
-    //    (r.Nombre || "").toLowerCase() === "representante"
-    //);
-
-    //if (!rolRepresentante) return;
-
-    //const tieneRol = rolesIds.includes(rolRepresentante.Id);
-
-    const tieneRol = true; //SE LO HABILITAMOS A TODOSP POR AHORA
-
-    if (rolesIds.length > 0 && tieneRol) {
-        $("#tabArtistasBtn").removeClass("d-none");
-    } else {
-        $("#tabArtistasBtn").addClass("d-none");
-
-        // limpia manuales (y deja intactos los bloqueados si existieran)
-        artistasSeleccionado = [];
-        renderChecklistArtistas();
-        actualizarContadoresTabs();
+    if (el.tagName === "SELECT" && $(el).data("select2")) {
+        const { $selection, $container } = getSelect2Selection(el);
+        $selection.removeClass("is-invalid is-valid").addClass(esValido ? "is-valid" : "is-invalid");
+        $container.removeClass("is-invalid is-valid").addClass(esValido ? "is-valid" : "is-invalid");
     }
 }
-
-function evaluarBloqueArtistas() {
-    evaluarPestaniaArtistas();
-}
-
-/* =========================
-   ARTISTAS CHECKLIST (IGUAL QUE ARTISTAS → PERSONAL)
-========================= */
-
-async function cargarArtistasChecklist(force = false) {
-
-    if (!force && artistasCache.length > 0)
-        return;
-
-    const res = await fetch("/Artistas/Lista", {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
-
-    if (!res.ok) {
-        console.error("No se pudo cargar Artistas");
-        artistasCache = [];
-        return;
-    }
-
-    artistasCache = await res.json() || [];
-}
-
-function renderChecklistArtistas() {
-
-    const cont = document.getElementById("listaArtistas");
-    if (!cont) return;
-
-    cont.innerHTML = "";
-
-    /* ===============================
-       BUSCADOR + CONTENEDOR
-    =============================== */
-
-    cont.insertAdjacentHTML("beforeend", `
-        <div class="mb-3">
-            <input type="text"
-                   id="txtBuscarArtista"
-                   class="form-control"
-                   placeholder="Buscar artista...">
-        </div>
-
-        <div class="rp-checklist-box">
-            <div id="listaArtistasItems" class="rp-checklist"></div>
-        </div>
-    `);
-
-    const items = document.getElementById("listaArtistasItems");
-    if (!items) return;
-
-    /* ===============================
-       CLASIFICAR
-    =============================== */
-
-    const asignados = [];
-    const disponibles = [];
-
-    (artistasCache || []).forEach(a => {
-
-        const id = parseInt(a.Id, 10);
-
-        const estaAsignado =
-            (artistasSeleccionado || []).includes(id) ||
-            (artistasAutomatico || []).includes(id) ||
-            (artistasDesdeArtista || []).includes(id);
-
-        if (estaAsignado)
-            asignados.push(a);
-        else
-            disponibles.push(a);
-    });
-
-    /* ===============================
-       ORDEN ALFABETICO
-    =============================== */
-
-    const getNombre = a =>
-        (a.NombreArtistico || a.Nombre || "").toString();
-
-    const ordenar = (a, b) =>
-        getNombre(a).localeCompare(getNombre(b));
-
-    asignados.sort(ordenar);
-    disponibles.sort(ordenar);
-
-    /* ===============================
-       RENDER GRUPOS
-    =============================== */
-
-    const renderGrupo = (titulo, lista, claseGrupo) => {
-
-        if (!lista.length) return;
-
-        items.insertAdjacentHTML("beforeend", `
-            <div class="rp-check-group ${claseGrupo}">
-                <div class="rp-check-group-title">
-                    ${titulo}
-                    <span class="rp-check-count">(${lista.length})</span>
-                </div>
-            </div>
-        `);
-
-        lista.forEach(a => {
-
-            const id = parseInt(a.Id, 10);
-
-            const esManual = (artistasSeleccionado || []).includes(id);
-            const esAuto = (artistasAutomatico || []).includes(id);
-            const esDesde = (artistasDesdeArtista || []).includes(id);
-
-            let checked = "";
-            let disabled = "";
-            let badge = "";
-            let claseExtra = "";
-
-            if (esManual) {
-                checked = "checked";
-                badge = `<span class="rp-badge manual">Manual</span>`;
-                claseExtra = "manual";
-            }
-            else if (esAuto) {
-                checked = "checked";
-                disabled = "disabled";
-                badge = `<span class="rp-badge auto">Automático</span>`;
-                claseExtra = "auto";
-            }
-            else if (esDesde) {
-                checked = "checked";
-                disabled = "disabled";
-                badge = `<span class="rp-badge cli">Automático</span>`;
-                claseExtra = "cli";
-            }
-
-            const nombre = getNombre(a);
-
-            items.insertAdjacentHTML("beforeend", `
-                <label class="rp-check-item ${claseExtra}"
-                       data-nombre="${nombre.toLowerCase()}">
-
-                    <input type="checkbox"
-                           value="${id}"
-                           ${checked}
-                           ${disabled}
-                           onchange="toggleArtista(${id})">
-
-                    <span class="rp-check-text">
-                        ${nombre}
-                        ${badge}
-                    </span>
-                </label>
-            `);
-        });
-    };
-
-    /* ===============================
-       RENDER FINAL
-    =============================== */
-
-    renderGrupo(
-        `<i class="fa fa-check-circle"></i> Asignados`,
-        asignados,
-        "grupo-asignados"
-    );
-
-    renderGrupo(
-        `<i class="fa fa-list"></i> Disponibles`,
-        disponibles,
-        "grupo-disponibles"
-    );
-
-    activarBuscadorArtistas();
-    actualizarContadoresTabs();
-}
-function toggleArtista(id) {
-
-    id = parseInt(id, 10);
-
-    // bloqueados
-    if ((artistasAutomatico || []).includes(id)) return;
-    if ((artistasDesdeArtista || []).includes(id)) return;
-
-    if ((artistasSeleccionado || []).includes(id))
-        artistasSeleccionado = artistasSeleccionado.filter(x => x !== id);
-    else
-        artistasSeleccionado.push(id);
-
-    renderChecklistArtistas();
-}
-
-function activarBuscadorArtistas() {
-
-    const input = document.getElementById("txtBuscarArtista");
-    if (!input) return;
-
-    input.oninput = function () {
-        const texto = (this.value || "").toLowerCase();
-
-        document.querySelectorAll("#listaArtistasItems .rp-check-item")
-            .forEach(el => {
-                const nombre = (el.getAttribute("data-nombre") || "").toLowerCase();
-                el.style.display = nombre.includes(texto) ? "" : "none";
-            });
-    };
-}
-
-function actualizarContadoresTabs() {
-    const cantRoles = $("#listaRoles input:checked").length;
-
-    const cantArtistas =
-        (artistasSeleccionado?.length || 0) +
-        (artistasDesdeArtista?.length || 0) +
-        (artistasAutomatico?.length || 0);
-
-    $("#contadorRoles").text(`(${cantRoles})`);
-    $("#contadorArtistas").text(`(${cantArtistas})`);
-}
-
-/* =========================
-   VER FICHA
-========================= */
-
-const verFicha = id => {
-    fetch("/Personal/EditarInfo?id=" + id, {
-        method: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + token,
-            'Content-Type': 'application/json'
-        }
-    })
-        .then(r => {
-            if (!r.ok) throw new Error("Ha ocurrido un error.");
-            return r.json();
-        })
-        .then(async dataJson => {
-
-            if (!dataJson) throw new Error("Ha ocurrido un error.");
-
-            await mostrarModal(dataJson);
-
-            setModalSoloLectura(true);
-
-            $("#modalEdicionLabel").text("Ver Personal");
-        })
-        .catch(_ => errorModal("Ha ocurrido un error."));
-};
 
 /* =========================================================
    FILTROS PERSONAL (server side)
