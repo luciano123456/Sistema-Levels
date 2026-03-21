@@ -124,6 +124,7 @@ public class ClientesController : Controller
 
         return Ok(new
         {
+            id = cliente.Id,
             valor = result.Ok,
             mensaje = result.Mensaje,
             tipo = result.Tipo,

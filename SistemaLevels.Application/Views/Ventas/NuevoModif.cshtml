@@ -165,7 +165,13 @@
 
                         <div class="col-md-4">
                             <label class="form-label vn-label">Cliente</label>
-                            <select id="IdCliente" class="form-select vn-input"></select>
+                            <div class="vn-select-plus">
+                                <select id="IdCliente" class="form-select vn-input"></select>
+
+                                <button type="button" id="btnCrearCliente" class="vn-btn-plus">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+                            </div>
                             <div class="invalid-feedback">Campo obligatorio</div>
                         </div>
 
@@ -620,9 +626,11 @@
 
 <div id="modalArtistaHost"></div>
 <div id="modalPersonalHost"></div>
+<div id="modalClienteHost"></div>
 <partial name="~/Views/Utils/Modals.cshtml" />
 <partial name="~/Views/Entities/M_Artistas.cshtml" />
 <partial name="~/Views/Entities/M_Personal.cshtml" />
+<partial name="~/Views/Entities/M_Clientes.cshtml" />
 
 @section Scripts {
 

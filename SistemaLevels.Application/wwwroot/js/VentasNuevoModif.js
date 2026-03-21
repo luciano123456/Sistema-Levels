@@ -1,5 +1,6 @@
 ﻿let modalArtistaVentas = null;
 let modalPersonalVentas = null;
+let modalClienteVentas = null;
 
 (function () {
     "use strict";
@@ -1569,6 +1570,7 @@ let modalPersonalVentas = null;
         try {
             await initModalArtistaVentas();
             await initModalPersonalVentas();
+            await initModalClienteVentas();
             initDuracionMask();
             actualizarVisibilidadContrato();
             actualizarVisibilidadResumenes();
@@ -3125,6 +3127,53 @@ let modalPersonalVentas = null;
         }
     }
 
+    async function initModalClienteVentas() {
+
+        const root = document.querySelector('[data-cliente-modal]');
+
+        modalClienteVentas = new ClienteModal(root, {
+
+            token: token,
+
+            onSaved: async (data, modelo) => {
+
+    try {
+
+        const idNuevo = Number(data.id || modelo.Id || 0);
+
+        const clientes = await vnFetchJson(API.listaClientes);
+
+        VN.clientes = clientes || [];
+
+        const sel = document.getElementById("IdCliente");
+
+        // 🔁 reconstruir select
+        vnFillSelectDom(sel, VN.clientes, "Id", "Nombre", "Seleccionar");
+
+        // 🔥 seleccionar automáticamente
+        if (idNuevo > 0) {
+
+            sel.value = String(idNuevo);
+
+            $("#IdCliente")?.trigger("change.select2");
+
+            // también actualizar hidden
+            document.getElementById("Venta_IdCliente").value = String(idNuevo);
+        }
+
+        vnToastOk("Cliente creado correctamente");
+
+    }
+    catch (e) {
+        console.error("Error recargando clientes", e);
+    }
+
+}
+
+        });
+
+    }
+
     async function initModalArtistaVentas() {
 
         const root = document.querySelector('[data-artista-modal]');
@@ -3191,6 +3240,19 @@ let modalPersonalVentas = null;
 
     }
 
+    document.addEventListener("click", async function (e) {
+
+        if (e.target.closest("#btnCrearCliente")) {
+
+            if (!modalClienteVentas) {
+                console.error("Modal cliente no inicializado");
+                return;
+            }
+
+            await modalClienteVentas.abrirNuevo();
+        }
+
+    });
 
     document.addEventListener("click", async function (e) {
 
