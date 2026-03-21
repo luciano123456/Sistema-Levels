@@ -101,7 +101,9 @@ public class ProductorasController : Controller
             valor = result.Ok,
             mensaje = result.Mensaje,
             tipo = result.Tipo,
-            idReferencia = result.IdReferencia
+            idReferencia = result.IdReferencia,
+            id = prod.Id
+
         });
     }
 

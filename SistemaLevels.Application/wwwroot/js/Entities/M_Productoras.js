@@ -1,23 +1,23 @@
 ﻿(function (window) {
     "use strict";
 
-    class PersonalModal {
+    class ProductoraModal {
         constructor(root, options = {}) {
-            if (!root) throw new Error("PersonalModal requiere un root.");
+            if (!root) throw new Error("ProductoraModal requiere un root.");
 
             this.root = root;
             this.options = Object.assign({
                 token: window.token || "",
                 endpoints: {
-                    editar: "/Personal/EditarInfo?id={id}",
-                    insertar: "/Personal/Insertar",
-                    actualizar: "/Personal/Actualizar",
-                    eliminar: "/Personal/Eliminar?id={id}",
+                    editar: "/Productoras/EditarInfo?id={id}",
+                    insertar: "/Productoras/Insertar",
+                    actualizar: "/Productoras/Actualizar",
+                    eliminar: "/Productoras/Eliminar?id={id}",
                     paises: "/Paises/Lista",
+                    provincias: "/PaisesProvincia/ListaPais?idPais={idPais}",
                     tiposDocumento: "/PaisesTiposDocumentos/Lista",
                     condicionesIva: "/PaisesCondicionesIVA/Lista",
-                    roles: "/PersonalRol/Lista",
-                    artistas: "/Artistas/Lista"
+                    clientes: "/Clientes/Lista"
                 },
                 onSaved: null,
                 onDeleted: null,
@@ -26,21 +26,20 @@
                 onGuardarModelo: null
             }, options || {});
 
-            this.modalEl = this.root.matches("[data-personal-modal]")
+            this.modalEl = this.root.matches("[data-productora-modal]")
                 ? this.root
-                : this.root.querySelector("[data-personal-modal]");
+                : this.root.querySelector("[data-productora-modal]");
 
             if (!this.modalEl) {
-                throw new Error("No se encontró [data-personal-modal].");
+                throw new Error("No se encontró [data-productora-modal].");
             }
 
             this.bsModal = new bootstrap.Modal(this.modalEl);
 
-            this.rolesCatalogo = [];
-            this.artistasCache = [];
-            this.artistasSeleccionado = [];
-            this.artistasDesdeArtista = [];
-            this.artistasAutomatico = [];
+            this.clientesCache = [];
+            this.clientesSeleccionados = [];
+            this.clientesAutomaticos = [];
+            this.clientesDesdeCliente = [];
 
             this._bindEvents();
             this._bindModalEvents();
@@ -135,13 +134,6 @@
             });
         }
 
-        _triggerChange(id) {
-            const el = this._id(id);
-            if (!el) return;
-            const ev = new Event("change", { bubbles: true });
-            el.dispatchEvent(ev);
-        }
-
         _setTitulo(txt) {
             const el = this._id("modalEdicionLabel");
             if (el) el.textContent = txt || "";
@@ -193,6 +185,7 @@
             };
 
             this.ensureSelect2(window.jQuery(this._id("cmbPais")), opts);
+            this.ensureSelect2(window.jQuery(this._id("cmbProvincia")), opts);
             this.ensureSelect2(window.jQuery(this._id("cmbTipoDocumento")), opts);
             this.ensureSelect2(window.jQuery(this._id("cmbCondicionIva")), opts);
         }
@@ -205,16 +198,19 @@
         }
 
         /* =========================
-           ESTADO SOLO LECTURA
+           SOLO LECTURA
         ========================= */
 
         setModalSoloLectura(soloLectura) {
             const disabled = !!soloLectura;
 
+            const txtSoloLectura = this._id("txtSoloLectura");
+            if (txtSoloLectura) txtSoloLectura.value = disabled ? "1" : "0";
+
             this._qa("input, select, textarea").forEach(el => {
                 const id = el.id || "";
 
-                if (id === "txtId") return;
+                if (id === "txtId" || id === "txtSoloLectura") return;
 
                 if (el.type === "checkbox") {
                     if (id === "chkAsociacionAutomatica") {
@@ -233,6 +229,13 @@
                 btnGuardar.classList.toggle("d-none", disabled);
             }
 
+            this._qa("#listaClientes input[type='checkbox']").forEach(chk => {
+                chk.disabled = disabled || chk.disabled;
+            });
+
+            const buscar = this._id("txtBuscarCliente");
+            if (buscar) buscar.disabled = disabled;
+
             this._qa("select").forEach(el => {
                 const $el = window.jQuery(el);
                 if ($el.data("select2")) {
@@ -243,7 +246,7 @@
         }
 
         /* =========================
-           INIT / EVENTS
+           EVENTS
         ========================= */
 
         _bindEvents() {
@@ -267,8 +270,8 @@
                     this.validarCampoIndividual(target);
                 }
 
-                if (target.id === "txtBuscarArtista") {
-                    this._filtrarChecklistArtistas(target.value || "");
+                if (target.id === "txtBuscarCliente") {
+                    this._filtrarChecklistClientes(target.value || "");
                 }
             });
 
@@ -284,9 +287,10 @@
                     await this._onPaisChange();
                 }
 
-                if (target.matches("#listaRoles input[type='checkbox']")) {
-                    this.evaluarBloqueArtistas();
-                    this.actualizarContadoresTabs();
+           
+
+                if (target.id === "chkAsociacionAutomatica") {
+                    this._actualizarEstadoVisualChecklist();
                 }
             });
 
@@ -307,10 +311,20 @@
                 if (window.jQuery) {
                     const $modal = window.jQuery(this.modalEl);
 
-                    $modal.off("select2:select.mpersonal select2:clear.mpersonal change.mpersonal", "select");
-                    $modal.on("select2:select.mpersonal select2:clear.mpersonal change.mpersonal", "select", (e) => {
+                    $modal.off("select2:select.mproductora select2:clear.mproductora change.mproductora", "select");
+                    $modal.on("select2:select.mproductora select2:clear.mproductora change.mproductora", "select", (e) => {
                         this.validarCampoIndividual(e.target);
                     });
+
+                    $modal.on("select2:select.mproductora", "#cmbPais", async (e) => {
+                        console.log("SELECT2 cambio pais");
+                        await this._onPaisChange();
+                    });
+
+                    $modal.off("scroll.select2fixproductora")
+                        .on("scroll.select2fixproductora", () => {
+                            $modal.find("select").select2("close");
+                        });
                 }
             });
 
@@ -339,28 +353,27 @@
             this.limpiarModal();
             this.setModalSoloLectura(false);
 
-            this.artistasSeleccionado = [];
-            this.artistasAutomatico = [];
-            this.artistasDesdeArtista = [];
+            this.clientesSeleccionados = [];
+            this.clientesAutomaticos = [];
+            this.clientesDesdeCliente = [];
 
             await Promise.all([
                 this.listaPaises(),
-                this.listaRoles(),
-                this.cargarArtistasChecklist(true)
+                this.cargarClientesChecklist(true)
             ]);
 
-            this.evaluarPestaniaArtistas();
-
+            this.resetSelect("cmbProvincia", "Seleccionar");
             this.resetSelect("cmbTipoDocumento", "Seleccionar");
             this.resetSelect("cmbCondicionIva", "Seleccionar");
 
             this.inicializarSelect2Modal();
-            this.renderChecklistArtistas();
-            this.activarBuscadorArtistas();
-            this.actualizarContadoresTabs();
+            this.renderChecklistClientes();
+            this.activarBuscadorClientes();
+            this.actualizarContadorClientes();
+            this._actualizarEstadoVisualChecklist();
 
             this._setTextoGuardar("Registrar");
-            this._setTitulo("Nuevo Personal");
+            this._setTitulo("Nueva Productora");
 
             const chk = this._id("chkAsociacionAutomatica");
             if (chk) {
@@ -375,6 +388,12 @@
             if (infoAuditoria) infoAuditoria.classList.add("d-none");
             if (infoRegistro) infoRegistro.innerHTML = "";
             if (infoModificacion) infoModificacion.innerHTML = "";
+
+            const tabDatos = this.modalEl.querySelector('#productoraTabs button[data-bs-target="#tabDatosProductora"]');
+            if (tabDatos) {
+                const tab = new bootstrap.Tab(tabDatos);
+                tab.show();
+            }
 
             this.bsModal.show();
 
@@ -429,7 +448,7 @@
             this.limpiarModal();
             this.setModalSoloLectura(false);
 
-            const tabDatos = this.modalEl.querySelector('#personalTabs button[data-bs-target="#tabDatos"]');
+            const tabDatos = this.modalEl.querySelector('#productoraTabs button[data-bs-target="#tabDatosProductora"]');
             if (tabDatos) {
                 const tab = new bootstrap.Tab(tabDatos);
                 tab.show();
@@ -439,24 +458,34 @@
             this._setFieldValue("txtNombre", modelo.Nombre || "");
             this._setFieldValue("txtDni", modelo.Dni || "");
             this._setFieldValue("txtNumeroDocumento", modelo.NumeroDocumento || "");
-            this._setFieldValue("txtDireccion", modelo.Direccion || "");
             this._setFieldValue("txtTelefono", modelo.Telefono || "");
+            this._setFieldValue("txtTelefonoAlternativo", modelo.TelefonoAlternativo || "");
+            this._setFieldValue("txtDireccion", modelo.Direccion || "");
+            this._setFieldValue("txtLocalidad", modelo.Localidad || "");
+            this._setFieldValue("txtEntreCalles", modelo.EntreCalles || "");
+            this._setFieldValue("txtCodigoPostal", modelo.CodigoPostal || "");
             this._setFieldValue("txtEmail", modelo.Email || "");
-            this._setFieldValue("txtFechaNacimiento", this.normalizarDateInput(modelo.FechaNacimiento));
 
             await Promise.all([
                 this.listaPaises(),
-                this.listaRoles(),
-                this.cargarArtistasChecklist(true)
+                this.cargarClientesChecklist(true)
             ]);
 
-            if (modelo.IdPais != null) {
-                this._setFieldValue("cmbPais", modelo.IdPais, true);
-                await this.listaTiposDocumento(modelo.IdPais);
-                await this.listaCondicionesIva(modelo.IdPais);
+            const idPais = modelo.Idpais ?? modelo.IdPais ?? null;
+
+            if (idPais != null) {
+                this._setFieldValue("cmbPais", idPais, true);
+                await this.listaProvincias(idPais);
+                await this.listaTiposDocumento(idPais);
+                await this.listaCondicionesIva(idPais);
             } else {
+                this.resetSelect("cmbProvincia", "Seleccionar");
                 this.resetSelect("cmbTipoDocumento", "Seleccionar");
                 this.resetSelect("cmbCondicionIva", "Seleccionar");
+            }
+
+            if (modelo.IdProvincia != null) {
+                this._setFieldValue("cmbProvincia", modelo.IdProvincia, true);
             }
 
             if (modelo.IdTipoDocumento != null) {
@@ -467,30 +496,22 @@
                 this._setFieldValue("cmbCondicionIva", modelo.IdCondicionIva, true);
             }
 
-            if (modelo.RolesIds) {
-                this._qa("#listaRoles input[type=checkbox]").forEach(chk => {
-                    const id = parseInt(chk.value, 10);
-                    chk.checked = modelo.RolesIds.includes(id);
-                });
-            }
-
-            this.artistasSeleccionado = Array.isArray(modelo.ArtistasIds)
-                ? modelo.ArtistasIds.map(x => parseInt(x, 10))
+            this.clientesSeleccionados = Array.isArray(modelo.clientesManualesIds)
+                ? modelo.clientesManualesIds.map(x => parseInt(x, 10))
                 : [];
 
-            this.artistasDesdeArtista = Array.isArray(modelo.ArtistasDesdeArtistaIds)
-                ? modelo.ArtistasDesdeArtistaIds.map(x => parseInt(x, 10))
+            this.clientesAutomaticos = Array.isArray(modelo.clientesAutomaticosIds)
+                ? modelo.clientesAutomaticosIds.map(x => parseInt(x, 10))
                 : [];
 
-            this.artistasAutomatico = Array.isArray(modelo.ArtistasAutomaticosIds)
-                ? modelo.ArtistasAutomaticosIds.map(x => parseInt(x, 10))
+            this.clientesDesdeCliente = Array.isArray(modelo.clientesDesdeClienteIds)
+                ? modelo.clientesDesdeClienteIds.map(x => parseInt(x, 10))
                 : [];
 
-            this.evaluarBloqueArtistas();
-            this.renderChecklistArtistas();
-            this.activarBuscadorArtistas();
-            this.actualizarContadoresTabs();
-
+            this.renderChecklistClientes();
+            this.activarBuscadorClientes();
+            this.actualizarContadorClientes();
+            this._actualizarEstadoVisualChecklist();
             this._setAuditoria(modelo);
 
             const chk = this._id("chkAsociacionAutomatica");
@@ -500,7 +521,7 @@
             }
 
             this._setTextoGuardar("Guardar");
-            this._setTitulo(soloLectura ? "Ver Personal" : "Editar Personal");
+            this._setTitulo(soloLectura ? "Ver Productora" : "Editar Productora");
 
             this.bsModal.show();
             this.setModalSoloLectura(soloLectura);
@@ -519,28 +540,33 @@
             if (!this.validarCampos()) return false;
 
             const id = this._getFieldValue("txtId");
-            const fechaNacimiento = this._getFieldValue("txtFechaNacimiento") || null;
 
             const modelo = {
                 Id: id !== "" ? parseInt(id, 10) : 0,
 
                 Nombre: this._getFieldValue("txtNombre"),
-                Dni: this._getFieldValue("txtDni"),
 
-                IdPais: this._getIntOrNull("cmbPais"),
+                Idpais: this._getIntOrNull("cmbPais"),
                 IdTipoDocumento: this._getIntOrNull("cmbTipoDocumento"),
                 NumeroDocumento: this._getFieldValue("txtNumeroDocumento"),
-
-                Direccion: this._getFieldValue("txtDireccion"),
-                Telefono: this._getFieldValue("txtTelefono"),
-                Email: this._getFieldValue("txtEmail"),
-
-                FechaNacimiento: fechaNacimiento,
+                Dni: this._getFieldValue("txtDni"),
 
                 IdCondicionIva: this._getIntOrNull("cmbCondicionIva"),
+                IdProvincia: this._getIntOrNull("cmbProvincia"),
 
-                RolesIds: this.getRolesSeleccionadosIds(),
-                ArtistasIds: [...this.artistasSeleccionado]
+                Telefono: this._getFieldValue("txtTelefono"),
+                TelefonoAlternativo: this._getFieldValue("txtTelefonoAlternativo"),
+
+                Direccion: this._getFieldValue("txtDireccion"),
+                Localidad: this._getFieldValue("txtLocalidad"),
+                EntreCalles: this._getFieldValue("txtEntreCalles"),
+                CodigoPostal: this._getFieldValue("txtCodigoPostal"),
+
+                Email: this._getFieldValue("txtEmail"),
+
+                AsociacionAutomatica: this._getFieldValue("chkAsociacionAutomatica"),
+
+                ClientesIds: [...this.clientesSeleccionados]
             };
 
             if (typeof this.options.onGuardarModelo === "function") {
@@ -592,8 +618,8 @@
                     window.exitoModal(
                         data.mensaje ||
                         (esNuevo
-                            ? "Personal registrado correctamente"
-                            : "Personal modificado correctamente")
+                            ? "Productora registrada correctamente"
+                            : "Productora modificada correctamente")
                     );
                 }
 
@@ -614,9 +640,9 @@
             let confirmado = true;
 
             if (typeof window.confirmarModal === "function") {
-                confirmado = await window.confirmarModal("¿Desea eliminar este registro de personal?");
+                confirmado = await window.confirmarModal("¿Desea eliminar esta productora?");
             } else {
-                confirmado = window.confirm("¿Desea eliminar este registro de personal?");
+                confirmado = window.confirm("¿Desea eliminar esta productora?");
             }
 
             if (!confirmado) return false;
@@ -639,7 +665,7 @@
                 }
 
                 if (typeof window.exitoModal === "function") {
-                    window.exitoModal(data.mensaje || "Personal eliminado correctamente");
+                    window.exitoModal(data.mensaje || "Productora eliminada correctamente");
                 }
 
                 if (typeof this.options.onDeleted === "function") {
@@ -666,6 +692,7 @@
         resetSelect(id, placeholder) {
             const el = this._id(id);
             if (!el) return;
+
             el.innerHTML = "";
             el.append(new Option(placeholder || "Seleccionar", ""));
             this._refreshSelect2Field(id);
@@ -677,6 +704,7 @@
             });
 
             this.resetSelect("cmbPais", "Seleccionar");
+
             const select = this._id("cmbPais");
             (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
@@ -689,8 +717,8 @@
             });
 
             this.resetSelect("cmbTipoDocumento", "Seleccionar");
-            const select = this._id("cmbTipoDocumento");
 
+            const select = this._id("cmbTipoDocumento");
             (data || [])
                 .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
                 .forEach(x => select.append(new Option(x.Nombre, x.Id)));
@@ -704,8 +732,8 @@
             });
 
             this.resetSelect("cmbCondicionIva", "Seleccionar");
-            const select = this._id("cmbCondicionIva");
 
+            const select = this._id("cmbCondicionIva");
             (data || [])
                 .filter(x => !idPaisSeleccionado || x.IdCombo == idPaisSeleccionado)
                 .forEach(x => select.append(new Option(x.Nombre, x.Id)));
@@ -713,139 +741,83 @@
             this.inicializarSelect2Modal();
         }
 
-        async _onPaisChange() {
-            const idPais = this._getFieldValue("cmbPais");
+        async listaProvincias(idPaisSeleccionado = null) {
+            this.resetSelect("cmbProvincia", "Seleccionar");
 
-            const tipoDocActual = this._getFieldValue("cmbTipoDocumento");
-            const ivaActual = this._getFieldValue("cmbCondicionIva");
-
-            await this.listaTiposDocumento(idPais);
-            await this.listaCondicionesIva(idPais);
-
-            if (tipoDocActual) {
-                this._setFieldValue("cmbTipoDocumento", tipoDocActual, true);
+            if (!idPaisSeleccionado) {
+                this.inicializarSelect2Modal();
+                return;
             }
 
-            if (ivaActual) {
-                this._setFieldValue("cmbCondicionIva", ivaActual, true);
-            }
-        }
-
-        /* =========================
-           ROLES
-        ========================= */
-
-        async listaRoles() {
-            const data = await this._fetchJson(this.options.endpoints.roles, {
+            const url = this._replaceUrl(this.options.endpoints.provincias, { idPais: idPaisSeleccionado });
+            const data = await this._fetchJson(url, {
                 headers: this._headers(false)
             });
 
-            this.rolesCatalogo = Array.isArray(data) ? data : [];
+            const select = this._id("cmbProvincia");
+            (data || []).forEach(x => select.append(new Option(x.Nombre, x.Id)));
 
-            const container = this._id("listaRoles");
-            if (!container) return;
-
-            container.innerHTML = "";
-
-            this.rolesCatalogo.forEach(x => {
-                container.insertAdjacentHTML("beforeend", `
-                    <label class="rp-check-item">
-                        <input type="checkbox" value="${x.Id}">
-                        <span>${x.Nombre}</span>
-                    </label>
-                `);
-            });
-
-            this.actualizarContadoresTabs();
+            this.inicializarSelect2Modal();
         }
 
-        getRolesSeleccionadosIds() {
-            const ids = [];
-            this._qa("#listaRoles input[type=checkbox]:checked").forEach(chk => {
-                ids.push(parseInt(chk.value, 10));
-            });
-            return ids;
-        }
+        async _onPaisChange() {
+            const idPais = this._getIntOrNull("cmbPais");
 
-        evaluarPestaniaArtistas() {
-            const rolesIds = this.getRolesSeleccionadosIds();
-            const tieneRol = true;
+            const tipoDocActual = this._getFieldValue("cmbTipoDocumento");
+            const ivaActual = this._getFieldValue("cmbCondicionIva");
+            const provinciaActual = this._getFieldValue("cmbProvincia");
 
-            const tabBtn = this._id("tabArtistasBtn");
-            if (!tabBtn) return;
+            await this.listaTiposDocumento(idPais);
+            await this.listaCondicionesIva(idPais);
+            await this.listaProvincias(idPais);
 
-            if (rolesIds.length > 0 && tieneRol) {
-                tabBtn.classList.remove("d-none");
-            } else {
-                tabBtn.classList.add("d-none");
-                this.artistasSeleccionado = [];
-                this.renderChecklistArtistas();
-                this.actualizarContadoresTabs();
-            }
-        }
-
-        evaluarBloqueArtistas() {
-            this.evaluarPestaniaArtistas();
+            if (tipoDocActual) this._setFieldValue("cmbTipoDocumento", tipoDocActual, true);
+            if (ivaActual) this._setFieldValue("cmbCondicionIva", ivaActual, true);
+            if (provinciaActual) this._setFieldValue("cmbProvincia", provinciaActual, true);
         }
 
         /* =========================
-           ARTISTAS CHECKLIST
+           CLIENTES CHECKLIST
         ========================= */
 
-        async cargarArtistasChecklist(force = false) {
-            if (!force && this.artistasCache.length > 0) return;
+        async cargarClientesChecklist(force = false) {
+            if (!force && this.clientesCache.length > 0) return;
 
             try {
-                const data = await this._fetchJson(this.options.endpoints.artistas, {
+                const data = await this._fetchJson(this.options.endpoints.clientes, {
                     method: "GET",
                     headers: this._headers(false)
                 });
 
-                this.artistasCache = Array.isArray(data) ? data : [];
+                this.clientesCache = Array.isArray(data) ? data : [];
             } catch (e) {
-                console.error("No se pudo cargar Artistas", e);
-                this.artistasCache = [];
+                console.error("No se pudo cargar Clientes", e);
+                this.clientesCache = [];
             }
         }
 
-        renderChecklistArtistas() {
-            const cont = this._id("listaArtistas");
+        renderChecklistClientes() {
+            const cont = this._id("listaClientes");
             if (!cont) return;
 
             cont.innerHTML = "";
 
-            cont.insertAdjacentHTML("beforeend", `
-                <div class="mb-3">
-                    <input type="text"
-                           id="txtBuscarArtista"
-                           class="form-control"
-                           placeholder="Buscar artista...">
-                </div>
-
-                <div class="rp-checklist-box">
-                    <div id="listaArtistasItems" class="rp-checklist"></div>
-                </div>
-            `);
-
-            const items = this._id("listaArtistasItems");
-            if (!items) return;
-
             const asignados = [];
             const disponibles = [];
 
-            (this.artistasCache || []).forEach(a => {
-                const id = parseInt(a.Id, 10);
+            (this.clientesCache || []).forEach(c => {
+                const id = parseInt(c.Id, 10);
 
                 const estaAsignado =
-                    this.artistasSeleccionado.includes(id) ||
-                    this.artistasAutomatico.includes(id) ||
-                    this.artistasDesdeArtista.includes(id);
+                    this.clientesSeleccionados.includes(id) ||
+                    this.clientesAutomaticos.includes(id) ||
+                    this.clientesDesdeCliente.includes(id);
 
-                if (estaAsignado) asignados.push(a);
-                else disponibles.push(a);
+                if (estaAsignado) asignados.push(c);
+                else disponibles.push(c);
             });
 
-            const getNombre = a => (a.NombreArtistico || a.Nombre || "").toString();
+            const getNombre = c => (c.Nombre || "").toString();
 
             const ordenar = (a, b) =>
                 getNombre(a).localeCompare(getNombre(b));
@@ -856,7 +828,7 @@
             const renderGrupo = (titulo, lista, claseGrupo) => {
                 if (!lista.length) return;
 
-                items.insertAdjacentHTML("beforeend", `
+                cont.insertAdjacentHTML("beforeend", `
                     <div class="rp-check-group ${claseGrupo}">
                         <div class="rp-check-group-title">
                             ${titulo}
@@ -865,17 +837,18 @@
                     </div>
                 `);
 
-                lista.forEach(a => {
-                    const id = parseInt(a.Id, 10);
+                lista.forEach(c => {
+                    const id = parseInt(c.Id, 10);
 
-                    const esManual = this.artistasSeleccionado.includes(id);
-                    const esAuto = this.artistasAutomatico.includes(id);
-                    const esDesde = this.artistasDesdeArtista.includes(id);
+                    const esManual = this.clientesSeleccionados.includes(id);
+                    const esAuto = this.clientesAutomaticos.includes(id);
+                    const esDesde = this.clientesDesdeCliente.includes(id);
 
                     let checked = "";
                     let disabled = "";
                     let badge = "";
                     let claseExtra = "";
+
 
                     if (esManual) {
                         checked = "checked";
@@ -895,16 +868,16 @@
                         claseExtra = "cli";
                     }
 
-                    const nombre = getNombre(a);
+                    const nombre = getNombre(c);
 
-                    items.insertAdjacentHTML("beforeend", `
-                         <label class="rp-check-item ${claseExtra}"
+                    cont.insertAdjacentHTML("beforeend", `
+                        <label class="rp-check-item ${claseExtra}"
                                data-nombre="${nombre.toLowerCase()}">
                             <input type="checkbox"
                                    value="${id}"
                                    ${checked}
                                    ${disabled}
-                                   onchange="toggleClienteProductora(${id})">
+                                   onclick="return toggleClienteProductora(${id})">
 
                             <span class="rp-check-text">
                                 ${nombre}
@@ -927,61 +900,74 @@
                 "grupo-disponibles"
             );
 
-            this.activarBuscadorArtistas();
-            this.actualizarContadoresTabs();
+
+
+            this.activarBuscadorClientes();
+            this.actualizarContadorClientes();
+            this._actualizarEstadoVisualChecklist();
+
+            if (this.isSoloLectura()) {
+                this._qa("#listaClientes input[type='checkbox']").forEach(chk => chk.disabled = true);
+            }
         }
 
-        toggleArtista(id) {
+        toggleCliente(id) {
+            if (this.isSoloLectura()) return false;
+
             id = parseInt(id, 10);
 
-            if (this.artistasAutomatico.includes(id)) return;
-            if (this.artistasDesdeArtista.includes(id)) return;
+            if (this.clientesAutomaticos.includes(id) ||
+                this.clientesDesdeCliente.includes(id)) {
 
-            if (this.artistasSeleccionado.includes(id)) {
-                this.artistasSeleccionado = this.artistasSeleccionado.filter(x => x !== id);
-            } else {
-                this.artistasSeleccionado.push(id);
+                this.renderChecklistClientes(); // 🔥 revierte UI
+                return false;
             }
 
-            this.renderChecklistArtistas();
+            if (this.clientesSeleccionados.includes(id)) {
+                this.clientesSeleccionados = this.clientesSeleccionados.filter(x => x !== id);
+            } else {
+                this.clientesSeleccionados.push(id);
+            }
+
+            this.renderChecklistClientes();
+            return false; // 🔥 evita toggle del checkbox
         }
 
-        activarBuscadorArtistas() {
-            const input = this._id("txtBuscarArtista");
+        activarBuscadorClientes() {
+            const input = this._id("txtBuscarCliente");
             if (!input) return;
 
             input.oninput = () => {
                 const texto = (input.value || "").toLowerCase();
-
-                this._qa("#listaArtistasItems .rp-check-item").forEach(el => {
-                    const nombre = (el.getAttribute("data-nombre") || "").toLowerCase();
-                    el.style.display = nombre.includes(texto) ? "" : "none";
-                });
+                this._filtrarChecklistClientes(texto);
             };
         }
 
-        _filtrarChecklistArtistas(texto) {
+        _filtrarChecklistClientes(texto) {
             const t = (texto || "").toLowerCase();
 
-            this._qa("#listaArtistasItems .rp-check-item").forEach(el => {
+            this._qa("#listaClientes .rp-check-item").forEach(el => {
                 const nombre = (el.getAttribute("data-nombre") || "").toLowerCase();
                 el.style.display = nombre.includes(t) ? "" : "none";
             });
         }
 
-        actualizarContadoresTabs() {
-            const cantRoles = this._qa("#listaRoles input:checked").length;
+        actualizarContadorClientes() {
+            const total =
+                (this.clientesSeleccionados?.length || 0) +
+                (this.clientesAutomaticos?.length || 0) +
+                (this.clientesDesdeCliente?.length || 0);
 
-            const cantArtistas =
-                (this.artistasSeleccionado?.length || 0) +
-                (this.artistasDesdeArtista?.length || 0) +
-                (this.artistasAutomatico?.length || 0);
+            const el = this._id("cntClientes");
+            if (el) el.textContent = `(${total})`;
+        }
 
-            const contadorRoles = this._id("contadorRoles");
-            const contadorArtistas = this._id("contadorArtistas");
+        _actualizarEstadoVisualChecklist() {
+            const cont = this._id("listaClientes");
+            const automatico = this._id("chkAsociacionAutomatica")?.checked;
 
-            if (contadorRoles) contadorRoles.textContent = `(${cantRoles})`;
-            if (contadorArtistas) contadorArtistas.textContent = `(${cantArtistas})`;
+            if (!cont) return;
+            cont.style.opacity = automatico ? "0.85" : "1";
         }
 
         /* =========================
@@ -1008,9 +994,12 @@
                 }
             });
 
-            this.artistasSeleccionado = [];
-            this.artistasAutomatico = [];
-            this.artistasDesdeArtista = [];
+            const txtSoloLectura = this._id("txtSoloLectura");
+            if (txtSoloLectura) txtSoloLectura.value = "0";
+
+            this.clientesSeleccionados = [];
+            this.clientesAutomaticos = [];
+            this.clientesDesdeCliente = [];
 
             this.cerrarErrorCampos();
 
@@ -1022,7 +1011,7 @@
             if (infoRegistro) infoRegistro.innerHTML = "";
             if (infoModificacion) infoModificacion.innerHTML = "";
 
-            this.actualizarContadoresTabs();
+            this.actualizarContadorClientes();
             this._refreshAllSelect2();
         }
 
@@ -1030,8 +1019,11 @@
             const camposObligatorios = [
                 "txtNombre",
                 "cmbPais",
+                "cmbProvincia",
                 "txtDni",
-                "txtNumeroDocumento"
+                "txtNumeroDocumento",
+                "txtTelefono",
+                "txtEmail"
             ];
 
             if (!camposObligatorios.includes(el.id)) return true;
@@ -1061,8 +1053,11 @@
             const campos = [
                 { id: "txtNombre", nombre: "Nombre" },
                 { id: "cmbPais", nombre: "País" },
+                { id: "cmbProvincia", nombre: "Provincia" },
                 { id: "txtDni", nombre: "DNI" },
-                { id: "txtNumeroDocumento", nombre: "Número Documento" }
+                { id: "txtNumeroDocumento", nombre: "Número Documento" },
+                { id: "txtTelefono", nombre: "Teléfono" },
+                { id: "txtEmail", nombre: "Correo" }
             ];
 
             let errores = [];
@@ -1139,7 +1134,7 @@
             if (idReferencia) {
                 botonReferencia = `
                     <button class="rp-btn-ref"
-                        onclick="verFicha(${idReferencia})">
+                            onclick="verFichaProductora(${idReferencia})">
                         <i class="fa fa-eye me-1"></i>
                         Abrir ficha existente →
                     </button>`;
@@ -1220,10 +1215,6 @@
             }
         }
 
-        /* =========================
-           HELPERS DE FECHA / SELECT
-        ========================= */
-
         formatearFecha(fecha) {
             try {
                 const d = new Date(fecha);
@@ -1232,41 +1223,33 @@
                 return fecha;
             }
         }
-
-        normalizarDateInput(fecha) {
-            if (!fecha) return "";
-            try {
-                const d = new Date(fecha);
-                if (isNaN(d.getTime())) return "";
-                const yyyy = d.getFullYear();
-                const mm = String(d.getMonth() + 1).padStart(2, "0");
-                const dd = String(d.getDate()).padStart(2, "0");
-                return `${yyyy}-${mm}-${dd}`;
-            } catch {
-                return "";
-            }
-        }
     }
 
-    // Compatibilidad con inline onclicks viejos
-    window.toggleArtista = function (id) {
-        if (window.personalModal && typeof window.personalModal.toggleArtista === "function") {
-            return window.personalModal.toggleArtista(id);
+    window.toggleClienteProductora = function (id) {
+        if (window.productoraModal && typeof window.productoraModal.toggleCliente === "function") {
+            return window.productoraModal.toggleCliente(id);
+        }
+        return false;
+    };
+
+    window.guardarProductora = function () {
+        if (window.productoraModal && typeof window.productoraModal.guardar === "function") {
+            return window.productoraModal.guardar();
         }
     };
 
-    window.guardarPersonal = function () {
-        if (window.personalModal && typeof window.personalModal.guardar === "function") {
-            return window.personalModal.guardar();
+    window.cerrarErrorCamposProductora = function () {
+        if (window.productoraModal && typeof window.productoraModal.cerrarErrorCampos === "function") {
+            return window.productoraModal.cerrarErrorCampos();
         }
     };
 
-    window.cerrarErrorCampos = function () {
-        if (window.personalModal && typeof window.personalModal.cerrarErrorCampos === "function") {
-            return window.personalModal.cerrarErrorCampos();
+    window.verFichaProductora = function (id) {
+        if (window.productoraModal && typeof window.productoraModal.abrirVer === "function") {
+            return window.productoraModal.abrirVer(id);
         }
     };
 
-    window.PersonalModal = PersonalModal;
+    window.ProductoraModal = ProductoraModal;
 
 })(window);

@@ -1,6 +1,7 @@
 ﻿let modalArtistaVentas = null;
 let modalPersonalVentas = null;
 let modalClienteVentas = null;
+let modalProductoraVentas = null;
 
 (function () {
     "use strict";
@@ -304,12 +305,16 @@ let modalClienteVentas = null;
     function ensureSelect2(domSel, options) {
         const jq = $(domSel);
         if (!jq || !jq.length) return;
+
         if (jq.data("select2")) jq.select2("destroy");
+
+        const modal = jq.closest(".modal"); // 👈 clave
 
         jq.select2(Object.assign({
             width: "100%",
             allowClear: true,
-            placeholder: "Seleccionar"
+            placeholder: "Seleccionar",
+            dropdownParent: modal.length ? modal : $(document.body) // 👈 FIX
         }, options || {}));
     }
 
@@ -1571,6 +1576,7 @@ let modalClienteVentas = null;
             await initModalArtistaVentas();
             await initModalPersonalVentas();
             await initModalClienteVentas();
+            await initModalProductoraVentas();
             initDuracionMask();
             actualizarVisibilidadContrato();
             actualizarVisibilidadResumenes();
@@ -1630,6 +1636,19 @@ let modalClienteVentas = null;
         } catch (e) {
             console.error(e);
             vnToastErr("Error inicializando la pantalla de ventas.");
+        }
+    });
+    document.addEventListener("click", function (e) {
+        const isSelect2 =
+            e.target.closest(".select2-container") ||
+            e.target.closest(".select2-dropdown");
+
+        if (!isSelect2) {
+            $(".select2-hidden-accessible").each(function () {
+                if ($(this).data("select2")) {
+                    $(this).select2("close");
+                }
+            });
         }
     });
 
@@ -3174,6 +3193,53 @@ let modalClienteVentas = null;
 
     }
 
+    async function initModalProductoraVentas() {
+
+        const root = document.querySelector('[data-productora-modal]');
+
+        modalProductoraVentas = new ProductoraModal(root, {
+
+            token: token,
+
+            onSaved: async (data, modelo) => {
+
+                try {
+
+                    const idNuevo = Number(data.id || modelo.Id || 0);
+
+                    const productoras = await vnFetchJson(API.productoras);
+
+                    VN.productoras = productoras || [];
+
+                    const sel = document.getElementById("IdProductora");
+
+                    // 🔁 reconstruir select
+                    vnFillSelectDom(sel, VN.productoras, "Id", "Nombre", "Seleccionar");
+
+                    // 🔥 seleccionar automáticamente
+                    if (idNuevo > 0) {
+
+                        sel.value = String(idNuevo);
+
+                        $("#IdProductora")?.trigger("change.select2");
+
+                        // también actualizar hidden
+                        document.getElementById("Venta_IdProductora").value = String(idNuevo);
+                    }
+
+                    vnToastOk("Productora creada correctamente");
+
+                }
+                catch (e) {
+                    console.error("Error recargando clientes", e);
+                }
+
+            }
+
+        });
+
+    }
+
     async function initModalArtistaVentas() {
 
         const root = document.querySelector('[data-artista-modal]');
@@ -3250,6 +3316,16 @@ let modalClienteVentas = null;
             }
 
             await modalClienteVentas.abrirNuevo();
+        }
+
+        if (e.target.closest("#btnCrearProductora")) {
+
+            if (!modalProductoraVentas) {
+                console.error("Modal productora no inicializado");
+                return;
+            }
+
+            await modalProductoraVentas.abrirNuevo();
         }
 
     });

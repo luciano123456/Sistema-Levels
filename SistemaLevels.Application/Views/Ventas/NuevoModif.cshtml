@@ -2,6 +2,7 @@
     ViewData["Title"] = "Ventas - Nuevo / Modificar";
     var id = (int)(ViewBag.Id ?? 0);
     var idCliente = (int)(ViewBag.IdCliente ?? 0);
+    var idProductora = (int)(ViewBag.IdProductora ?? 0);
 }
 
 @section Estilos {
@@ -126,7 +127,8 @@
 
                 <input type="hidden" id="Venta_Id" value="@id" />
                 <input type="hidden" id="Venta_IdCliente" value="@idCliente" />
-
+                <input type="hidden" id="Venta_IdProductora" value="@idProductora" />
+ 
                 <!-- Formato elegido para exportar contrato (word/pdf) -->
                 <input type="hidden" id="Contrato_Formato" value="pdf" />
 
@@ -204,7 +206,14 @@
 
                         <div class="col-md-4">
                             <label class="form-label vn-label">Productora</label>
-                            <select id="IdProductora" class="form-select vn-input"></select>
+                            <div class="vn-select-plus">
+                                <select id="IdProductora" class="form-select vn-input"></select>
+
+                                <button type="button" id="btnCrearProductora" class="vn-btn-plus">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+                            </div>
+
                             <div class="invalid-feedback">Campo obligatorio</div>
                         </div>
 
@@ -624,13 +633,11 @@
 </div>
 
 
-<div id="modalArtistaHost"></div>
-<div id="modalPersonalHost"></div>
-<div id="modalClienteHost"></div>
 <partial name="~/Views/Utils/Modals.cshtml" />
 <partial name="~/Views/Entities/M_Artistas.cshtml" />
 <partial name="~/Views/Entities/M_Personal.cshtml" />
 <partial name="~/Views/Entities/M_Clientes.cshtml" />
+<partial name="~/Views/Entities/M_Productoras.cshtml" />
 
 @section Scripts {
 
@@ -659,7 +666,8 @@
     <script>
         window.VN_INIT = {
             id: @id,
-            idCliente: @idCliente
+            idCliente: @idCliente,
+            idProductora: @idProductora,
         };
 
    
