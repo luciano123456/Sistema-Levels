@@ -1148,47 +1148,36 @@ let modalProductoraVentas = null;
 
     }
     async function exportarContrato(tipo) {
-
         try {
+            if (!validarCamposVenta()) return;
 
-            if (!validarCamposVenta())
+            const idVenta = Number(document.getElementById("Venta_Id")?.value || 0);
+            if (!idVenta) {
+                errorModal("Primero guardá la venta.");
                 return;
+            }
 
-            const model = buildModel();
-            const idTipoContrato = Number(model.IdTipoContrato || 0);
-
+            const idTipoContrato = Number(document.getElementById("IdTipoContrato")?.value || 0);
             if (!idTipoContrato) {
                 errorModal("Seleccioná el Tipo de contrato.");
                 return;
             }
 
-            // ===============================
-            // 1️⃣ Obtener plantilla DOCX
-            // ===============================
+            // 🔥 DATA COMPLETA DESDE BACK
+            const v = await vnFetchJson(API.editarInfo(idVenta));
 
             const tplBuf = await fetchContratoTemplate(
                 idTipoContrato,
                 `Contrato_${idTipoContrato}.docx`
             );
 
-            // ===============================
-            // 2️⃣ Generar datos del contrato
-            // ===============================
+            const data = buildContratoData(v);
 
-            const data = buildContratoData(model);
-
-            // ===============================
-            // 3️⃣ Generar DOCX con docxtemplater
-            // ===============================
+            console.log("DATA CONTRATO:", data);
 
             const blobDocx = renderDocxFromTemplate(tplBuf, data);
 
-            // ===============================
-            // WORD
-            // ===============================
-
             if (tipo === "word") {
-
                 const url = URL.createObjectURL(blobDocx);
 
                 const a = document.createElement("a");
@@ -1202,24 +1191,15 @@ let modalProductoraVentas = null;
                 return;
             }
 
-            // ===============================
-            // PDF
-            // ===============================
-
             const arrayBuffer = await blobDocx.arrayBuffer();
 
-            // convertir DOCX a HTML
             const result = await mammoth.convertToHtml({ arrayBuffer });
-
             const html = result.value;
 
-            // contenedor temporal
             const container = document.createElement("div");
-
             container.style.padding = "40px";
-
-            container.style.left = "-9999px"
-            container.style.top = "-9999px"
+            container.style.left = "-9999px";
+            container.style.top = "-9999px";
             container.style.background = "white";
             container.innerHTML = html;
 
@@ -1245,15 +1225,11 @@ let modalProductoraVentas = null;
             document.body.removeChild(container);
 
             exitoModal("Contrato generado en PDF.");
-
         }
         catch (e) {
-
             console.error(e);
             errorModal("No se pudo generar el contrato.");
-
         }
-
     }
     async function fetchContratoTemplate(idTipoContrato, fallbackName) {
         const r = await fetch(`/Contratos/Descargar?idTipoContrato=${idTipoContrato}&nombre=${encodeURIComponent(fallbackName)}`, {
@@ -1284,122 +1260,68 @@ let modalProductoraVentas = null;
 
     function buildContratoData(v) {
 
-        v = v || {}
+        v = v || {};
 
-        const safe = x => x == null ? "" : String(x)
-        const num = x => Number(x || 0)
+        const safe = x => x == null ? "" : String(x);
+        const num = x => Number(x || 0);
+        const money = n => num(n).toLocaleString("es-AR");
 
-        const money = n =>
-            num(n).toLocaleString("es-AR")
-
-        /* =========================
-           FECHA
-        ========================= */
-
-        let Dia = ""
-        let Mes = ""
-        let Año = ""
-        let FechaEvento = ""
+        let Dia = "";
+        let Mes = "";
+        let Año = "";
+        let FechaEvento = "";
 
         if (v.Fecha) {
-
-            const f = new Date(v.Fecha)
+            const f = new Date(v.Fecha);
 
             if (!isNaN(f)) {
-
-                Dia = f.getDate()
-                Mes = f.toLocaleString("es-AR", { month: "long" })
-                Año = f.getFullYear()
-                FechaEvento = f.toLocaleDateString("es-AR")
-
+                Dia = f.getDate();
+                Mes = f.toLocaleString("es-AR", { month: "long" });
+                Año = f.getFullYear();
+                FechaEvento = f.toLocaleDateString("es-AR");
             }
-
         }
 
-        /* =========================
-           DURACION
-        ========================= */
-
-        let DuracionHora = "0"
-        let DuracionMinuto = "00"
+        let DuracionHora = "0";
+        let DuracionMinuto = "00";
 
         if (v.Duracion) {
-
-            const d = new Date(v.Duracion)
+            const d = new Date(v.Duracion);
 
             if (!isNaN(d)) {
-
-                DuracionHora = d.getHours()
-                DuracionMinuto = String(d.getMinutes()).padStart(2, "0")
-
+                DuracionHora = d.getHours();
+                DuracionMinuto = String(d.getMinutes()).padStart(2, "0");
             }
-
         }
 
-        /* =========================
-           ARTISTAS
-        ========================= */
+        const artistas = Array.isArray(v.Artistas) ? v.Artistas : [];
+        const a1 = artistas[0] || {};
+        const a2 = artistas[1] || {};
 
-        const artistas = Array.isArray(v.Artistas) ? v.Artistas : []
+        const personal = Array.isArray(v.Personal) ? v.Personal : [];
+        const p1 = personal[0] || {};
+        const p2 = personal[1] || {};
 
-        const a1 = artistas[0] || {}
-        const a2 = artistas[1] || {}
+        const importeTotal = num(v.ImporteTotal);
+        const mitad1 = Math.floor(importeTotal / 2);
+        const mitad2 = importeTotal - mitad1;
 
-        /* =========================
-           PERSONAL
-        ========================= */
+        const totalCobrado = num(v.ImporteAbonado);
+        const saldo = num(v.Saldo);
 
-        const personal = Array.isArray(v.Personal) ? v.Personal : []
-
-        const p1 = personal[0] || {}
-        const p2 = personal[1] || {}
-
-        /* =========================
-           IMPORTES
-        ========================= */
-
-        const importeTotal = num(v.ImporteTotal)
-
-        const mitad1 = Math.floor(importeTotal / 2)
-        const mitad2 = importeTotal - mitad1
-
-        const totalCobrado = num(v.ImporteAbonado)
-        const saldo = num(v.Saldo)
-
-        /* =========================
-           CLIENTE
-        ========================= */
-
-        const clienteNombre = safe(v.Cliente)
-
-        /* =========================
-           MONEDA
-        ========================= */
-
-        const moneda = safe(v.Moneda)
-
-        /* =========================
-           ARCHIVO
-        ========================= */
+        const clienteNombre = safe(v.Cliente);
+        const moneda = safe(v.Moneda);
 
         const nombreArchivo =
-
             (safe(v.NombreEvento) || safe(clienteNombre) || "Contrato")
                 .replace(/[^\w\s-]/gi, "")
-                .replace(/\s+/g, "_")
+                .replace(/\s+/g, "_");
 
-        /* =========================
-           DATA
-        ========================= */
-
-        const data = {
-
-            /* CLIENTE */
-
+        return {
             Cliente: clienteNombre,
-            NombreCliente: clienteNombre,
+            NombreCliente: " " + clienteNombre + " ",
 
-            DniCliente: safe(v.DniCliente),
+            DniCliente: " " + safe(v.DniCliente) + " ",
             CuitCliente: safe(v.CuitCliente),
             DomicilioCliente: safe(v.DomicilioCliente),
             TelefonoCliente: safe(v.TelefonoCliente),
@@ -1407,14 +1329,14 @@ let modalProductoraVentas = null;
 
             ProductoraCliente: safe(v.Productora),
 
-            FirmaDNICliente: safe(v.DniCliente),
             FirmaNombreCliente: clienteNombre,
-
-            /* EVENTO */
+            FirmaDNICliente: safe(v.DniCliente),
+            FirmaDniCliente: safe(v.DniCliente),
 
             NombreEvento: safe(v.NombreEvento),
 
             Ubicacion: safe(v.Ubicacion),
+            "Ubicación": safe(v.Ubicacion),
             Lugar: safe(v.Ubicacion),
             Espacio: safe(v.NombreEvento),
 
@@ -1423,31 +1345,23 @@ let modalProductoraVentas = null;
             Año,
             FechaEvento,
 
-            /* SHOW */
-
             DuracionHora,
             DuracionMinuto,
 
             Exclusividad:
-                v.IdOpExclusividad
+                Number(v.IdOpExclusividad || 0) === 1
                     ? " con exclusividad artística según lo pactado entre las partes."
                     : "",
 
-            /* MONEDA */
-
             Moneda: moneda,
-
             NombreMoneda_1: moneda,
             NombreMoneda_2: moneda,
             NombreMoneda_3: moneda,
-
-            /* IMPORTES */
 
             ImporteTotal: importeTotal,
             ImporteTotalTexto: money(importeTotal),
 
             Mitad: mitad1,
-
             Mitad_1: mitad1,
             Mitad_2: mitad2,
 
@@ -1460,69 +1374,53 @@ let modalProductoraVentas = null;
             TotalCobrado: totalCobrado,
             Saldo: saldo,
 
-            /* ARTISTA 1 */
-
             NombreArtista: safe(a1.Artista),
             NombreArtista1: safe(a1.Artista),
+            NombreArtista_2: safe(a1.Artista),
+            FirmaNombreArtista1: safe(a1.Artista),
 
             DniArtista: safe(a1.DniArtista),
             CuitArtista: safe(a1.CuitArtista),
             DomicilioArtista: safe(a1.DomicilioArtista),
-
             FirmaDNIArtista1: safe(a1.DniArtista),
 
-            /* ARTISTA 2 */
-
             NombreArtista2: safe(a2.Artista),
+            FirmaNombreArtista2: safe(a2.Artista),
 
             DniArtista2: safe(a2.DniArtista),
             CuitArtista2: safe(a2.CuitArtista),
             DomicilioArtista2: safe(a2.DomicilioArtista),
-
             FirmaDNIArtista2: safe(a2.DniArtista),
-
-            /* REPRESENTANTE 1 */
 
             NombreRepresentante: safe(a1.Representante),
             NombreRepresentante1: safe(a1.Representante),
+            FirmaNombreRepresentante: safe(a1.Representante),
+            FirmaNombreRepresentante1: safe(a1.Representante),
 
             DniRepresentante: safe(a1.DniRepresentante),
             CuitRepresentante: safe(a1.CuitRepresentante),
             DomicilioRepresentante: safe(a1.DomicilioRepresentante),
-
             FirmaDNIRepresentante: safe(a1.DniRepresentante),
             FirmaDNIRepresentante1: safe(a1.DniRepresentante),
 
-            FirmaNombreRepresentante: safe(a1.Representante),
-
-            /* REPRESENTANTE 2 */
-
             NombreRepresentante2: safe(a2.Representante),
+            FirmaNombreRepresentante2: safe(a2.Representante),
 
             DniRepresentante2: safe(a2.DniRepresentante),
             CuitRepresentante2: safe(a2.CuitRepresentante),
             DomicilioRepresentante2: safe(a2.DomicilioRepresentante),
-
             FirmaDNIRepresentante2: safe(a2.DniRepresentante),
-
-            /* PERSONAL */
 
             NombrePersonal1: safe(p1.Personal),
             CargoPersonal1: safe(p1.Cargo),
-
             NombrePersonal2: safe(p2.Personal),
             CargoPersonal2: safe(p2.Cargo),
 
-            /* CONTROL */
+            DatosArtista2: "",
 
             IdVenta: safe(v.Id),
-
             NombreArchivo: nombreArchivo
-
-        }
-
-        return data
-
+        };
     }
     function textById(list, id) {
         id = Number(id || 0);
@@ -1533,40 +1431,24 @@ let modalProductoraVentas = null;
 
     function renderDocxFromTemplate(arrayBuffer, data) {
 
-        const zip = new PizZip(arrayBuffer)
-
-        Object.keys(zip.files)
-            .filter(f => f.startsWith("word/") && f.endsWith(".xml"))
-            .forEach(file => {
-
-                let xml = zip.file(file).asText()
-
-                // 🔧 UNIR TEXTO PARTIDO POR WORD
-                xml = xml.replace(/<\/w:t>\s*<w:t[^>]*>/g, "")
-
-                // 🔧 limpiar nbsp
-                xml = xml.replace(/\u00A0/g, " ")
-
-                // 🔧 convertir @Campo → {Campo}
-                xml = xml.replace(/@([A-Za-z0-9_]+)/g, "{$1}")
-
-                zip.file(file, xml)
-
-            })
+        const zip = new PizZip(arrayBuffer);
 
         const doc = new docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,
-            nullGetter: () => ""
-        })
+            nullGetter: () => "",
+            delimiters: {
+                start: "{",
+                end: "}"
+            }
+        });
 
-        doc.render(data)
+        doc.render(data);
 
         return doc.getZip().generate({
             type: "blob",
             mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        })
-
+        });
     }
     /* =========================
        INIT
