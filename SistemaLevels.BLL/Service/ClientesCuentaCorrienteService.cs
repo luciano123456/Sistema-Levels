@@ -57,12 +57,13 @@ namespace SistemaLevels.BLL.Service
         public Task<bool> RegistrarAjuste(
             int idCliente,
             int idMoneda,
+            int idCuenta,
             DateTime fecha,
             string concepto,
             decimal debe,
             decimal haber,
             int idUsuario)
-            => _repo.RegistrarAjuste(idCliente, idMoneda, fecha, concepto, debe, haber, idUsuario);
+            => _repo.RegistrarAjuste(idCliente, idMoneda, idCuenta, fecha, concepto, debe, haber, idUsuario);
 
         public Task<bool> Eliminar(int id)
             => _repo.Eliminar(id);

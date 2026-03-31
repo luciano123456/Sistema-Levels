@@ -644,6 +644,7 @@ async function configurarDataTable(data) {
             },
             scrollX: true,
             scrollCollapse: true,
+            order: [],
 
             columns: [
                 {

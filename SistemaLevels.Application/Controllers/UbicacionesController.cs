@@ -48,10 +48,12 @@ public class UbicacionesController : Controller
 
         return Ok(new
         {
+            id = entity.Id,
             valor = result.Ok,
             mensaje = result.Mensaje,
             tipo = result.Tipo,
             idReferencia = result.IdReferencia
+
         });
     }
 

@@ -204,38 +204,119 @@ function formatearFechaParaVista(fecha) {
     return m.isValid() ? m.format('DD/MM/YYYY') : '';
 }
 
-
 function formatearMilesInput(input) {
 
-    // obtener solo números
-    let valor = input.value.replace(/\D/g, "");
+    let value = input.value;
 
-    if (!valor) {
-        input.value = "";
-        return;
-    }
+    if (!value) return;
+
+    // permitir solo números, coma y punto
+    value = value.replace(/[^0-9.,]/g, "");
+
+    // separar decimal (solo primera coma)
+    let parts = value.split(",");
+    let entero = parts[0];
+    let decimal = parts[1] ?? null;
+
+    // limpiar puntos existentes
+    entero = entero.replace(/\./g, "");
 
     // formatear miles
-    input.value = valor.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    if (entero) {
+        entero = Number(entero).toLocaleString("es-AR");
+    }
 
+    // reconstruir
+    input.value = decimal !== null
+        ? `${entero},${decimal}`
+        : entero;
 }
 
-function formatearMiles(valor) {
-    let num = String(valor).replace(/\D/g, '');
-    return num.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
+function parseNumero(valor) {
 
-function formatearSinMiles(valor) {
-    if (!valor) return 0;
+    if (valor == null) return 0;
 
-    // Si no tiene puntos, devolvés directamente el número original
-    if (!valor.includes('.')) return parseFloat(valor) || 0;
+    let limpio = String(valor)
+        .replace(/\./g, "")   // quitar miles
+        .replace(",", ".");   // decimal a punto
 
-    const limpio = valor.replace(/\./g, '').replace(',', '.');
     const num = parseFloat(limpio);
+
     return isNaN(num) ? 0 : num;
 }
 
+function redondear2(n) {
+    const x = Number(n || 0);
+    return Math.round(x * 100) / 100;
+}
+
+function formatearMonedaARS(n) {
+
+    const v = redondear2(Number(n || 0));
+
+    return v.toLocaleString("es-AR", {
+        style: "currency",
+        currency: "ARS",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function formatearNumero(n) {
+
+    return Number(n || 0).toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+
+function formatearMiles(valor) {
+
+    if (!valor) return "";
+
+    let value = String(valor).replace(/[^0-9.,]/g, "");
+
+    let [entero, decimal] = value.split(",");
+
+    entero = (entero || "").replace(/\./g, "");
+
+    if (entero) {
+        entero = Number(entero).toLocaleString("es-AR");
+    }
+
+    return decimal !== undefined
+        ? `${entero},${decimal}`
+        : entero;
+}
+
+function formatearSinMiles(valor) {
+
+    if (valor == null) return 0;
+
+    let s = String(valor).trim();
+
+    if (!s) return 0;
+
+    s = s.replace(/\s/g, "");
+
+    // formato AR → 1.500,30
+    if (s.includes(".") && s.includes(",")) {
+        s = s.replace(/\./g, "").replace(",", ".");
+    }
+    // solo coma → decimal
+    else if (s.includes(",")) {
+        s = s.replace(",", ".");
+    }
+    // solo puntos múltiples → miles
+    else if ((s.match(/\./g) || []).length > 1) {
+        s = s.replace(/\./g, "");
+    }
+
+    const n = parseFloat(s);
+
+    return isNaN(n) ? 0 : n;
+}
 
 let audioContext = null;
 let audioBuffer = null;

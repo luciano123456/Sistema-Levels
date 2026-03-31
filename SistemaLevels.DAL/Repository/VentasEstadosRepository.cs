@@ -35,11 +35,11 @@ namespace SistemaLevels.DAL.Repository
             return true;
         }
 
-        public async Task<bool> Insertar(VentasEstado model)
+        public async Task<int> Insertar(VentasEstado model)
         {
             _dbcontext.VentasEstados.Add(model);
             await _dbcontext.SaveChangesAsync();
-            return true;
+            return model.Id;
         }
 
         public async Task<VentasEstado> Obtener(int id)

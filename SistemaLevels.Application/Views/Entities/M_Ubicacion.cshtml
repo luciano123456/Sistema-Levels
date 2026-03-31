@@ -1,0 +1,66 @@
+﻿<!-- MISMO ESTILO CLIENTES -->
+<link href="~/css/productora.css?v=1.0" rel="stylesheet" />
+<link href="~/css/disenopantallas.css?v=1.0" rel="stylesheet" />
+<link href="~/css/M_Generico.css" rel="stylesheet" />
+
+@* =========================================================
+   M_Productora.cshtml
+   Modal genérico reutilizable de Productora
+   ========================================================= *@
+
+<div data-ubicacion-modal>
+    <div class="modal fade"
+         id="modalUbicacion"
+         tabindex="-1"
+         data-bs-backdrop="static"
+         data-bs-keyboard="false">
+
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+
+                <div class="modal-header colorEncabezado">
+                    <h5 class="modal-title" data-field="titulo">Nueva Ubicación</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <input type="hidden" data-field="Id">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+                            <label>Descripción</label>
+                            <input class="form-control" data-field="Descripcion">
+                            <div class="invalid-feedback">Campo obligatorio</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label>Espacio</label>
+                            <input class="form-control" data-field="Espacio">
+                                  <div class="invalid-feedback">Campo obligatorio</div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label>Dirección</label>
+                            <input class="form-control" data-field="Direccion">
+                            <div class="invalid-feedback">Campo obligatorio</div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+
+                    <button class="btn btn-primary" data-action="guardar">
+                        Guardar
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script src="~/js/entities/M_Ubicacion.js?v=1.0"></script>

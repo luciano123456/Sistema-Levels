@@ -25,34 +25,41 @@ namespace SistemaLevels.DAL.Repository
      string? tipoMov,
      string? texto)
         {
-            var query = _db.Cajas
-                .AsNoTracking()
-                .Include(x => x.IdMonedaNavigation)
-                .Include(x => x.IdCuentaNavigation)
-                .AsQueryable();
 
-            if (fechaDesde.HasValue)
-                query = query.Where(x => x.Fecha >= fechaDesde.Value.Date);
+            try
+            {
+                var query = _db.Cajas
+                    .AsNoTracking()
+                    .Include(x => x.IdMonedaNavigation)
+                    .Include(x => x.IdCuentaNavigation)
+                    .AsQueryable();
 
-            if (fechaHasta.HasValue)
-                query = query.Where(x => x.Fecha <= fechaHasta.Value.Date.AddDays(1).AddTicks(-1));
+                if (fechaDesde.HasValue)
+                    query = query.Where(x => x.Fecha >= fechaDesde.Value.Date);
 
-            if (idMoneda.HasValue)
-                query = query.Where(x => x.IdMoneda == idMoneda.Value);
+                if (fechaHasta.HasValue)
+                    query = query.Where(x => x.Fecha <= fechaHasta.Value.Date.AddDays(1).AddTicks(-1));
 
-            if (idCuenta.HasValue)
-                query = query.Where(x => x.IdCuenta == idCuenta.Value);
+                if (idMoneda.HasValue)
+                    query = query.Where(x => x.IdMoneda == idMoneda.Value);
 
-            if (!string.IsNullOrWhiteSpace(tipoMov))
-                query = query.Where(x => x.TipoMov == tipoMov);
+                if (idCuenta.HasValue)
+                    query = query.Where(x => x.IdCuenta == idCuenta.Value);
 
-            if (!string.IsNullOrWhiteSpace(texto))
-                query = query.Where(x => x.Concepto.Contains(texto));
+                if (!string.IsNullOrWhiteSpace(tipoMov))
+                    query = query.Where(x => x.TipoMov == tipoMov);
 
-            return await query
-                .OrderBy(x => x.Fecha)
-                .ThenBy(x => x.Id)
-                .ToListAsync();
+                if (!string.IsNullOrWhiteSpace(texto))
+                    query = query.Where(x => x.Concepto.Contains(texto));
+
+                return await query
+                    .OrderBy(x => x.Fecha)
+                    .ThenBy(x => x.Id)
+                    .ToListAsync();
+            } catch (Exception ex)
+            {
+                return null;
+            }
         }
 
         public async Task<decimal> SaldoAnterior(

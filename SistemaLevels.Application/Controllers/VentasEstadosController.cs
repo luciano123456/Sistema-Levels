@@ -33,19 +33,21 @@ namespace SistemaLevels.Application.Controllers
             return Ok(lista);
         }
 
-
         [HttpPost]
         public async Task<IActionResult> Insertar([FromBody] VMGenericModel model)
         {
             var VentasEstado = new VentasEstado
             {
-                Id = model.Id,
                 Nombre = model.Nombre,
             };
 
-            bool respuesta = await _VentasEstadosService.Insertar(VentasEstado);
+            var idGenerado = await _VentasEstadosService.Insertar(VentasEstado);
 
-            return Ok(new { valor = respuesta });
+            return Ok(new
+            {
+                valor = true,
+                id = idGenerado
+            });
         }
 
         [HttpPut]

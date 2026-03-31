@@ -25,7 +25,7 @@ public partial class Venta
 
     public string NombreEvento { get; set; } = null!;
 
-    public DateTime Duracion { get; set; }
+    public string Duracion { get; set; } = "";
 
     public int IdCliente { get; set; }
 

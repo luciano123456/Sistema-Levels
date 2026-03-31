@@ -266,7 +266,7 @@ public class VentasController : Controller
                 TotalComision = a.TotalComision,
                 IdArtistaCc = a.IdArtistaCc,
 
-                Artista = a.IdArtistaNavigation?.NombreArtistico
+                Artista = a.IdArtistaNavigation?.Nombre
                           ?? a.IdArtistaNavigation?.Nombre
                           ?? "",
 
