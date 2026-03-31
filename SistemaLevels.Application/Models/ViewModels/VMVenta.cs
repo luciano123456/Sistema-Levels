@@ -10,7 +10,7 @@ namespace SistemaLevels.Application.Models.ViewModels
         public DateTime Fecha { get; set; }
         public int IdUbicacion { get; set; }
         public string NombreEvento { get; set; } = "";
-        public DateTime Duracion { get; set; }
+        public string Duracion { get; set; } = "";
 
         public int IdCliente { get; set; }
         public int IdProductora { get; set; }

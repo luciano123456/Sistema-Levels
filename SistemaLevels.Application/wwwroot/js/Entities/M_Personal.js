@@ -280,10 +280,6 @@
                     this.validarCampoIndividual(target);
                 }
 
-                if (target.id === "cmbPais") {
-                    await this._onPaisChange();
-                }
-
                 if (target.matches("#listaRoles input[type='checkbox']")) {
                     this.evaluarBloqueArtistas();
                     this.actualizarContadoresTabs();
@@ -307,9 +303,17 @@
                 if (window.jQuery) {
                     const $modal = window.jQuery(this.modalEl);
 
-                    $modal.off("select2:select.mpersonal select2:clear.mpersonal change.mpersonal", "select");
-                    $modal.on("select2:select.mpersonal select2:clear.mpersonal change.mpersonal", "select", (e) => {
-                        this.validarCampoIndividual(e.target);
+    
+                    $modal.off("select2:select.mpersonal select2:clear.mpersonal", "select");
+
+                    $modal.on("select2:select.mpersonal select2:clear.mpersonal", "select", async (e) => {
+                        const target = e.target;
+
+                        this.validarCampoIndividual(target);
+
+                        if (target.id === "cmbPais") {
+                            await this._onPaisChange();
+                        }
                     });
                 }
             });

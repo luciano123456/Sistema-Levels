@@ -70,6 +70,8 @@
 
         public int IdMoneda { get; set; }
 
+        public int IdCuenta { get; set; }
+
         public DateTime Fecha { get; set; }
 
         public string Concepto { get; set; } = "";

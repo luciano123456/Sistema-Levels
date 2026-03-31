@@ -157,6 +157,7 @@ namespace SistemaLevels.Controllers
 
                 var resp = await _service.RegistrarAjuste(
                     model.IdArtista,
+                    model.IdCuenta,
                     model.IdMoneda,
                     model.Fecha,
                     model.Concepto,

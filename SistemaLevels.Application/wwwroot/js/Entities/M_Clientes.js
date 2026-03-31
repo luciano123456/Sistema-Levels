@@ -1530,9 +1530,9 @@
                 if (window.jQuery) {
                     const $modal = window.jQuery(this.modalEl);
 
-                    $modal.off("select2:select.mclientes select2:clear.mclientes change.mclientes", "select");
-                    $modal.on("select2:select.mclientes select2:clear.mclientes change.mclientes", "select", (e) => {
-                        this.validarCampoIndividual(e.target);
+                    // 🔥 IMPORTANTE: escuchar cambio de pais con select2
+                    $modal.on("select2:select.mclientes select2:clear.mclientes", "#cmbPais", async (e) => {
+                        await this._onPaisChange();
                     });
                 }
 

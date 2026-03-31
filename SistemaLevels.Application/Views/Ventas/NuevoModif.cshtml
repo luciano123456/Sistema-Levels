@@ -15,45 +15,50 @@
     <link href="~/css/VentasNuevoModif.css?v=1.0" rel="stylesheet" />
 
     <!-- Extras SOLO para la sección Contrato (tiles PDF/Word + layout) -->
-  
 }
 
 <div class="container-fluid mt-4 ventanew">
 
-    <!-- HEADER -->
-    <div class="vn-card mb-3">
-        <div class="vn-card-head">
-            <div class="t">
+    <div class="vn-actions-pro">
+
+        <!-- IZQUIERDA -->
+        <div class="vn-actions-header">
+            <div class="icon">
                 <i class="fa fa-ticket"></i>
-                Ventas
             </div>
-
-            <div class="vn-actions">
-
-                <button class="btn btn-danger vn-btn" id="btnEliminarVenta" type="button">
-                    <i class="fa fa-trash"></i> Eliminar venta
-                </button>
-
-                <button id="btnDraftSave" class="btn btn-outline-light vn-btn" type="button">
-                    <i class="fa fa-save"></i> Guardar borrador
-                </button>
-
-                <div class="vn-actions-secondary">
-                    <button id="btnDraftRestore" class="btn btn-info vn-btn" type="button">
-                        <i class="fa fa-refresh"></i> Restaurar borrador
-                    </button>
-
-                    <button class="btn btn-warning vn-btn" id="btnDraftClear" type="button">
-                        <i class="fa fa-trash"></i> Limpiar borrador
-                    </button>
-                </div>
-
-                <button class="btn btn-primary vn-btn-main" id="btnGuardarVenta" type="button">
-                    <i class="fa fa-check" id="tituloVenta"> Registrar venta</i>
-                </button>
-
-            </div>
+            <div class="title">Ventas</div>
         </div>
+
+        <!-- 🔥 DERECHA (TODO JUNTO) -->
+        <div class="vn-actions-right">
+
+            <button class="vn-btn-main-pro" id="btnGuardarVenta" type="button">
+                <i class="fa fa-check" id="tituloVenta"> Registrar Venta</i>
+            </button>
+
+
+            <button id="btnGuardarBorrador" class="vn-btn-soft">
+                <i class="fa fa-save"></i>
+                Guardar
+            </button>
+
+            <button id="btnRestaurarBorrador" class="vn-btn-soft">
+                <i class="fa fa-refresh"></i>
+                Restaurar
+            </button>
+
+            <button id="btnLimpiarBorrador" class="vn-btn-soft-muted">
+                <i class="fa fa-eraser"></i>
+                Limpiar
+            </button>
+
+            <button id="btnEliminarVenta" class="vn-btn-soft-danger">
+                <i class="fa fa-trash"></i>
+                Eliminar
+            </button>
+
+        </div>
+
     </div>
 
     <div class="vn-grid">
@@ -64,7 +69,9 @@
         <div class="vn-card">
 
             <div class="vn-card-head vn-head-tabs">
+
                 <ul class="vn-head-nav">
+
                     <li>
                         <button class="vn-head-btn active" data-sec="datos" type="button">
                             <i class="fa fa-info-circle"></i>
@@ -125,19 +132,7 @@
 
             <div class="p-3">
 
-                <input type="hidden" id="Venta_Id" value="@id" />
-                <input type="hidden" id="Venta_IdCliente" value="@idCliente" />
-                <input type="hidden" id="Venta_IdProductora" value="@idProductora" />
- 
-                <!-- Formato elegido para exportar contrato (word/pdf) -->
-                <input type="hidden" id="Contrato_Formato" value="pdf" />
-
-                <!-- =====================
-                     DATOS
-                ===================== -->
-                <div class="vn-section active" id="sec-datos">
-
-                    <div id="errorCampos" class="rp-error-panel d-none mb-2">
+                  <div id="errorCampos" class="rp-error-panel d-none mb-2">
                         <div class="rp-error-icon">
                             <i class="fa fa-exclamation-triangle"></i>
                         </div>
@@ -153,6 +148,20 @@
                             <i class="fa fa-times"></i>
                         </button>
                     </div>
+
+                <input type="hidden" id="Venta_Id" value="@id" />
+                <input type="hidden" id="Venta_IdCliente" value="@idCliente" />
+                <input type="hidden" id="Venta_IdProductora" value="@idProductora" />
+
+                <!-- Formato elegido para exportar contrato (word/pdf) -->
+                <input type="hidden" id="Contrato_Formato" value="pdf" />
+
+                <!-- =====================
+                     DATOS
+                ===================== -->
+                <div class="vn-section active" id="sec-datos">
+
+                  
 
                     <!-- ====== BLOQUE: DATOS GENERALES ====== -->
                     <div class="vn-subtitle">
@@ -198,11 +207,20 @@
                                    inputmode="numeric">
                         </div>
 
+
                         <div class="col-md-4">
                             <label class="form-label vn-label">Ubicación</label>
-                            <select id="IdUbicacion" class="form-select vn-input"></select>
+                            <div class="vn-select-plus">
+                                <select id="IdUbicacion" class="form-select vn-input"></select>
+
+                                <button type="button" id="btnCrearUbicacion" class="vn-btn-plus">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+                            </div>
+
                             <div class="invalid-feedback">Campo obligatorio</div>
                         </div>
+
 
                         <div class="col-md-4">
                             <label class="form-label vn-label">Productora</label>
@@ -225,7 +243,15 @@
 
                         <div class="col-md-4">
                             <label class="form-label vn-label">Estado</label>
-                            <select id="IdEstado" class="form-select vn-input"></select>
+
+                            <div class="vn-select-plus">
+                                <select id="IdEstado" class="form-select vn-input"></select>
+
+                                <button type="button" id="btnCrearEstadoVenta" class="vn-btn-plus" title="Agregar estado">
+                                    <i class="fa fa-plus"></i>
+                                </button>
+                            </div>
+
                             <div class="invalid-feedback">Campo obligatorio</div>
                         </div>
 
@@ -262,23 +288,9 @@
 
                     </div>
 
-                   
 
-                    <div class="vn-gridtable">
-                        <table class="table vn-table">
-                            <thead>
-                                <tr>
-                                    <th>Artista</th>
-                                    <th>Representante</th>
-                                    <th>%</th>
-                                    <th>Total comisión</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
 
-                            <tbody id="tbArtistas"></tbody>
-                        </table>
-                    </div>
+                    <div class="vn-cards-wrap" id="tbArtistas"></div>
 
                 </div>
 
@@ -304,22 +316,7 @@
 
                     </div>
 
-                    <div class="vn-gridtable">
-                        <table class="table vn-table">
-                            <thead>
-                                <tr>
-                                    <th>Personal</th>
-                                    <th>Cargo</th>
-                                    <th>Tipo comisión</th>
-                                    <th>%</th>
-                                    <th>Total comisión</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-
-                            <tbody id="tbPersonal"></tbody>
-                        </table>
-                    </div>
+                    <div class="vn-cards-wrap" id="tbPersonal"></div>
 
                 </div>
 
@@ -332,23 +329,7 @@
                         <i class="fa fa-plus"></i> Agregar cobro
                     </button>
 
-                    <div class="vn-gridtable">
-                        <table class="table vn-table">
-                            <thead>
-                                <tr>
-                                    <th>Fecha</th>
-                                    <th>Moneda</th>
-                                    <th>Cuenta</th>
-                                    <th>Importe</th>
-                                    <th>Cotización</th>
-                                    <th>Convertido</th>
-                                    <th></th>
-                                </tr>
-                            </thead>
-
-                            <tbody id="tbCobros"></tbody>
-                        </table>
-                    </div>
+                    <div class="vn-cards-wrap" id="tbCobros"></div>
 
                 </div>
 
@@ -538,6 +519,11 @@
 
             <div class="p-3 vn-summary">
 
+                <div id="alertComisiones" class="vn-alert-warning" style="display:none;">
+                    ⚠ Las comisiones superan el importe total de la venta
+                </div>
+
+
                 <div class="vn-stat">
                     <div class="lbl">Importe total</div>
                     <div class="val" id="sumImporte">$ 0</div>
@@ -638,6 +624,7 @@
 <partial name="~/Views/Entities/M_Personal.cshtml" />
 <partial name="~/Views/Entities/M_Clientes.cshtml" />
 <partial name="~/Views/Entities/M_Productoras.cshtml" />
+<partial name="~/Views/Entities/M_Ubicacion.cshtml" />
 
 @section Scripts {
 
@@ -670,9 +657,9 @@
             idProductora: @idProductora,
         };
 
-   
+
     </script>
 
-    <script src="~/js/VentasNuevoModif.js?v=1.0"></script>
+    <script src="~/js/VentasNuevoModif.js?v=1.2"></script>
 
 }

@@ -22,7 +22,7 @@ namespace SistemaLevels.BLL.Service
             return await _contactRepo.Eliminar(id);
         }
 
-        public async Task<bool> Insertar(VentasEstado model)
+        public async Task<int> Insertar(VentasEstado model)
         {
             return await _contactRepo.Insertar(model);
         }

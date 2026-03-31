@@ -41,6 +41,7 @@ namespace SistemaLevels.DAL.Repository
         Task<bool> RegistrarAjuste(
             int idCliente,
             int idMoneda,
+            int idCuenta,
             DateTime fecha,
             string concepto,
             decimal debe,

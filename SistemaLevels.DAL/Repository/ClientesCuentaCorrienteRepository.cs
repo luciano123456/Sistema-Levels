@@ -113,11 +113,18 @@ namespace SistemaLevels.DAL.Repository
             if (idMoneda.HasValue)
                 query = query.Where(x => x.IdMoneda == idMoneda);
 
-            if (desde.HasValue)
-                query = query.Where(x => x.Fecha >= desde);
-
-            if (hasta.HasValue)
-                query = query.Where(x => x.Fecha <= hasta);
+            if (desde.HasValue || hasta.HasValue)
+            {
+                query = query.Where(x =>
+                    x.Debe > 0 // 🔥 DEBE: SIEMPRE pasa (sin filtro de fecha)
+                    ||
+                    (
+                        x.Haber > 0 && // 🔥 HABER: sí se filtra por fecha
+                        (!desde.HasValue || x.Fecha >= desde) &&
+                        (!hasta.HasValue || x.Fecha <= hasta)
+                    )
+                );
+            }
 
             if (!string.IsNullOrWhiteSpace(tipoMov))
                 query = query.Where(x => x.TipoMov == tipoMov);
@@ -238,34 +245,66 @@ namespace SistemaLevels.DAL.Repository
         }
 
         public async Task<bool> RegistrarAjuste(
-            int idCliente,
-            int idMoneda,
-            DateTime fecha,
-            string concepto,
-            decimal debe,
-            decimal haber,
-            int idUsuario)
+     int idCliente,
+     int idMoneda,
+     int idCuenta, // 🔥 IMPORTANTE
+     DateTime fecha,
+     string concepto,
+     decimal debe,
+     decimal haber,
+     int idUsuario)
         {
-            var mov = new ClientesCuentaCorriente
+            using var trx = await _db.Database.BeginTransactionAsync();
+
+            try
             {
-                IdCliente = idCliente,
-                IdMoneda = idMoneda,
-                TipoMov = TIPO_MOV_AJUSTE,
-                Fecha = fecha,
-                Concepto = concepto,
-                Debe = debe,
-                Haber = haber,
-                IdUsuarioRegistra = idUsuario,
-                FechaRegistra = DateTime.Now
-            };
+                var mov = new ClientesCuentaCorriente
+                {
+                    IdCliente = idCliente,
+                    IdMoneda = idMoneda,
+                    TipoMov = TIPO_MOV_AJUSTE,
+                    Fecha = fecha,
+                    Concepto = concepto,
+                    Debe = debe,
+                    Haber = haber,
+                    IdUsuarioRegistra = idUsuario,
+                    FechaRegistra = DateTime.Now
+                };
 
-            _db.ClientesCuentaCorrientes.Add(mov);
+                _db.ClientesCuentaCorrientes.Add(mov);
+                await _db.SaveChangesAsync();
 
-            await _db.SaveChangesAsync();
+                // 🔥 IMPACTO EN CAJA
+                if (debe > 0 || haber > 0)
+                {
+                    var caja = new Caja
+                    {
+                        TipoMov = TIPO_MOV_AJUSTE,
+                        IdMov = mov.Id,
+                        Fecha = fecha,
+                        Concepto = $"Ajuste cliente {concepto}",
+                        IdMoneda = idMoneda,
+                        IdCuenta = idCuenta,
+                        Ingreso = haber > 0 ? haber : 0,
+                        Egreso = debe > 0 ? debe : 0,
+                        IdUsuarioRegistra = idUsuario,
+                        FechaRegistra = DateTime.Now
+                    };
 
-            return true;
+                    _db.Cajas.Add(caja);
+                    await _db.SaveChangesAsync();
+                }
+
+                await trx.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await trx.RollbackAsync();
+                return false;
+            }
         }
-
         public async Task<bool> Eliminar(int id)
         {
             using var trx = await _db.Database.BeginTransactionAsync();

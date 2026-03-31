@@ -88,6 +88,7 @@ namespace SistemaLevels.Application.Models.ViewModels
         public int IdArtista { get; set; }
 
         public int IdMoneda { get; set; }
+        public int IdCuenta { get; set; }
 
         public DateTime Fecha { get; set; }
 

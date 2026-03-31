@@ -17,6 +17,7 @@ public partial class SistemaLevelsContext : DbContext
     {
     }
 
+
     private readonly IConfiguration _configuration;
 
 
@@ -118,6 +119,7 @@ public partial class SistemaLevelsContext : DbContext
     public virtual DbSet<VentasEstado> VentasEstados { get; set; }
 
     public virtual DbSet<VentasPersonal> VentasPersonals { get; set; }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -1203,7 +1205,9 @@ public partial class SistemaLevelsContext : DbContext
 
         modelBuilder.Entity<Venta>(entity =>
         {
-            entity.Property(e => e.Duracion).HasColumnType("datetime");
+            entity.Property(e => e.Duracion)
+                .HasMaxLength(50)
+                .IsUnicode(false);
             entity.Property(e => e.Fecha).HasColumnType("datetime");
             entity.Property(e => e.FechaHasta).HasColumnType("datetime");
             entity.Property(e => e.FechaModifica).HasColumnType("datetime");

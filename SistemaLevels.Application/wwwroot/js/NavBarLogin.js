@@ -1,5 +1,6 @@
 ﻿let listaVacia = false;
-
+let vieneDeModalConfiguraciones = false;
+window.esModoAtajo = false;
 
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -83,20 +84,28 @@ async function listaConfiguracion() {
 }
 
 
-async function abrirConfiguracion(_nombreConfiguracion, _controllerConfiguracion, _comboNombre = null, _comboController = null, _lblComboNombre) {
-
+async function abrirConfiguracion(
+    _nombreConfiguracion,
+    _controllerConfiguracion,
+    _comboNombre = null,
+    _comboController = null,
+    _lblComboNombre,
+    esAtajo = false
+) {
     try {
 
         nombreConfiguracion = _nombreConfiguracion;
-        controllerConfiguracion = _controllerConfiguracion,
-            comboNombre = _comboNombre,
-            comboController = _comboController,
-            lblComboNombre = _lblComboNombre;
+        controllerConfiguracion = _controllerConfiguracion;
+        comboNombre = _comboNombre;
+        comboController = _comboController;
+        lblComboNombre = _lblComboNombre;
 
-        var result = await llenarConfiguraciones()
+        window.esModoAtajo = esAtajo; // 🔥 CLAVE
+
+        const result = await llenarConfiguraciones();
 
         if (!result) {
-            await errorModal("Ha ocurrido un error al cargar la lista")
+            await errorModal("Ha ocurrido un error al cargar la lista");
             return;
         }
 
@@ -105,32 +114,39 @@ async function abrirConfiguracion(_nombreConfiguracion, _controllerConfiguracion
 
         cancelarModificarConfiguracion();
 
-        $('#txtNombreConfiguracion').off('input').on('input', function () {
-            validarCamposConfiguracion();
-        });
+        // 🔥 MODO ATAJO
+        if (esAtajo) {
 
-        $('#cmbConfiguracion').off('change').on('change', function () {
-            validarCamposConfiguracion();
-        });
+            // ocultar eliminar
+            document.querySelectorAll(".rp-icon-btn.danger").forEach(btn => {
+                btn.style.display = "none";
+            });
 
-        $('#txtBuscarConfiguracion').off('input').on('input', function () {
-            filtrarConfiguraciones();
-        });
+            // abrir directamente en "nuevo"
+            agregarConfiguracion();
 
-        document.getElementById("modalConfiguracionLabel").innerText = "Configuracion de " + nombreConfiguracion;
+        } else {
 
-        const buscador = document.getElementById("txtBuscarConfiguracion");
-        if (buscador) {
-            buscador.value = "";
+            // mostrar eliminar normal
+            document.querySelectorAll(".rp-icon-btn.danger").forEach(btn => {
+                btn.style.display = "";
+            });
         }
 
-        document.getElementById("modalConfiguracionLabel").innerText = "Configuracion de " + nombreConfiguracion;
+        $('#txtNombreConfiguracion').off('input').on('input', validarCamposConfiguracion);
+        $('#cmbConfiguracion').off('change').on('change', validarCamposConfiguracion);
+        $('#txtBuscarConfiguracion').off('input').on('input', filtrarConfiguraciones);
+
+        document.getElementById("modalConfiguracionLabel").innerText =
+            "Configuracion de " + nombreConfiguracion;
+
+        const buscador = document.getElementById("txtBuscarConfiguracion");
+        if (buscador) buscador.value = "";
+
     } catch (ex) {
-        errorModal("Ha ocurrido un error al cargar la lista")
+        errorModal("Ha ocurrido un error al cargar la lista");
     }
-
 }
-
 async function editarConfiguracion(id) {
     fetch("/" + controllerConfiguracion + "/EditarInfo?id=" + id, {
         method: "GET",
@@ -172,6 +188,8 @@ async function editarConfiguracion(id) {
 async function llenarConfiguraciones() {
 
     try {
+
+        let ocultarEliminar = window.esModoAtajo || false;
 
         const buscador = document.getElementById("txtBuscarConfiguracion");
         if (buscador) {
@@ -227,10 +245,12 @@ async function llenarConfiguraciones() {
                 <i class="fa fa-pencil"></i>
             </button>
 
-            <button class="rp-icon-btn danger"
-                onclick="eliminarConfiguracion(${indexado})">
-                <i class="fa fa-trash"></i>
-            </button>
+          ${ocultarEliminar ? "" : `
+<button class="rp-icon-btn danger"
+    onclick="eliminarConfiguracion(${indexado})">
+    <i class="fa fa-trash"></i>
+</button>
+`}
         </div>
     </div>
 `);
@@ -245,6 +265,8 @@ async function llenarConfiguraciones() {
 
     }
 }
+
+
 
 async function eliminarConfiguracion(id) {
 
@@ -271,7 +293,19 @@ async function eliminarConfiguracion(id) {
             if (dataJson.valor) {
                 llenarConfiguraciones()
 
-                exitoModal(nombreConfiguracion + " eliminada correctamente")
+                if (dataJson.valor) {
+                    await llenarConfiguraciones();
+
+                    exitoModal(nombreConfiguracion + " eliminada correctamente");
+
+                    document.dispatchEvent(new CustomEvent("configuracionActualizada", {
+                        detail: {
+                            tipo: controllerConfiguracion,
+                            nuevoId: null,
+                            accion: "eliminar"
+                        }
+                    }));
+                }
             }
         } catch (error) {
             console.error("Ha ocurrido un error:", error);
@@ -339,11 +373,42 @@ function guardarCambiosConfiguracion() {
                 if (!response.ok) throw new Error(response.statusText);
                 return response.json();
             })
-            .then(dataJson => {
-                const mensaje = idConfiguracion === "" ? nombreConfiguracion + " registrado/a correctamente" : nombreConfiguracion + " modificado/a correctamente";
-                llenarConfiguraciones()
+            .then(async dataJson => {
+
+                const esNuevo = idConfiguracion === "";
+
+                const mensaje = esNuevo
+                    ? nombreConfiguracion + " registrado/a correctamente"
+                    : nombreConfiguracion + " modificado/a correctamente";
+
                 cancelarModificarConfiguracion();
-                exitoModal(mensaje)
+
+                const ok = await llenarConfiguraciones();
+
+                if (!ok) {
+                    errorModal("Error recargando la lista");
+                    return;
+                }
+
+                exitoModal(mensaje);
+
+                const nuevoId = dataJson?.id ?? null;
+
+                document.dispatchEvent(new CustomEvent("configuracionActualizada", {
+                    detail: {
+                        tipo: controllerConfiguracion,
+                        nuevoId: nuevoId,
+                        accion: esNuevo ? "insertar" : "actualizar"
+                    }
+                }));
+
+                // 🔥🔥🔥 CLAVE
+                if (window.esModoAtajo) {
+                    setTimeout(() => {
+                        $('#modalConfiguracion').modal('hide');
+                    }, 300);
+                }
+
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -386,6 +451,8 @@ function agregarConfiguracion() {
 }
 
 function abrirConfiguraciones() {
+    vieneDeModalConfiguraciones = true;
+
     $('#ModalEdicionConfiguraciones').modal('show');
     $("#btnGuardarConfiguracion").text("Aceptar");
     $("#modalEdicionLabel").text("Configuraciones");
@@ -406,6 +473,18 @@ function abrirConfiguraciones() {
 function cerrarSesion() {
     localStorage.removeItem('JwtToken'); // Borrar token
     window.location.href = '/Login/Logout'; // Ir al login
+}
+
+function volverConfiguraciones() {
+
+    if (vieneDeModalConfiguraciones) {
+        // volver al modal anterior
+        $('#modalConfiguracion').modal('hide');
+        $('#ModalEdicionConfiguraciones').modal('show');
+    } else {
+        // 🔥 cerrar TODO
+        $('.modal').modal('hide');
+    }
 }
 
 async function abrirContratosPlantillas() {

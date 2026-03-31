@@ -2,6 +2,8 @@
 let modalPersonalVentas = null;
 let modalClienteVentas = null;
 let modalProductoraVentas = null;
+let modalUbicacionVentas = null;
+
 
 (function () {
     "use strict";
@@ -74,6 +76,16 @@ let modalProductoraVentas = null;
         "Content-Type": "application/json"
     });
 
+    function getCotizacionHoyDesdeSistema(idMonedaVenta) {
+
+        if (!idMonedaVenta) return 1;
+
+        const moneda = (VN.combos.monedas || [])
+            .find(x => Number(x.Id) === Number(idMonedaVenta));
+
+        return Number(moneda?.Cotizacion || 1);
+    }
+
     /* =========================
        DRAFT
     ========================= */
@@ -81,6 +93,72 @@ let modalProductoraVentas = null;
         const userId = localStorage.getItem("userId") || "default";
         return `VN_DRAFT_${userId}`;
     };
+
+    function vnFormatInput(valor) {
+
+    if (valor == null || valor === "") return "";
+
+    const num = Number(valor);
+
+    if (isNaN(num)) return "";
+
+    return num.toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+
+    async function recargarEstadosVenta(mantenerSeleccion = true, idSeleccionar = null) {
+        try {
+            const select = document.getElementById("IdEstado");
+            if (!select) return;
+
+            const valorActual = mantenerSeleccion ? select.value : "";
+
+            const estados = await vnFetchJson(API.estadosVenta);
+
+            VN.combos.estados = Array.isArray(estados) ? estados : [];
+
+            vnFillSelectDom(select, VN.combos.estados, "Id", "Nombre", "Seleccionar");
+
+            if (idSeleccionar) {
+                select.value = String(idSeleccionar);
+            } else if (valorActual) {
+                const existe = VN.combos.estados.some(x => String(x.Id) === String(valorActual));
+                if (existe) {
+                    select.value = String(valorActual);
+                }
+            }
+
+            if (window.jQuery && $(select)?.data("select2")) {
+                $(select).trigger("change.select2");
+            } else if (window.jQuery) {
+                $(select).trigger("change");
+            } else {
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+
+        } catch (e) {
+            console.error("Error recargando estados de venta", e);
+        }
+    }
+
+    function registrarListenerConfiguracionesGlobales() {
+        document.addEventListener("configuracionActualizada", async function (e) {
+            try {
+                const detail = e.detail || {};
+                const tipo = detail.tipo || "";
+                const nuevoId = detail.nuevoId || null;
+
+                if (tipo === "VentasEstados") {
+                    await recargarEstadosVenta(true, nuevoId);
+                }
+            } catch (err) {
+                console.error("Error procesando configuracionActualizada", err);
+            }
+        });
+    }
 
     function getCotizacionUSD() {
 
@@ -122,12 +200,22 @@ let modalProductoraVentas = null;
     }
 
     function vnToNumber(v) {
+
         if (v == null) return 0;
-        const s = String(v).trim();
+
+        let s = String(v).trim();
+
         if (!s) return 0;
-        const cleaned = s.replace(/[^\d,-]/g, "").replace(/\./g, "").replace(",", ".");
-        const n = Number(cleaned);
-        return Number.isFinite(n) ? n : 0;
+
+        // quitar miles
+        s = s.replace(/\./g, "");
+
+        // decimal coma → punto
+        s = s.replace(",", ".");
+
+        const n = parseFloat(s);
+
+        return isNaN(n) ? 0 : n;
     }
 
     function vnRound2(n) {
@@ -138,8 +226,15 @@ let modalProductoraVentas = null;
     function vnFmtMoneyARS(n) {
         try {
             const v = vnRound2(Number(n || 0));
-            return v.toLocaleString("es-AR", { style: "currency", currency: "ARS", minimumFractionDigits: 0, maximumFractionDigits: 0 });
-        } catch { return "$ 0"; }
+            return v.toLocaleString("es-AR", {
+                style: "currency",
+                currency: "ARS",
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        } catch {
+            return "$ 0,00";
+        }
     }
 
     function vnIsoLocalFromDate(d) {
@@ -237,69 +332,6 @@ let modalProductoraVentas = null;
     function vnMarkDirty() {
         if (VN.flags.restoringDraft) return;
         VN.flags.dirty = true;
-    }
-
-    function recalcularComisionesPorImporte() {
-
-        const total = Number(document.getElementById("ImporteTotal")?.value || 0);
-
-        // ARTISTAS
-        VN.detalle.artistas.forEach((a, idx) => {
-
-            if (a.PorcComision > 0) {
-
-                a.TotalComision = vnRound2(total * (a.PorcComision / 100));
-
-                const inp = document.querySelector(`input.vn-a-total[data-idx="${idx}"]`);
-                if (inp) inp.value = a.TotalComision;
-
-            } else {
-
-                const val = Number(a.TotalComision || 0);
-
-                a.PorcComision = total > 0
-                    ? vnRound2((val / total) * 100)
-                    : 0;
-
-                const inp = document.querySelector(`input.vn-a-porc[data-idx="${idx}"]`);
-                if (inp) inp.value = a.PorcComision;
-
-            }
-
-        });
-
-
-        // PERSONAL
-        VN.detalle.personal.forEach((p, idx) => {
-
-            const tipo = Number(p.IdTipoComision || 0);
-
-            if (tipo === 1) {
-
-                // porcentaje
-                p.TotalComision = vnRound2(total * (p.PorcComision / 100));
-
-                const inp = document.querySelector(`input.vn-p-total[data-idx="${idx}"]`);
-                if (inp) inp.value = p.TotalComision;
-
-            }
-
-            if (tipo === 2) {
-
-                // fijo → recalcular %
-                const val = Number(p.TotalComision || 0);
-
-                p.PorcComision = total > 0
-                    ? vnRound2((val / total) * 100)
-                    : 0;
-
-                const inp = document.querySelector(`input.vn-p-porc[data-idx="${idx}"]`);
-                if (inp) inp.value = p.PorcComision;
-
-            }
-
-        });
-
     }
 
     function ensureSelect2(domSel, options) {
@@ -863,27 +895,13 @@ let modalProductoraVentas = null;
            COTIZACION USD
         ========================================= */
 
-        function getCotizacionUSD() {
+      
 
-            if (!Array.isArray(VN?.combos?.monedas))
-                return 1;
+        const idMonedaVenta = Number(v.IdMoneda || 0);
+        const cotUSD = getCotizacionHoyDesdeSistema(idMonedaVenta);
 
-            const usd = VN.combos.monedas.find(m => {
-
-                const n = String(m.Nombre || "").toUpperCase();
-
-                return (
-                    n.includes("USD") ||
-                    n.includes("DOLAR")
-                );
-
-            });
-
-            return Number(usd?.Cotizacion || 1);
-
-        }
-
-        const cotUSD = getCotizacionUSD();
+        const monedaNombre = String(v.Moneda || "").toUpperCase();
+        const esUSD = monedaNombre.includes("USD") || monedaNombre.includes("DOLAR") || monedaNombre.includes("US$");
 
         /* =========================================
            CALCULOS
@@ -1096,12 +1114,31 @@ let modalProductoraVentas = null;
         cell(px[2], y, pw[2], 6, "Total ARS", { align: "center" });
         cell(px[3], y, pw[3], 6, "Total USD", { align: "center" });
 
+        let totalPersonalARS = 0;
+        let totalPersonalUSD = 0;
+
         personal.forEach((p, i) => {
 
             const yy = y + 6 + (i * 7);
 
-            const ars = Number(p.TotalComision || 0);
-            const usd = ars / cotUSD;
+            const totalVenta = Number(v.ImporteTotal || 0);
+            const pct = Number(p.PorcComision || 0);
+
+            const total = vnRound2(totalVenta * (pct / 100));
+
+            // 🔥 EL TOTAL YA VIENE EN MONEDA ORIGINAL
+            let ars = 0;
+            let usd = 0;
+
+            if (esUSD) {
+                usd = total;
+                ars = total * cotUSD;
+            } else {
+                ars = total;
+                usd = cotUSD > 0 ? total / cotUSD : 0;
+            }
+            totalPersonalARS += ars;
+            totalPersonalUSD += usd;
 
             cell(px[0], yy, pw[0], 7, `${p.PorcComision}%`, { align: "center" });
             cell(px[1], yy, pw[1], 7, p.Cargo || "");
@@ -1110,8 +1147,8 @@ let modalProductoraVentas = null;
 
         });
 
-        txt(X + W - 3, y + tablePH - 5, `Comisión ARS: $ ${money0(comisionPersonalARS)}`, { align: "right" });
-        txt(X + W - 3, y + tablePH - 1, `Comisión USD: USD ${money0(comisionPersonalUSD)}`, { align: "right" });
+        txt(X + W - 3, y + tablePH - 5, `Comisión ARS: $ ${money0(totalPersonalARS)}`, { align: "right" });
+        txt(X + W - 3, y + tablePH - 1, `Comisión USD: USD ${money0(totalPersonalUSD)}`, { align: "right" });
 
         y += tablePH;
 
@@ -1127,12 +1164,31 @@ let modalProductoraVentas = null;
 
         rect(X, y, W, tableAH);
 
+        let totalArtistaARS = 0;
+        let totalArtistaUSD = 0;
+
         artistas.forEach((a, i) => {
 
             const yy = y + 6 + (i * 7);
 
-            const ars = Number(a.TotalComision || 0);
-            const usd = ars / cotUSD;
+            const totalVenta = Number(v.ImporteTotal || 0);
+            const pct = Number(a.PorcComision || 0);
+
+            const total = vnRound2(totalVenta * (pct / 100));
+
+            let ars = 0;
+            let usd = 0;
+
+            if (esUSD) {
+                usd = total;
+                ars = total * cotUSD;
+            } else {
+                ars = total;
+                usd = cotUSD > 0 ? total / cotUSD : 0;
+            }
+
+            totalArtistaARS += ars;
+            totalArtistaUSD += usd;
 
             cell(px[0], yy, pw[0], 7, `${a.PorcComision}%`, { align: "center" });
             cell(px[1], yy, pw[1], 7, a.Artista || "");
@@ -1141,8 +1197,8 @@ let modalProductoraVentas = null;
 
         });
 
-        txt(X + W - 3, y + tableAH - 5, `Comisión ARS: $ ${money0(comisionArtistaARS)}`, { align: "right" });
-        txt(X + W - 3, y + tableAH - 1, `Comisión USD: USD ${money0(comisionArtistaUSD)}`, { align: "right" });
+        txt(X + W - 3, y + tableAH - 5, `Comisión ARS: $ ${money0(totalArtistaARS)}`, { align: "right" });
+        txt(X + W - 3, y + tableAH - 1, `Comisión USD: USD ${money0(totalArtistaUSD)}`, { align: "right" });
 
         doc.save(generarNombrePDF(v));
 
@@ -1286,11 +1342,12 @@ let modalProductoraVentas = null;
         let DuracionMinuto = "00";
 
         if (v.Duracion) {
-            const d = new Date(v.Duracion);
 
-            if (!isNaN(d)) {
-                DuracionHora = d.getHours();
-                DuracionMinuto = String(d.getMinutes()).padStart(2, "0");
+            const parts = String(v.Duracion).split(":");
+
+            if (parts.length === 2) {
+                DuracionHora = parts[0];
+                DuracionMinuto = parts[1];
             }
         }
 
@@ -1459,6 +1516,7 @@ let modalProductoraVentas = null;
             await initModalPersonalVentas();
             await initModalClienteVentas();
             await initModalProductoraVentas();
+            await initModalUbicacionVentas();
             initDuracionMask();
             actualizarVisibilidadContrato();
             actualizarVisibilidadResumenes();
@@ -1466,6 +1524,8 @@ let modalProductoraVentas = null;
             initSecciones()
             bindUI();
 
+            registrarEventosEstadoVenta();
+            registrarListenerConfiguracionesGlobales();
 
             await cargarCombosBase();
             await cargarClientes();
@@ -1533,29 +1593,56 @@ let modalProductoraVentas = null;
             });
         }
     });
+    document.addEventListener("input", function (e) {
+        const input = e.target;
+        if (!input.classList || !input.classList.contains("Inputmiles")) return;
 
-    document.querySelectorAll(".Inputmiles").forEach(inp => {
+        let value = input.value ?? "";
+        const hadTrailingComma = value.endsWith(",");
 
-        inp.addEventListener("input", function () {
-            formatearMilesInput(this);
-        });
+        value = value.replace(/[^0-9.,]/g, "");
 
+        const firstComma = value.indexOf(",");
+        if (firstComma >= 0) {
+            const before = value.slice(0, firstComma);
+            const after = value.slice(firstComma + 1).replace(/,/g, "");
+            value = before + "," + after;
+        }
+
+        let [entero, decimal] = value.split(",");
+        entero = (entero || "").replace(/\./g, "");
+
+        if (entero !== "") {
+            entero = Number(entero).toLocaleString("es-AR");
+        }
+
+        if (decimal !== undefined) {
+            input.value = `${entero},${decimal}`;
+        } else if (hadTrailingComma) {
+            input.value = `${entero},`;
+        } else {
+            input.value = entero;
+        }
     });
 
     function bindUI() {
+
         const btnGuardar = document.getElementById("btnGuardarVenta");
         const btnReset = document.getElementById("btnReset");
         const btnDraftRestore = document.getElementById("btnDraftRestore");
         const btnDraftClear = document.getElementById("btnDraftClear");
-
         const btnDraftSave = document.getElementById("btnDraftSave");
+
+        /* =========================
+           BOTONES PRINCIPALES
+        ========================= */
 
         btnDraftSave?.addEventListener("click", () => {
             guardarDraft(true);
         });
 
-
         btnGuardar?.addEventListener("click", () => guardarVenta());
+
         btnReset?.addEventListener("click", async () => {
             const ok = await vnConfirm("¿Reiniciar la venta? (no guarda cambios)");
             if (!ok) return;
@@ -1563,6 +1650,7 @@ let modalProductoraVentas = null;
         });
 
         btnDraftRestore?.addEventListener("click", () => restaurarDraft());
+
         btnDraftClear?.addEventListener("click", async () => {
             const ok = await vnConfirm("¿Eliminar el borrador guardado?");
             if (!ok) return;
@@ -1570,6 +1658,9 @@ let modalProductoraVentas = null;
             vnToastOk("Borrador eliminado.");
         });
 
+        /* =========================
+           EXPORTACIONES
+        ========================= */
 
         document.getElementById("btnResumenComisiones")
             ?.addEventListener("click", () => exportarResumen("comisiones"));
@@ -1577,8 +1668,26 @@ let modalProductoraVentas = null;
         document.getElementById("btnResumenCliente")
             ?.addEventListener("click", () => exportarResumen("cliente"));
 
-        // adds
+        document.getElementById("btnContrato")?.addEventListener("click", async () => {
+
+            const idTipoContrato = Number(document.getElementById("IdTipoContrato")?.value || 0);
+
+            if (!idTipoContrato) {
+                vnToastErr("Seleccioná el Tipo de contrato antes de generar.");
+                return;
+            }
+
+            const formato = document.getElementById("Contrato_Formato")?.value || "pdf";
+
+            await exportarContrato(formato);
+        });
+
+        /* =========================
+           AGREGAR DETALLE
+        ========================= */
+
         document.getElementById("btnAddArtista")?.addEventListener("click", () => {
+
             VN.detalle.artistas.push({
                 Id: 0,
                 IdArtista: 0,
@@ -1586,22 +1695,51 @@ let modalProductoraVentas = null;
                 PorcComision: 0,
                 TotalComision: 0
             });
+
             renderDetalle();
             vnMarkDirty();
         });
 
         document.getElementById("btnAddPersonal")?.addEventListener("click", () => {
+
             VN.detalle.personal.push({
                 Id: 0,
                 IdPersonal: 0,
                 IdCargo: 0,
-                IdTipoComision: 0, // 1=% 2=fijo
+                IdTipoComision: 0,
                 PorcComision: 0,
                 TotalComision: 0
             });
+
             renderDetalle();
             vnMarkDirty();
         });
+
+        document.getElementById("btnAddCobro")?.addEventListener("click", () => {
+
+            const idMoneda = Number(document.getElementById("IdMoneda")?.value || 0);
+
+            VN.detalle.cobros.push({
+                Id: 0,
+                Fecha: new Date(),
+                IdMoneda: idMoneda,
+                IdCuenta: 0,
+                Importe: 0,
+                Cotizacion: getCotizacionById(idMoneda),
+                Conversion: 0,
+                ManualConversion: false,
+                NotaCliente: "",
+                NotaInterna: ""
+            });
+
+            renderDetalle();
+            recalcularTotales();
+            vnMarkDirty();
+        });
+
+        /* =========================
+           ELIMINAR VENTA
+        ========================= */
 
         const btnEliminar = document.getElementById("btnEliminarVenta");
 
@@ -1615,16 +1753,13 @@ let modalProductoraVentas = null;
             }
 
             const ok = await confirmarModal("¿Eliminar la venta? Esta acción no se puede deshacer.");
-
             if (!ok) return;
 
             try {
 
                 const r = await fetch(`/Ventas/Eliminar?id=${id}`, {
                     method: "DELETE",
-                    headers: {
-                        "Authorization": "Bearer " + (token || "")
-                    }
+                    headers: { "Authorization": "Bearer " + (token || "") }
                 });
 
                 const data = await r.json();
@@ -1640,88 +1775,108 @@ let modalProductoraVentas = null;
                     window.location.href = "/Ventas";
                 }, 800);
 
-            }
-            catch (e) {
+            } catch (e) {
                 console.error(e);
                 errorModal("Error eliminando la venta.");
             }
+        });
+
+        /* =========================
+           EVENTO GLOBAL (CLAVE)
+        ========================= */
+
+        $(document).on("select2:select select2:clear", "select", function () {
+
+            const el = this;
+
+            // 🔥 FORZAR MISMA LÓGICA
+            handleChangeGlobal(el);
 
         });
 
-        document.getElementById("btnAddCobro")?.addEventListener("click", () => {
-            VN.detalle.cobros.push({
-                Id: 0,
-                Fecha: new Date(),
-                IdMoneda: Number(document.getElementById("IdMoneda")?.value || 0) || 0,
-                IdCuenta: 0,
-                Importe: 0,
-                Cotizacion: 1,
-                Conversion: 0,
-                ManualConversion: false,
-                NotaCliente: "",
-                NotaInterna: ""
-            });
-            renderDetalle();
-            recalcularTotales();
-            vnMarkDirty();
+        document.addEventListener("change", function (e) {
+            handleChangeGlobal(e.target);
         });
 
-        // CONTRATO
-        document.getElementById("btnContrato")?.addEventListener("click", async () => {
+        /* =========================
+           INPUT GLOBAL (CONTROLADO)
+        ========================= */
 
-            const idTipoContrato = Number(document.getElementById("IdTipoContrato")?.value || 0);
+        document.addEventListener("input", function (e) {
 
-            if (!idTipoContrato) {
-                vnToastErr("Seleccioná el Tipo de contrato antes de generar.");
-                return;
+            const el = e.target;
+            if (!el) return;
+
+            // 🔥 IMPORTE TOTAL
+            if (el.id === "ImporteTotal") {
+
+                vnMarkDirty();
+
+                recalcularTodasLasComisiones();
+                recalcularTotales();
             }
 
-            const formato = document.getElementById("Contrato_Formato")?.value || "pdf";
+        });
 
-            await exportarContrato(formato);
+        /* =========================
+           SELECT2 CLOSE (UX)
+        ========================= */
+
+        document.addEventListener("click", function (e) {
+
+            const isSelect2 =
+                e.target.closest(".select2-container") ||
+                e.target.closest(".select2-dropdown");
+
+            if (!isSelect2) {
+                $(".select2-hidden-accessible").each(function () {
+                    if ($(this).data("select2")) {
+                        $(this).select2("close");
+                    }
+                });
+            }
 
         });
 
-        document
-            .querySelectorAll("input, select, textarea")
-            .forEach(el => {
-
-                el.addEventListener("input", () => validarCampoIndividual(el))
-                el.addEventListener("change", () => validarCampoIndividual(el))
-                el.addEventListener("blur", () => validarCampoIndividual(el))
-
-            })
-
-        // mark dirty on main inputs
-        const watchIds = [
-            "IdCliente", "Fecha", "NombreEvento", "Duracion",
-            "IdUbicacion", "IdProductora", "IdMoneda", "IdEstado",
-            "IdTipoContrato", "IdOpExclusividad", "DiasPrevios",
-            "FechaHasta", "ImporteTotal", "NotaInterna", "NotaCliente"
-        ];
-
-        $(document).on("select2:select select2:clear change", "select", function () {
-            validarCampoIndividual(this);
-        });
-
-        const imp = document.getElementById("ImporteTotal");
-
-        imp?.addEventListener("input", () => {
-
-            recalcularComisionesPorImporte();
-            recalcularTotales();
-            vnMarkDirty();
-
-        });
-
-        watchIds.forEach(id => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.addEventListener("input", () => { vnMarkDirty(); recalcularTotales(); });
-            el.addEventListener("change", () => { vnMarkDirty(); recalcularTotales(); });
-        });
     }
 
+    function handleChangeGlobal(el) {
+
+        if (!el) return;
+
+        validarCampoIndividual(el);
+
+        const id = el.id;
+
+        // 🔥 MONEDA
+        if (id === "IdMoneda") {
+
+            vnMarkDirty();
+
+            actualizarCobrosPorCambioMonedaVenta();
+
+            recalcularTodasLasComisiones();
+            recalcularTotales();
+
+            return;
+        }
+
+        const recalcularIds = [
+            "IdCliente",
+            "Fecha",
+            "IdUbicacion",
+            "IdProductora",
+            "IdEstado",
+            "IdTipoContrato"
+        ];
+
+        if (recalcularIds.includes(id)) {
+
+            vnMarkDirty();
+            recalcularTotales();
+        }
+
+    }
     /* =========================
        CARGAS BASE
     ========================= */
@@ -1836,7 +1991,7 @@ let modalProductoraVentas = null;
 
         const d = document.getElementById("Duracion")
         if (d && !d.value)
-            d.value = "00:00"
+            d.value = "02:00"
 
     }
 
@@ -1926,7 +2081,11 @@ let modalProductoraVentas = null;
             // =========================
             const elDur = document.getElementById("Duracion");
             if (elDur) {
-                elDur.value = vnTimeHHmm(v.Duracion); // ✅ "HH:mm"
+                if (typeof v.Duracion === "string") {
+                    elDur.value = v.Duracion;
+                } else {
+                    elDur.value = vnTimeHHmm(v.Duracion);
+                }
             }
 
             // =========================
@@ -1971,7 +2130,7 @@ let modalProductoraVentas = null;
             const elImp = document.getElementById("ImporteTotal");
             if (elImp) {
                 // guardo como número simple, sin "NaN"
-                elImp.value = String(Number(v.ImporteTotal ?? 0));
+                elImp.value = vnFormatInput(v.ImporteTotal);
             }
 
             document.getElementById("NotaInterna").value = v.NotaInterna || "";
@@ -2123,80 +2282,115 @@ let modalProductoraVentas = null;
     function renderArtistas() {
         const tb = document.getElementById("tbArtistas");
         if (!tb) return;
+
         tb.innerHTML = "";
 
-         if (VN.detalle.artistas.length === 0) {
-
-        tb.innerHTML = `
-            <tr class="vn-empty-row">
-                <td colspan="5">
-                    <div class="vn-empty">
-                        <i class="fa fa-music"></i>
-                        <div>No hay artistas cargados</div>
-                        <small>Presioná <b>Agregar artista</b> para comenzar</small>
-                    </div>
-                </td>
-            </tr>
+        if (VN.detalle.artistas.length === 0) {
+            tb.innerHTML = `
+            <div class="vn-empty-card">
+                <div class="vn-empty">
+                    <i class="fa fa-music"></i>
+                    <div>No hay artistas cargados</div>
+                    <small>Presioná <b>Agregar artista</b> para comenzar</small>
+                </div>
+            </div>
         `;
-
-        return;
-    }
+            return;
+        }
 
         VN.detalle.artistas.forEach((it, idx) => {
             tb.insertAdjacentHTML("beforeend", `
-                <tr>
-                    <td><select class="form-select vn-input vn-mini vn-a-artista" data-idx="${idx}"></select></td>
-                    <td><select class="form-select vn-input vn-mini vn-a-rep" data-idx="${idx}"></select></td>
-                    <td><input class="form-control vn-input vn-mini vn-a-porc" data-idx="${idx}" type="number" min="0" step="0.01" value="${Number(it.PorcComision || 0)}"></td>
-                    <td><input class="form-control vn-input  vn-mini vn-a-total Inputmiles" data-idx="${idx}" type="text" value="${Number(it.TotalComision || 0)}"></td>
-                    <td class="text-end">
-                        <button class="btn btn-outline-danger vn-btn vn-mini" type="button" onclick="window.vnDelArtista(${idx})">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `);
+            <div class="vn-item-card">
+                <div class="vn-item-card-head">
+                    <div class="vn-item-card-title">
+                        <i class="fa fa-music"></i>
+                        Artista #${idx + 1}
+                    </div>
+
+                  <button class="vn-btn-delete"
+        type="button"
+        onclick="window.vnDelArtista(${idx})">
+    <i class="fa fa-trash"></i>
+</button>
+                </div>
+
+                <div class="vn-item-grid vn-item-grid-2">
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Artista</label>
+                        <select class="form-select vn-input vn-a-art" data-idx="${idx}"></select>
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Representante</label>
+                        <select class="form-select vn-input vn-a-rep" data-idx="${idx}"></select>
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">% comisión</label>
+                        <input class="form-control vn-input vn-a-porc Inputmiles"
+                               data-idx="${idx}"
+                              type="text"inputmode="decimal"
+                               value="${vnFormatInput(it.PorcComision)}">
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Total comisión</label>
+                        <input class="form-control vn-input vn-a-total Inputmiles"
+                               data-idx="${idx}"
+                               type="text"
+                               value="${vnFormatInput(it.TotalComision)}">
+                    </div>
+                </div>
+            </div>
+        `);
         });
 
-        // fill + select2
-        tb.querySelectorAll("select.vn-a-artista").forEach(sel => {
+        tb.querySelectorAll("select.vn-a-art").forEach(sel => {
             const idx = Number(sel.dataset.idx);
+
             vnFillSelectDom(sel, VN.combos.artistas, "Id", "Nombre", "Seleccionar");
             sel.value = String(VN.detalle.artistas[idx].IdArtista || "");
-            $(sel)?.select2({ width: "100%", allowClear: true, placeholder: "Artista" })
-                .on("change", function () {
-                    VN.detalle.artistas[idx].IdArtista = Number(this.value || 0);
-                    vnMarkDirty();
-                });
+
+            $(sel)?.select2({
+                width: "100%",
+                allowClear: true,
+                placeholder: "Artista"
+            }).on("change", function () {
+                VN.detalle.artistas[idx].IdArtista = Number(this.value || 0);
+                vnMarkDirty();
+            });
         });
 
         tb.querySelectorAll("select.vn-a-rep").forEach(sel => {
             const idx = Number(sel.dataset.idx);
+
             vnFillSelectDom(sel, VN.combos.representantes, "Id", "Nombre", "Seleccionar");
             sel.value = String(VN.detalle.artistas[idx].IdRepresentante || "");
-            $(sel)?.select2({ width: "100%", allowClear: true, placeholder: "Representante" })
-                .on("change", function () {
-                    VN.detalle.artistas[idx].IdRepresentante = Number(this.value || 0);
-                    vnMarkDirty();
-                });
+
+            $(sel)?.select2({
+                width: "100%",
+                allowClear: true,
+                placeholder: "Representante"
+            }).on("change", function () {
+                VN.detalle.artistas[idx].IdRepresentante = Number(this.value || 0);
+                vnMarkDirty();
+            });
         });
 
-        // % change => recalcular total
         tb.querySelectorAll("input.vn-a-porc").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.artistas[idx].PorcComision = formatearMiles(Number(this.value || 0));
-                calcArtistaFromPercent(idx);
+                VN.detalle.artistas[idx].PorcComision = vnToNumber(this.value);
+                recalcularTodasLasComisiones();
                 recalcularTotales();
                 vnMarkDirty();
             });
         });
 
-        // total change => recalcular %
         tb.querySelectorAll("input.vn-a-total").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
-                VN.detalle.artistas[idx].TotalComision = formatearMiles(vnToNumber(this.value));
+                VN.detalle.artistas[idx].TotalComision = vnToNumber(this.value);
                 calcArtistaFromTotal(idx);
                 recalcularTotales();
                 vnMarkDirty();
@@ -2204,14 +2398,82 @@ let modalProductoraVentas = null;
         });
     }
 
-    function calcArtistaFromPercent(idx) {
-        const it = VN.detalle.artistas[idx];
+    function actualizarCobrosPorCambioMonedaVenta() {
+
+        const idMonedaVenta = Number(document.getElementById("IdMoneda")?.value || 0);
+        if (!idMonedaVenta) return;
+
+        const cotVenta = getCotizacionById(idMonedaVenta);
+
+        VN.detalle.cobros.forEach((c, idx) => {
+
+            const idMonedaCobro = Number(c.IdMoneda || 0);
+            if (!idMonedaCobro) return;
+
+            const cotCobro = Number(c.Cotizacion || getCotizacionById(idMonedaCobro));
+            const importe = Number(c.Importe || 0);
+
+            if (!c.ManualConversion) {
+
+                const conversion = importe * (cotCobro / cotVenta);
+
+                c.Conversion = vnRound2(conversion);
+
+                // 🔥 actualizar input UI
+                const elConv = document.querySelector(`input.vn-c-conv[data-idx="${idx}"]`);
+                if (elConv) elConv.value = c.Conversion;
+            }
+
+        });
+
+        recalcularTotales();
+    }
+
+    function recalcularTodasLasComisiones() {
+
         const total = vnGetImporteTotal();
-        const pct = Number(it.PorcComision || 0);
-        it.TotalComision = vnRound2(total * (pct / 100));
-        // refrescar celda total sin rerender completo
-        const inp = document.querySelector(`input.vn-a-total[data-idx="${idx}"]`);
-        if (inp) inp.value = formatearMiles(String(it.TotalComision || 0));
+
+        // 🔥 ARTISTAS
+        VN.detalle.artistas.forEach((a, idx) => {
+
+            const pct = Number(a.PorcComision || 0);
+
+            a.TotalComision = vnRound2(total * (pct / 100));
+
+            const el = document.querySelector(`input.vn-a-total[data-idx="${idx}"]`);
+            if (el) el.value = a.TotalComision;
+
+        });
+
+        // 🔥 PERSONAL
+        VN.detalle.personal.forEach((p, idx) => {
+
+            const tipo = Number(p.IdTipoComision || 0);
+
+            if (tipo === 1) {
+                // porcentaje
+                const pct = Number(p.PorcComision || 0);
+
+                p.TotalComision = vnRound2(total * (pct / 100));
+
+                const el = document.querySelector(`input.vn-p-total[data-idx="${idx}"]`);
+                if (el) el.value = p.TotalComision;
+            }
+
+            if (tipo === 2) {
+                // fijo → recalcular porcentaje
+                const val = Number(p.TotalComision || 0);
+
+                p.PorcComision = total > 0
+                    ? vnRound2((val / total) * 100)
+                    : 0;
+
+                const el = document.querySelector(`input.vn-p-porc[data-idx="${idx}"]`);
+                if (el) el.value = p.PorcComision;
+            }
+
+        });
+
     }
 
     function calcArtistaFromTotal(idx) {
@@ -2226,115 +2488,148 @@ let modalProductoraVentas = null;
     function renderPersonal() {
         const tb = document.getElementById("tbPersonal");
         if (!tb) return;
+
         tb.innerHTML = "";
 
         if (VN.detalle.personal.length === 0) {
-
             tb.innerHTML = `
-            <tr class="vn-empty-row">
-                <td colspan="6">
-                    <div class="vn-empty">
-                        <i class="fa fa-id-badge"></i>
-                        <div>No hay personal asignado</div>
-                        <small>Presioná <b>Agregar personal</b> para comenzar</small>
-                    </div>
-                </td>
-            </tr>
+            <div class="vn-empty-card">
+                <div class="vn-empty">
+                    <i class="fa fa-id-badge"></i>
+                    <div>No hay personal asignado</div>
+                    <small>Presioná <b>Agregar personal</b> para comenzar</small>
+                </div>
+            </div>
         `;
-
             return;
         }
-
 
         VN.detalle.personal.forEach((it, idx) => {
             const isFixed = Number(it.IdTipoComision || 0) === 2;
 
             tb.insertAdjacentHTML("beforeend", `
-                <tr>
-                    <td><select class="form-select vn-input vn-mini vn-p-personal" data-idx="${idx}"></select></td>
-                    <td><select class="form-select vn-input vn-mini vn-p-cargo" data-idx="${idx}"></select></td>
-                    <td><select class="form-select vn-input vn-mini vn-p-tipo" data-idx="${idx}"></select></td>
-                    <td>
-                        <input class="form-control vn-input vn-mini vn-p-porc Inputmiles" data-idx="${idx}"
-                               type="number" min="0" step="0.01" value="${Number(it.PorcComision || 0)}" ${isFixed ? "disabled" : ""}>
-                    </td>
-                    <td><input class="form-control vn-input vn-mini vn-p-total Inputmiles" data-idx="${idx}" type="text" value="${Number(it.TotalComision || 0)}"></td>
-                    <td class="text-end">
-                        <button class="btn btn-outline-danger vn-btn vn-mini" type="button" onclick="window.vnDelPersonal(${idx})">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `);
+            <div class="vn-item-card">
+                <div class="vn-item-card-head">
+                    <div class="vn-item-card-title">
+                        <i class="fa fa-id-badge"></i>
+                        Personal #${idx + 1}
+                    </div>
+
+                     <button class="vn-btn-delete"
+        type="button"
+                            onclick="window.vnDelPersonal(${idx})">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+
+                <div class="vn-item-grid vn-item-grid-2">
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Personal</label>
+                        <select class="form-select vn-input vn-p-personal" data-idx="${idx}"></select>
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Cargo</label>
+                        <select class="form-select vn-input vn-p-cargo" data-idx="${idx}"></select>
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Tipo comisión</label>
+                        <select class="form-select vn-input vn-p-tipo" data-idx="${idx}"></select>
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">% comisión</label>
+                        <input class="form-control vn-input vn-p-porc Inputmiles"
+                               data-idx="${idx}"
+                              type="text"
+                              inputmode="decimal"
+                               value="${vnFormatInput(it.PorcComision)}"
+                               ${isFixed ? "disabled" : ""}>
+                    </div>
+
+                    <div class="vn-field vn-field-full">
+                        <label class="vn-label-sm">Total comisión</label>
+                        <input class="form-control vn-input vn-p-total Inputmiles"
+                               data-idx="${idx}"
+                               type="text"
+                               value="${vnFormatInput(it.TotalComision)}">
+                    </div>
+                </div>
+            </div>
+        `);
         });
 
-        // select2: personal
         tb.querySelectorAll("select.vn-p-personal").forEach(sel => {
             const idx = Number(sel.dataset.idx);
+
             vnFillSelectDom(sel, VN.combos.personal, "Id", "Nombre", "Seleccionar");
             sel.value = String(VN.detalle.personal[idx].IdPersonal || "");
-            $(sel)?.select2({ width: "100%", allowClear: true, placeholder: "Personal" })
-                .on("change", function () {
-                    VN.detalle.personal[idx].IdPersonal = Number(this.value || 0);
-                    vnMarkDirty();
-                });
+
+            $(sel)?.select2({
+                width: "100%",
+                allowClear: true,
+                placeholder: "Personal"
+            }).on("change", function () {
+                VN.detalle.personal[idx].IdPersonal = Number(this.value || 0);
+                vnMarkDirty();
+            });
         });
 
-        // cargo
         tb.querySelectorAll("select.vn-p-cargo").forEach(sel => {
             const idx = Number(sel.dataset.idx);
+
             vnFillSelectDom(sel, VN.combos.cargos, "Id", "Nombre", "Seleccionar");
             sel.value = String(VN.detalle.personal[idx].IdCargo || "");
-            $(sel)?.select2({ width: "100%", allowClear: true, placeholder: "Cargo" })
-                .on("change", function () {
-                    VN.detalle.personal[idx].IdCargo = Number(this.value || 0);
-                    vnMarkDirty();
-                });
+
+            $(sel)?.select2({
+                width: "100%",
+                allowClear: true,
+                placeholder: "Cargo"
+            }).on("change", function () {
+                VN.detalle.personal[idx].IdCargo = Number(this.value || 0);
+                vnMarkDirty();
+            });
         });
 
-        // tipo comision
         tb.querySelectorAll("select.vn-p-tipo").forEach(sel => {
             const idx = Number(sel.dataset.idx);
+
             vnFillSelectDom(sel, VN.combos.tiposComision, "Id", "Nombre", "Seleccionar");
             sel.value = String(VN.detalle.personal[idx].IdTipoComision || "");
-            $(sel)?.select2({ width: "100%", allowClear: true, placeholder: "Tipo comisión" })
-                .on("change", function () {
-                    VN.detalle.personal[idx].IdTipoComision = Number(this.value || 0);
 
-                    // si es fijo (2), deshabilita % y recalcula % informativo
-                    const isFixed = VN.detalle.personal[idx].IdTipoComision === 2;
-                    const porcEl = document.querySelector(`input.vn-p-porc[data-idx="${idx}"]`);
-                    if (porcEl) porcEl.disabled = isFixed;
+            $(sel)?.select2({
+                width: "100%",
+                allowClear: true,
+                placeholder: "Tipo comisión"
+            }).on("change", function () {
+                const tipo = Number(this.value || 0);
+                VN.detalle.personal[idx].IdTipoComision = tipo;
 
-                    // recalcular según tipo
-                    if (isFixed) {
-                        calcPersonalFixed(idx);
-                    } else {
-                        calcPersonalFromPercent(idx);
-                    }
-                    recalcularTotales();
-                    vnMarkDirty();
-                });
-        });
+                const inpPct = document.querySelector(`input.vn-p-porc[data-idx="${idx}"]`);
+                if (inpPct) inpPct.disabled = (tipo === 2);
 
-        // % change => recalcular total (solo si tipo=%)
-        tb.querySelectorAll("input.vn-p-porc").forEach(inp => {
-            inp.addEventListener("input", function () {
-                const idx = Number(this.dataset.idx);
-                VN.detalle.personal[idx].PorcComision = Number(this.value || 0);
-
-                const tipo = Number(VN.detalle.personal[idx].IdTipoComision || 0);
                 if (tipo === 1) {
-                    calcPersonalFromPercent(idx);
+                    recalcularTodasLasComisiones();
+                } else if (tipo === 2) {
+                    calcPersonalFixed(idx);
                 }
+
                 recalcularTotales();
                 vnMarkDirty();
             });
         });
 
-        // total change => comportamiento:
-        // - si tipo=1 (%): recalcula %
-        // - si tipo=2 (fijo): mantiene total, recalcula % informativo
+        tb.querySelectorAll("input.vn-p-porc").forEach(inp => {
+            inp.addEventListener("input", function () {
+                const idx = Number(this.dataset.idx);
+                VN.detalle.personal[idx].PorcComision = vnToNumber(this.value);
+                recalcularTodasLasComisiones();
+                recalcularTotales();
+                vnMarkDirty();
+            });
+        });
+
         tb.querySelectorAll("input.vn-p-total").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
@@ -2346,6 +2641,7 @@ let modalProductoraVentas = null;
                 } else if (tipo === 2) {
                     calcPersonalFixed(idx);
                 }
+
                 recalcularTotales();
                 vnMarkDirty();
             });
@@ -2383,117 +2679,153 @@ let modalProductoraVentas = null;
     function renderCobros() {
         const tb = document.getElementById("tbCobros");
         if (!tb) return;
+
         tb.innerHTML = "";
 
         if (VN.detalle.cobros.length === 0) {
-
             tb.innerHTML = `
-            <tr class="vn-empty-row">
-                <td colspan="7">
-                    <div class="vn-empty">
-                        <i class="fa fa-money"></i>
-                        <div>No hay cobros registrados</div>
-                        <small>Podés agregar cobros cuando empiecen los pagos</small>
-                    </div>
-                </td>
-            </tr>
+            <div class="vn-empty-card">
+                <div class="vn-empty">
+                    <i class="fa fa-money"></i>
+                    <div>No hay cobros registrados</div>
+                    <small>Podés agregar cobros cuando empiecen los pagos</small>
+                </div>
+            </div>
         `;
-
             return;
         }
 
         VN.detalle.cobros.forEach((it, idx) => {
             const fechaIso = vnIsoLocalFromDate(it.Fecha || new Date());
+
             tb.insertAdjacentHTML("beforeend", `
-                <tr>
-                    <td><input class="form-control vn-input vn-mini vn-c-fecha" data-idx="${idx}" type="datetime-local" value="${fechaIso}"></td>
-                    <td><select class="form-select vn-input vn-mini vn-c-mon" data-idx="${idx}"></select></td>
-                    <td><select class="form-select vn-input vn-mini vn-c-cuenta" data-idx="${idx}"></select></td>
-                    <td><input class="form-control vn-input vn-mini vn-c-imp Inputmiles" data-idx="${idx}" type="text" value="${Number(it.Importe || 0)}"></td>
-                    <td><input class="form-control vn-input vn-mini vn-c-cot Inputmiles" data-idx="${idx}" type="number" step="0.0001" min="0" value="${Number(it.Cotizacion || 1)}"></td>
-                    <td><input class="form-control vn-input vn-mini vn-c-conv Inputmiles" data-idx="${idx}" type="text" value="${Number(it.Conversion || 0)}"></td>
-                    <td class="text-end">
-                        <button class="btn btn-outline-danger vn-btn vn-mini" type="button" onclick="window.vnDelCobro(${idx})">
-                            <i class="fa fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-            `);
+            <div class="vn-item-card">
+                <div class="vn-item-card-head">
+                    <div class="vn-item-card-title">
+                        <i class="fa fa-money"></i>
+                        Cobro #${idx + 1}
+                    </div>
+
+                     <button class="vn-btn-delete"
+        type="button"
+                            onclick="window.vnDelCobro(${idx})">
+                        <i class="fa fa-trash"></i>
+                    </button>
+                </div>
+
+                <div class="vn-item-grid vn-item-grid-2">
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Fecha</label>
+                        <input class="form-control vn-input vn-c-fecha"
+                               data-idx="${idx}"
+                               type="datetime-local"
+                               value="${fechaIso}">
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Moneda</label>
+                        <select class="form-select vn-input vn-c-mon" data-idx="${idx}"></select>
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Cuenta</label>
+                        <select class="form-select vn-input vn-c-cuenta" data-idx="${idx}"></select>
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Importe</label>
+                        <input class="form-control vn-input vn-c-imp Inputmiles"
+                               data-idx="${idx}"
+                               type="text"
+                               value="${Number(it.Importe || 0)}">
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Cotización</label>
+                        <input class="form-control vn-input vn-c-cot Inputmiles"
+                               data-idx="${idx}"
+                               type="text"
+                               inputmode="decimal"
+                               value="${Number(it.Cotizacion || 1)}">
+                    </div>
+
+                    <div class="vn-field">
+                        <label class="vn-label-sm">Convertido</label>
+                        <input class="form-control vn-input vn-c-conv Inputmiles"
+                               data-idx="${idx}"
+                               type="text"
+                               value="${Number(it.Conversion || 0)}">
+                    </div>
+                </div>
+            </div>
+        `);
         });
 
-        // moneda
-       tb.querySelectorAll("select.vn-c-mon").forEach(sel => {
-
-    const idx = Number(sel.dataset.idx);
-
-    vnFillSelectDom(sel, VN.combos.monedas, "Id", "Nombre", "Seleccionar");
-
-    sel.value = String(VN.detalle.cobros[idx].IdMoneda || "");
-
-    $(sel)?.select2({
-        width: "100%",
-        allowClear: true,
-        placeholder: "Moneda"
-    })
-    .on("change", function () {
-
-        const idMoneda = Number(this.value || 0);
-
-        VN.detalle.cobros[idx].IdMoneda = idMoneda;
-
-        // 🔹 buscar moneda
-        const moneda = VN.combos.monedas.find(m => Number(m.Id) === idMoneda);
-
-        if (moneda) {
-
-            const cot = Number(moneda.Cotizacion || 1);
-
-            VN.detalle.cobros[idx].Cotizacion = formatearMiles(cot);
-
-            const cotEl = document.querySelector(`input.vn-c-cot[data-idx="${idx}"]`);
-
-            if (cotEl)
-                cotEl.value = formatearMiles(cot);
-
-        }
-
-        // 🔹 cargar cuentas de esa moneda
-        cargarCuentasPorMoneda(idx, idMoneda);
-
-        recalcularCobro(idx);
-
-        vnMarkDirty();
-
-    });
-
-});
-
-        // cuenta
-        tb.querySelectorAll("select.vn-c-cuenta").forEach(async sel => {
-
+        tb.querySelectorAll("select.vn-c-mon").forEach(sel => {
             const idx = Number(sel.dataset.idx);
-            const idMoneda = VN.detalle.cobros[idx].IdMoneda || 0;
 
-            await cargarCuentasPorMoneda(idx, idMoneda);
-
-            sel.value = String(VN.detalle.cobros[idx].IdCuenta || "");
+            vnFillSelectDom(sel, VN.combos.monedas, "Id", "Nombre", "Seleccionar");
+            sel.value = String(VN.detalle.cobros[idx].IdMoneda || "");
 
             $(sel)?.select2({
                 width: "100%",
                 allowClear: true,
-                placeholder: "Cuenta"
-            });
+                placeholder: "Moneda"
+            }).on("change", async function () {
 
-            $(sel)?.on("change", function () {
+                const idMoneda = Number(this.value || 0);
 
-                VN.detalle.cobros[idx].IdCuenta = Number(this.value || 0);
+                const cobro = VN.detalle.cobros[idx];
+                cobro.IdMoneda = idMoneda;
+
+                // 🔥 1. TRAER COTIZACIÓN AUTOMÁTICA
+                const cot = getCotizacionById(idMoneda);
+                cobro.Cotizacion = cot;
+
+                // actualizar input cotización
+                const inpCot = document.querySelector(`input.vn-c-cot[data-idx="${idx}"]`);
+                if (inpCot) inpCot.value = cot;
+
+                // 🔥 2. RESET MANUAL
+                cobro.ManualConversion = false;
+
+                // 🔥 3. RESET CUENTA
+                await cargarCuentasPorMoneda(idx, idMoneda);
+
+                cobro.IdCuenta = 0;
+
+                const selCuenta = document.querySelector(`select.vn-c-cuenta[data-idx="${idx}"]`);
+                if (selCuenta) {
+                    selCuenta.value = "";
+                    $(selCuenta)?.trigger("change.select2");
+                }
+
+                // 🔥 4. RECALCULAR COBRO
+                recalcularCobro(idx);
+
+                // 🔥 5. MARCAR DIRTY
                 vnMarkDirty();
-
             });
-
         });
 
-        // fecha
+        tb.querySelectorAll("select.vn-c-cuenta").forEach(async sel => {
+            const idx = Number(sel.dataset.idx);
+            const idMoneda = Number(VN.detalle.cobros[idx].IdMoneda || 0);
+
+            if (idMoneda) {
+                await cargarCuentasPorMoneda(idx, idMoneda);
+                sel.value = String(VN.detalle.cobros[idx].IdCuenta || "");
+                $(sel)?.trigger("change.select2");
+            } else {
+                vnFillSelectDom(sel, [], "Id", "Nombre", "Seleccionar");
+            }
+
+            $(sel)?.off("change.vncuenta").on("change.vncuenta", function () {
+                VN.detalle.cobros[idx].IdCuenta = Number(this.value || 0);
+                vnMarkDirty();
+            });
+        });
+
         tb.querySelectorAll("input.vn-c-fecha").forEach(inp => {
             inp.addEventListener("change", function () {
                 const idx = Number(this.dataset.idx);
@@ -2502,7 +2834,6 @@ let modalProductoraVentas = null;
             });
         });
 
-        // importe
         tb.querySelectorAll("input.vn-c-imp").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
@@ -2513,7 +2844,6 @@ let modalProductoraVentas = null;
             });
         });
 
-        // cotizacion
         tb.querySelectorAll("input.vn-c-cot").forEach(inp => {
             inp.addEventListener("input", function () {
                 const idx = Number(this.dataset.idx);
@@ -2523,13 +2853,32 @@ let modalProductoraVentas = null;
                 vnMarkDirty();
             });
         });
-
-        // conversion manual
         tb.querySelectorAll("input.vn-c-conv").forEach(inp => {
             inp.addEventListener("input", function () {
+
                 const idx = Number(this.dataset.idx);
-                VN.detalle.cobros[idx].Conversion = vnToNumber(this.value);
-                VN.detalle.cobros[idx].ManualConversion = true;
+                const c = VN.detalle.cobros[idx];
+
+                c.Conversion = vnToNumber(this.value);
+                c.ManualConversion = true;
+
+                const idMonedaVenta = Number(document.getElementById("IdMoneda")?.value || 0);
+                const idMonedaCobro = Number(c.IdMoneda || 0);
+
+                const cotVenta = getCotizacionById(idMonedaVenta);
+                const cotCobro = Number(c.Cotizacion || getCotizacionById(idMonedaCobro));
+
+                if (cotVenta && cotCobro) {
+
+                    // 🔥 cálculo inverso
+                    const importe = c.Conversion * (cotVenta / cotCobro);
+
+                    c.Importe = vnRound2(importe);
+
+                    const inpImp = document.querySelector(`input.vn-c-imp[data-idx="${idx}"]`);
+                    if (inpImp) inpImp.value = formatearMiles(String(c.Importe || 0));
+                }
+
                 recalcularTotales();
                 vnMarkDirty();
             });
@@ -2537,18 +2886,41 @@ let modalProductoraVentas = null;
     }
 
     function recalcularCobro(idx) {
+
         const c = VN.detalle.cobros[idx];
         if (!c) return;
 
-        const imp = Number(c.Importe || 0);
-        const cot = Number(c.Cotizacion || 1) || 1;
+        const importe = Number(c.Importe || 0);
+
+        const idMonedaVenta = Number(document.getElementById("IdMoneda")?.value || 0);
+        const idMonedaCobro = Number(c.IdMoneda || 0);
+
+        if (!idMonedaVenta || !idMonedaCobro) return;
+
+        // 🔥 obtener cotizaciones reales
+        const cotVenta = getCotizacionById(idMonedaVenta);
+        const cotCobro = Number(c.Cotizacion || getCotizacionById(idMonedaCobro));
+
+        if (!cotVenta || !cotCobro) return;
 
         if (!c.ManualConversion) {
-            c.Conversion = vnRound2(imp * cot);
-            const convEl = document.querySelector(`input.vn-c-conv[data-idx="${idx}"]`);
-            if (convEl) convEl.value = String(c.Conversion || 0);
+
+            const conversion = importe * (cotCobro / cotVenta);
+
+            c.Conversion = vnRound2(conversion);
+
+            const el = document.querySelector(`input.vn-c-conv[data-idx="${idx}"]`);
+            if (el) el.value = c.Conversion;
         }
+
         recalcularTotales();
+    }
+
+    function getCotizacionById(idMoneda) {
+
+        const m = VN.combos.monedas.find(x => Number(x.Id) === Number(idMoneda));
+
+        return Number(m?.Cotizacion || 1);
     }
 
     /* =========================
@@ -2627,6 +2999,18 @@ let modalProductoraVentas = null;
         if (sumComisiones) sumComisiones.textContent = vnFmtMoneyARS(totalComisiones);
         if (sumCobrado) sumCobrado.textContent = vnFmtMoneyARS(cobrado);
         if (sumSaldo) sumSaldo.textContent = vnFmtMoneyARS(saldo);
+
+        const alerta = document.getElementById("alertComisiones");
+
+        if (alerta) {
+
+            if (totalComisiones > importeTotal) {
+                alerta.style.display = "flex";
+            } else {
+                alerta.style.display = "none";
+            }
+
+        }
     }
 
     /* =========================
@@ -2635,6 +3019,7 @@ let modalProductoraVentas = null;
     function validarCamposVenta() {
 
         let errores = []
+        let erroresCampos = []
 
         const campos = [
             { id: "IdCliente", nombre: "Cliente" },
@@ -2659,46 +3044,105 @@ let modalProductoraVentas = null;
 
             setEstadoCampo(el, esValido)
 
-            if (!esValido)
+            if (!esValido) {
                 errores.push(c.nombre)
+                erroresCampos.push(c.id) // 🔥 clave para marcar sección
+            }
 
         })
 
-        // duración HH:MM
+        // 🔥 DURACIÓN
         const dur = document.getElementById("Duracion")?.value || ""
 
         if (!/^\d{2}:\d{2}$/.test(dur)) {
 
             errores.push("Duración")
+            erroresCampos.push("Duracion")
 
             setEstadoCampo(document.getElementById("Duracion"), false)
         }
 
-        // cobros
-        VN.detalle.cobros.forEach((c, i) => {
+        // 🔥 ARTISTAS (mínimo 1)
+        if (!Array.isArray(VN.detalle.artistas) || VN.detalle.artistas.length === 0) {
 
-            if (!c.IdCuenta)
-                errores.push(`Cobro #${i + 1} (cuenta)`)
+            errores.push("Debe agregar al menos un artista")
+            erroresCampos.push("artistas")
 
-            if (!c.IdMoneda)
-                errores.push(`Cobro #${i + 1} (moneda)`)
+        }
 
-            if (Number(c.Importe || 0) <= 0)
-                errores.push(`Cobro #${i + 1} (importe)`)
+        // 🔥 ARTISTAS
+        VN.detalle.artistas.forEach((a, i) => {
+
+            let hayError = false
+
+            if (!a.IdArtista) {
+                errores.push(`Artista #${i + 1} (artista)`)
+                hayError = true
+
+                const sel = document.querySelector(`select.vn-a-art[data-idx="${i}"]`)
+                if (sel) setEstadoCampo(sel, false)
+            }
+
+            if (!a.IdRepresentante) {
+                errores.push(`Artista #${i + 1} (representante)`)
+                hayError = true
+
+                const sel = document.querySelector(`select.vn-a-rep[data-idx="${i}"]`)
+                if (sel) setEstadoCampo(sel, false)
+            }
+
+            if (hayError) {
+                erroresCampos.push("artistas") // 🔥 clave para pintar sección
+            }
 
         })
 
+        // 🔥 COBROS
+        VN.detalle.cobros.forEach((c, i) => {
+
+            let hayError = false
+
+            if (!c.IdCuenta) {
+                errores.push(`Cobro #${i + 1} (cuenta)`)
+                hayError = true
+            }
+
+            if (!c.IdMoneda) {
+                errores.push(`Cobro #${i + 1} (moneda)`)
+                hayError = true
+            }
+
+            if (Number(c.Importe || 0) <= 0) {
+                errores.push(`Cobro #${i + 1} (importe)`)
+                hayError = true
+            }
+
+            if (hayError) {
+                erroresCampos.push("cobros") // 🔥 mapea a sección cobros
+            }
+
+        })
+
+        // 🔥 MARCAR SECCIONES
         if (errores.length > 0) {
+
+            marcarSeccionesPorErrores(erroresCampos)
+
+            // opcional: ir a la primera con error
+            irAPrimeraSeccionConError()
 
             mostrarErrorCampos(
                 `Debes completar los campos requeridos:<br>
-            <strong>${errores.join(", ")}</strong>`,
+        <strong>${errores.join(", ")}</strong>`,
                 null,
                 "validacion"
             )
 
             return false
         }
+
+        // limpiar estados si todo OK
+        marcarSeccionesPorErrores([])
 
         cerrarErrorCampos()
 
@@ -2743,7 +3187,7 @@ let modalProductoraVentas = null;
                 ? new Date(document.getElementById("Fecha").value)
                 : new Date(),
 
-            Duracion: durDate,
+            Duracion: dur,
 
             IdUbicacion: Number(document.getElementById("IdUbicacion")?.value || 0),
 
@@ -3028,6 +3472,58 @@ let modalProductoraVentas = null;
         }
     }
 
+    async function initModalUbicacionVentas() {
+
+        const root = document.querySelector('[data-ubicacion-modal]');
+
+        modalUbicacionVentas = new UbicacionModal(root, {
+
+            token: token,
+
+            onSaved: async (data, modelo) => {
+
+                try {
+
+                    const idNuevo = Number(data.id || modelo.Id || 0);
+
+                    const ubicaciones = await vnFetchJson(API.ubicaciones);
+
+                    VN.combos.ubicaciones = ubicaciones || [];
+
+                    const sel = document.getElementById("IdUbicacion");
+
+                    // 🔥 1. DESTRUIR SELECT2
+                    if ($(sel)?.data("select2")) {
+                        $(sel).select2("destroy");
+                    }
+
+                    // 🔥 2. RECARGAR OPTIONS
+                    vnFillSelectDom(sel, VN.combos.ubicaciones, "Id", "Descripcion", "Seleccionar");
+
+                    // 🔥 3. VOLVER A INICIALIZAR SELECT2 (IMPORTANTE)
+                    ensureSelect2("#IdUbicacion");
+
+                    // 🔥 4. SELECCIONAR EL NUEVO
+                    if (idNuevo > 0) {
+
+                        const val = String(idNuevo);
+
+                        // 🔥 setear valor
+                        sel.value = val;
+
+                        // 🔥 select2 necesita esto sí o sí
+                        $(sel).val(val).trigger("change.select2");
+                    }
+
+                    vnToastOk("Ubicación creada");
+
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+        });
+    }
+
     async function initModalClienteVentas() {
 
         const root = document.querySelector('[data-cliente-modal]');
@@ -3188,7 +3684,16 @@ let modalProductoraVentas = null;
 
     }
 
+
+
     document.addEventListener("click", async function (e) {
+
+        if (e.target.closest("#btnCrearUbicacion")) {
+
+            if (!modalUbicacionVentas) return;
+
+            await modalUbicacionVentas.abrirNuevo();
+        }
 
         if (e.target.closest("#btnCrearCliente")) {
 
@@ -3407,26 +3912,6 @@ function validarCampoIndividual(el) {
     setFormato("pdf");
 })();
 
-document.addEventListener("input", function (e) {
-    const input = e.target;
-    if (!input.classList || !input.classList.contains("Inputmiles")) return;
-
-    const cursorPos = input.selectionStart || 0;
-    const originalLength = input.value.length;
-
-    const soloNumeros = input.value.replace(/\D/g, "");
-    if (!soloNumeros) { input.value = ""; return; }
-
-    const formateado = formatearMiles(soloNumeros);
-    input.value = formateado;
-
-    const newLength = formateado.length;
-    const delta = newLength - originalLength;
-    const newPos = Math.max(0, cursorPos + delta);
-
-    try { input.setSelectionRange(newPos, newPos); } catch { }
-});
-
 
 function actualizarVisibilidadContrato() {
 
@@ -3585,3 +4070,165 @@ function cargarImagenBase64(url) {
 
 }
 
+
+
+function registrarEventosEstadoVenta() {
+    const btnCrearEstado = document.getElementById("btnCrearEstadoVenta");
+
+    if (!btnCrearEstado) return;
+
+    btnCrearEstado.addEventListener("click", async function () {
+        try {
+            await abrirConfiguracion(
+                "Estados de venta",   // nombre visible
+                "VentasEstados",      // controller configuracion
+                null,                 // comboNombre
+                null,                 // comboController
+                null,                  // lblComboNombre
+                true
+            );
+        } catch (e) {
+            console.error("Error al abrir configuraciones de estados", e);
+            errorModal("No se pudo abrir la configuración de estados.");
+        }
+    });
+}
+
+
+
+document.querySelectorAll(".vn-head-btn").forEach(btn => {
+
+    btn.addEventListener("click", function () {
+
+        const nav = document.querySelector(".vn-head-nav");
+
+        // scroll automático hacia el botón activo
+        const left = this.offsetLeft - (nav.clientWidth / 2) + (this.clientWidth / 2);
+
+        nav.scrollTo({
+            left: left,
+            behavior: "smooth"
+        });
+
+    });
+
+});
+
+const nav = document.querySelector(".vn-head-nav");
+
+if (nav) {
+
+    // crear flechas
+    const btnLeft = document.createElement("button");
+    const btnRight = document.createElement("button");
+
+    btnLeft.innerHTML = '<i class="fa fa-chevron-left"></i>';
+    btnRight.innerHTML = '<i class="fa fa-chevron-right"></i>';
+
+    btnLeft.className = "vn-scroll-arrow left";
+    btnRight.className = "vn-scroll-arrow right";
+
+    nav.parentElement.style.position = "relative";
+
+    nav.parentElement.appendChild(btnLeft);
+    nav.parentElement.appendChild(btnRight);
+
+    // scroll
+    btnRight.addEventListener("click", () => {
+        nav.scrollBy({ left: 150, behavior: "smooth" });
+    });
+
+    btnLeft.addEventListener("click", () => {
+        nav.scrollBy({ left: -150, behavior: "smooth" });
+    });
+    function updateArrows() {
+        const maxScroll = nav.scrollWidth - nav.clientWidth;
+
+        const showLeft = nav.scrollLeft > 5;
+        const showRight = nav.scrollLeft < maxScroll - 5;
+
+        btnLeft.style.display = showLeft ? "flex" : "none";
+        btnRight.style.display = showRight ? "flex" : "none";
+
+        // 👇 activar/desactivar animación
+        btnLeft.style.animation = showLeft ? "vnBreathing 2.2s ease-in-out infinite" : "none";
+        btnRight.style.animation = showRight ? "vnBreathing 2.2s ease-in-out infinite" : "none";
+    }
+
+    nav.addEventListener("scroll", updateArrows);
+    window.addEventListener("resize", updateArrows);
+
+    updateArrows();
+
+}
+
+
+
+
+function getSeccionDeCampo(id) {
+
+    const map = {
+
+        // DATOS
+        "IdCliente": "datos",
+        "Fecha": "datos",
+        "NombreEvento": "datos",
+        "Duracion": "datos",
+        "IdUbicacion": "datos",
+        "IdProductora": "datos",
+        "artistas": "artistas",
+        "IdMoneda": "datos",
+        "IdEstado": "datos",
+        "ImporteTotal": "datos",
+
+        // CONTRATO
+        "IdTipoContrato": "contrato",
+        "IdOpExclusividad": "contrato",
+        "DiasPrevios": "contrato",
+        "FechaHasta": "contrato",
+
+        // NOTAS
+        "NotaInterna": "notas",
+        "NotaCliente": "notas"
+
+    };
+
+    return map[id] || null;
+}
+
+function marcarSeccionesPorErrores(erroresCampos = []) {
+
+    // limpiar estados previos
+    document.querySelectorAll(".vn-head-btn").forEach(btn => {
+        btn.classList.remove("error", "ok");
+    });
+
+    const seccionesConError = new Set();
+
+    erroresCampos.forEach(idCampo => {
+
+        const sec = getSeccionDeCampo(idCampo);
+        if (sec) seccionesConError.add(sec);
+
+    });
+
+    document.querySelectorAll(".vn-head-btn").forEach(btn => {
+
+        const sec = btn.dataset.sec;
+
+        if (!sec) return;
+
+        if (seccionesConError.has(sec)) {
+            btn.classList.add("error");
+        } 
+        
+
+    });
+}
+
+function irAPrimeraSeccionConError() {
+
+    const btn = document.querySelector(".vn-head-btn.error");
+
+    if (btn) btn.click();
+}

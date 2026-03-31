@@ -7,7 +7,7 @@ namespace SistemaLevels.BLL.Service
     {
         Task<bool> Eliminar(int id);
         Task<bool> Actualizar(VentasEstado model);
-        Task<bool> Insertar(VentasEstado model);
+        Task<int> Insertar(VentasEstado model);
 
         Task<VentasEstado> Obtener(int id);
 
