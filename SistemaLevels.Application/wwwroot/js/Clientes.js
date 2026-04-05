@@ -30,6 +30,9 @@ const columnConfig = [
 
 $(document).ready(() => {
 
+    Permisos.init();
+    Permisos.aplicarUI("Clientes");
+
     clienteModal = new ClienteModal(document.body, {
         token: token,
 
@@ -155,7 +158,7 @@ async function configurarDataTable(data) {
                             ver: "verCliente",
                             editar: "editarCliente",
                             eliminar: "eliminarCliente"
-                        });
+                        }, "Clientes");
                     },
                     orderable: false,
                     searchable: false,
@@ -173,12 +176,7 @@ async function configurarDataTable(data) {
             ],
 
             dom: 'Bfrtip',
-            buttons: [
-                { text: 'Excel', action: () => abrirModalExportacion(gridClientes, 'excel', 'Clientes') },
-                { text: 'PDF', action: () => abrirModalExportacion(gridClientes, 'pdf', 'Clientes') },
-                { text: 'Imprimir', action: () => abrirModalExportacion(gridClientes, 'print', 'Clientes') },
-                'pageLength'
-            ],
+            buttons: getBotonesExportacion(gridClientes, "Clientes"),
 
             orderCellsTop: true,
             fixedHeader: true,

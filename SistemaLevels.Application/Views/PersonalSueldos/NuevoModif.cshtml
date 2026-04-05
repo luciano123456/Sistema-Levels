@@ -28,7 +28,7 @@
 
             <div class="vn-actions">
 
-                <button class="btn btn-danger vn-btn" id="btnEliminarSueldo" type="button">
+                <button class="btn btn-danger vn-btn" id="btnEliminarSueldo" type="button" data-permiso="eliminar" data-modulo="Personal Sueldos">
                     <i class="fa fa-trash"></i> Eliminar sueldo
                 </button>
 
@@ -46,7 +46,7 @@
                     </button>
                 </div>
 
-                <button class="btn btn-primary vn-btn-main" id="btnGuardarSueldo" type="button">
+                <button class="btn btn-primary vn-btn-main" id="btnGuardarSueldo" type="button" data-permiso="crear" data-modulo="Personal Sueldos">
                     <i class="fa fa-check" id="tituloSueldo"> Registrar sueldo</i>
                 </button>
 
@@ -337,7 +337,7 @@
 
 </div>
 
-<partial name="~/Views/Utils/Modals.cshtml" />
+
 
 @section Scripts {
 
@@ -359,6 +359,6 @@
         };
     </script>
 
-    <script src="~/js/PersonalSueldosNuevoModif.js?v=1.1"></script>
+    <script src="~/js/PersonalSueldosNuevoModif.js?v=1.2"></script>
 
 }

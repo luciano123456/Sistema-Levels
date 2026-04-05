@@ -6,10 +6,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var userSession = JSON.parse(localStorage.getItem('userSession'));
 
+    aplicarPermisosNavbar();
+
     if (userSession) {
 
-        document.getElementById("seccionConfiguraciones").removeAttribute("hidden");
-
+        
         //if (userSession.IdRol == 1 || userSession.IdRol == 3) {
         //    document.getElementById("seccionPuntosDeVenta").removeAttribute("hidden");
         //    document.getElementById("seccionCuentas").removeAttribute("hidden");
@@ -64,6 +65,61 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 });
 
+function aplicarPermisosNavbar() {
+
+    try {
+
+        const user = JSON.parse(localStorage.getItem("userSession"));
+        if (!user || !user.Permisos) return;
+
+        const permisos = user.Permisos;
+
+        document.querySelectorAll("[data-modulo]").forEach(el => {
+
+            const modulo = (el.getAttribute("data-modulo") || "").toLowerCase().trim();
+            const permisoCodigo = (el.getAttribute("data-permiso") || "VER").toLowerCase().trim();
+
+            const tienePermiso = permisos.some(p => {
+
+                const nombreModulo = (p.Modulo || "").toLowerCase().trim();
+                const codigoModulo = (p.CodigoModulo || "").toLowerCase().trim();
+
+                if (nombreModulo !== modulo && codigoModulo !== modulo) return false;
+
+                if (!p.Permisos) return false;
+
+                const permiso = p.Permisos.find(x =>
+                    (x.Codigo || "").toLowerCase() === permisoCodigo
+                );
+
+                return !!permiso?.Activo;
+            });
+
+            if (tienePermiso) {
+                el.removeAttribute("hidden");
+            } else {
+                el.setAttribute("hidden", "hidden");
+            }
+
+        });
+
+        // 🔥 ocultar dropdowns vacíos
+        document.querySelectorAll(".nav-item.dropdown").forEach(drop => {
+
+            const hijosVisibles = drop.querySelectorAll("li:not([hidden])");
+
+            if (hijosVisibles.length === 0) {
+                drop.setAttribute("hidden", "hidden");
+            } else {
+                drop.removeAttribute("hidden");
+            }
+
+        });
+
+    } catch (e) {
+        console.error("Error aplicando permisos navbar", e);
+    }
+}
 
 async function listaConfiguracion() {
     const url = `/${controllerConfiguracion}/Lista`;

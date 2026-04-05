@@ -106,7 +106,15 @@ public partial class SistemaLevelsContext : DbContext
 
     public virtual DbSet<UsuariosEstado> UsuariosEstados { get; set; }
 
+    public virtual DbSet<UsuariosModulo> UsuariosModulos { get; set; }
+
+    public virtual DbSet<UsuariosPermiso> UsuariosPermisos { get; set; }
+
+    public virtual DbSet<UsuariosPermisosUsuario> UsuariosPermisosUsuarios { get; set; }
+
     public virtual DbSet<UsuariosRol> UsuariosRoles { get; set; }
+
+    public virtual DbSet<UsuariosRolesPermiso> UsuariosRolesPermisos { get; set; }
 
     public virtual DbSet<Venta> Ventas { get; set; }
 
@@ -1194,6 +1202,88 @@ public partial class SistemaLevelsContext : DbContext
                 .IsUnicode(false);
         });
 
+        modelBuilder.Entity<UsuariosModulo>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Usuarios__3214EC077A55EFF9");
+
+            entity.ToTable("Usuarios_Modulos");
+
+            entity.Property(e => e.Activo)
+                .IsRequired()
+                .HasDefaultValueSql("((1))");
+            entity.Property(e => e.Codigo)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+            entity.Property(e => e.Grupo)
+                .HasMaxLength(250)
+                .IsUnicode(false);
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<UsuariosPermiso>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Usuarios__3214EC0748135CAC");
+
+            entity.ToTable("Usuarios_Permisos");
+
+            entity.Property(e => e.Activo)
+                .IsRequired()
+                .HasDefaultValueSql("((1))");
+            entity.Property(e => e.Codigo)
+                .HasMaxLength(50)
+                .IsUnicode(false);
+            entity.Property(e => e.Descripcion)
+                .HasMaxLength(250)
+                .IsUnicode(false);
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(100)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.IdModuloNavigation).WithMany(p => p.UsuariosPermisos)
+                .HasForeignKey(d => d.IdModulo)
+                .HasConstraintName("FK_UsuariosPermiso_Modulo");
+        });
+
+        modelBuilder.Entity<UsuariosPermisosUsuario>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Usuarios__3214EC07F8A74F88");
+
+            entity.ToTable("Usuarios_PermisosUsuario");
+
+            entity.HasIndex(e => new { e.IdUsuario, e.IdModulo, e.IdPermiso }, "UQ_UPU").IsUnique();
+
+            entity.Property(e => e.Activo)
+                .IsRequired()
+                .HasDefaultValueSql("((1))");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+
+            entity.HasOne(d => d.IdModuloNavigation).WithMany(p => p.UsuariosPermisosUsuarios)
+                .HasForeignKey(d => d.IdModulo)
+                .HasConstraintName("FK_UPU_Modulo");
+
+            entity.HasOne(d => d.IdPermisoNavigation).WithMany(p => p.UsuariosPermisosUsuarios)
+                .HasForeignKey(d => d.IdPermiso)
+                .HasConstraintName("FK_UPU_Permiso");
+
+            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.UsuariosPermisosUsuarioIdUsuarioNavigations)
+                .HasForeignKey(d => d.IdUsuario)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_UPU_User");
+
+            entity.HasOne(d => d.IdUsuarioModificaNavigation).WithMany(p => p.UsuariosPermisosUsuarioIdUsuarioModificaNavigations)
+                .HasForeignKey(d => d.IdUsuarioModifica)
+                .HasConstraintName("FK_UPU_UserMod");
+
+            entity.HasOne(d => d.IdUsuarioRegistraNavigation).WithMany(p => p.UsuariosPermisosUsuarioIdUsuarioRegistraNavigations)
+                .HasForeignKey(d => d.IdUsuarioRegistra)
+                .HasConstraintName("FK_UPU_UserReg");
+        });
+
         modelBuilder.Entity<UsuariosRol>(entity =>
         {
             entity.ToTable("Usuarios_Roles");
@@ -1201,6 +1291,35 @@ public partial class SistemaLevelsContext : DbContext
             entity.Property(e => e.Nombre)
                 .HasMaxLength(100)
                 .IsUnicode(false);
+        });
+
+        modelBuilder.Entity<UsuariosRolesPermiso>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__Usuarios__3214EC0785E941AE");
+
+            entity.ToTable("Usuarios_RolesPermisos");
+
+            entity.HasIndex(e => new { e.IdRol, e.IdModulo, e.IdPermiso }, "UQ_URP").IsUnique();
+
+            entity.Property(e => e.Activo)
+                .IsRequired()
+                .HasDefaultValueSql("((1))");
+            entity.Property(e => e.FechaModifica).HasColumnType("datetime");
+            entity.Property(e => e.FechaRegistra)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+
+            entity.HasOne(d => d.IdModuloNavigation).WithMany(p => p.UsuariosRolesPermisos)
+                .HasForeignKey(d => d.IdModulo)
+                .HasConstraintName("FK_URP_Modulo");
+
+            entity.HasOne(d => d.IdPermisoNavigation).WithMany(p => p.UsuariosRolesPermisos)
+                .HasForeignKey(d => d.IdPermiso)
+                .HasConstraintName("FK_URP_Permiso");
+
+            entity.HasOne(d => d.IdRolNavigation).WithMany(p => p.UsuariosRolesPermisos)
+                .HasForeignKey(d => d.IdRol)
+                .HasConstraintName("FK_URP_Rol");
         });
 
         modelBuilder.Entity<Venta>(entity =>

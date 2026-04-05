@@ -50,15 +50,15 @@
                     <i class="fa fa-refresh me-2"></i> Actualizar
                 </button>
 
-                <button id="btnPago" class="btn btn-success vi-btn" type="button">
+                <button id="btnPago" class="btn btn-success vi-btn" type="button" data-permiso="crear" data-modulo="Clientes CC">
                     <i class="fa fa-plus me-2"></i> Registrar pago
                 </button>
 
-                <button id="btnAjuste" class="btn btn-warning vi-btn" type="button">
+                <button id="btnAjuste" class="btn btn-warning vi-btn" type="button" data-permiso="crear" data-modulo="Clientes CC">
                     <i class="fa fa-pencil me-2"></i> Ajuste
                 </button>
 
-                <button id="btnEstadoPdf" class="btn btn-danger vi-btn" type="button">
+                <button id="btnEstadoPdf" class="btn btn-danger vi-btn" type="button" data-permiso="exportar" data-modulo="Clientes CC">
                     <i class="fa fa-file-pdf-o me-2"></i> Estado PDF
                 </button>
 
@@ -606,7 +606,7 @@
     </div>
 </div>
 
-<partial name="~/Views/Utils/Modals.cshtml" />
+
 
 
 
@@ -643,7 +643,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
     <!-- tu JS -->
-    <script src="~/js/ClientesCuentaCorriente.js?v=1.1"></script>
+    <script src="~/js/ClientesCuentaCorriente.js?v=1.2"></script>
 }
 
 

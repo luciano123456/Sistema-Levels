@@ -52,7 +52,8 @@
                     <!-- IMPORTANTE: usar BUTTON, no <a>, para que no scrollee -->
                     <button type="button"
                             class="btn btn-success d-flex align-items-center px-3 py-2 btnnuevo"
-                            onclick="nuevaTarea()">
+                            onclick="nuevaTarea()"
+                            data-permiso="crear" data-modulo="Tareas">
                         <i class="fa fa-plus-square me-2"></i> Nuevo
                     </button>
                 </div>
@@ -160,7 +161,7 @@
     </div>
 </div>
 
-<partial name="~/Views/Utils/Modals.cshtml" />
+
 
 
 @section Scripts {
@@ -190,6 +191,6 @@
     <script src="~/js/utils/moment.js"></script>
 
     <!-- 7️⃣ TU SCRIPT (SIEMPRE ÚLTIMO) -->
-    <script src="~/js/Tareas.js?v=1.2"></script>
+    <script src="~/js/Tareas.js?v=1.3"></script>
 
 }

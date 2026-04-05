@@ -57,6 +57,10 @@ const authHeaders = () => ({
 
 $(document).ready(async () => {
 
+    Permisos.init();
+    Permisos.aplicarUI("CLIENTES CC");
+
+
     wireEventos();
 
     inicializarFechasPorDefecto();
@@ -656,7 +660,7 @@ async function configurarDataTable(data) {
                             return renderAccionesGrid(data, {
                                 ver: "verMovimiento",
                                 eliminar: "eliminarMovimiento"
-                            });
+                            }, "Clientes CC");
                         }
 
                         return `
@@ -710,12 +714,7 @@ async function configurarDataTable(data) {
             ],
 
             dom: 'Bfrtip',
-            buttons: [
-                { text: 'Excel', action: () => abrirModalExportacion(gridCuentaCorriente, 'excel', 'CuentaCorrienteClientes') },
-                { text: 'PDF', action: () => abrirModalExportacion(gridCuentaCorriente, 'pdf', 'CuentaCorrienteClientes') },
-                { text: 'Imprimir', action: () => abrirModalExportacion(gridCuentaCorriente, 'print', 'CuentaCorrienteClientes') },
-                'pageLength'
-            ],
+            buttons: getBotonesExportacion(gridCuentaCorriente, "Clientes CC"),
 
             orderCellsTop: true,
             fixedHeader: true,
@@ -983,6 +982,12 @@ async function eliminarMovimiento(id) {
 
 function abrirModalPago() {
 
+    if (!Permisos.tiene("CLIENTES CC", "Crear")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
+
     if (!ACC.ClienteSel) {
         return errorModal("Seleccioná un Cliente.");
     }
@@ -1167,6 +1172,12 @@ function verificarErroresPagoGeneral() {
    MODAL AJUSTE
 ========================================================= */
 function abrirModalAjuste() {
+
+    if (!Permisos.tiene("CLIENTES CC", "Crear")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
 
     if (!ACC.ClienteSel) {
         return errorModal("Seleccioná un Cliente.");
@@ -1359,6 +1370,12 @@ function verificarErroresAjusteGeneral() {
 ========================================================= */
 
 function exportarEstadoCuentaPdf() {
+
+    if (!Permisos.tiene("CLIENTES CC", "Exportar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
 
     if (!ACC.ClienteSel) {
         return errorModal("Seleccioná un Cliente.");

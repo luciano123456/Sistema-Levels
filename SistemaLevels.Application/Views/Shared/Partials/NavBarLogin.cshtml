@@ -11,36 +11,41 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 
-                <li class="nav-item dropdown" id="seccionPersonal">
+                <li class="nav-item dropdown"
+                    id="seccionPersonal"
+                    data-modulo="Personal"
+                    data-permiso="Ver"
+                    hidden>
 
                     <a class="nav-link dropdown-toggle"
                        href="#"
-                       id="artistasDropdownLink"
+                       id="personalDropdownLink"
                        role="button"
                        data-bs-toggle="dropdown"
-                       aria-expanded="false">
+                       aria-expanded="false"
+                       aria-haspopup="true">
 
                         Personal
 
                     </a>
 
-                    <ul class="dropdown-menu" aria-labelledby="artistasDropdownLink">
+                    <ul class="dropdown-menu" aria-labelledby="personalDropdownLink">
 
-                        <li>
+                        <li data-modulo="Personal" data-permiso="Ver">
                             <a class="dropdown-item"
                                href="@Url.Action("Index", "Personal")">
                                 Personal
                             </a>
                         </li>
 
-                        <li>
+                        <li data-modulo="Personal CC" data-permiso="Ver">
                             <a class="dropdown-item"
                                href="@Url.Action("Index", "PersonalCuentaCorriente")">
                                 Cuenta Corriente
                             </a>
                         </li>
 
-                        <li>
+                        <li data-modulo="Personal Sueldos" data-permiso="Ver">
                             <a class="dropdown-item"
                                href="@Url.Action("Index", "PersonalSueldos")">
                                 Pago de sueldos
@@ -52,14 +57,19 @@
                 </li>
 
 
-                <li class="nav-item dropdown" id="seccionArtistas">
+                <li class="nav-item dropdown"
+                    id="seccionArtistas"
+                    data-modulo="Artistas"
+                    data-permiso="Ver"
+                    hidden>
 
                     <a class="nav-link dropdown-toggle"
                        href="#"
                        id="artistasDropdownLink"
                        role="button"
                        data-bs-toggle="dropdown"
-                       aria-expanded="false">
+                       aria-expanded="false"
+                       aria-haspopup="true">
 
                         Artistas
 
@@ -67,14 +77,14 @@
 
                     <ul class="dropdown-menu" aria-labelledby="artistasDropdownLink">
 
-                        <li>
+                        <li data-modulo="Artistas" data-permiso="Ver">
                             <a class="dropdown-item"
                                href="@Url.Action("Index", "Artistas")">
                                 Artistas
                             </a>
                         </li>
 
-                        <li>
+                        <li data-modulo="Artistas CC" data-permiso="Ver">
                             <a class="dropdown-item"
                                href="@Url.Action("Index", "ArtistasCuentaCorriente")">
                                 Cuenta Corriente
@@ -85,11 +95,14 @@
 
                 </li>
 
-                <li class="nav-item dropdown" id="seccionClientes">
+                <li class="nav-item dropdown"
+                    id="seccionClientes"
+                    data-modulo="Clientes"
+                    data-permiso="Ver" hidden>
 
                     <a class="nav-link dropdown-toggle"
                        href="#"
-                       id="artistasDropdownLink"
+                       id="clientesDropdownLink"
                        role="button"
                        data-bs-toggle="dropdown"
                        aria-expanded="false">
@@ -98,16 +111,16 @@
 
                     </a>
 
-                    <ul class="dropdown-menu" aria-labelledby="artistasDropdownLink">
+                    <ul class="dropdown-menu" aria-labelledby="clientesDropdownLink">
 
-                        <li>
+                        <li data-modulo="Clientes" data-permiso="Ver">
                             <a class="dropdown-item"
                                href="@Url.Action("Index", "Clientes")">
                                 Clientes
                             </a>
                         </li>
 
-                        <li>
+                        <li data-modulo="Clientes CC" data-permiso="Ver">
                             <a class="dropdown-item"
                                href="@Url.Action("Index", "ClientesCuentaCorriente")">
                                 Cuenta Corriente
@@ -117,67 +130,116 @@
                     </ul>
 
                 </li>
-                <li class="nav-item" id="seccionProductoras">
+
+                <li class="nav-item"
+                    id="seccionProductoras"
+                    data-modulo="Productoras"
+                    data-permiso="Ver" hidden>
                     <a class="nav-link" href="@Url.Action("Index", "Productoras")">
                         Productoras
                     </a>
                 </li>
 
 
-                 <li class="nav-item" id="seccionVentas">
+                <li class="nav-item"
+                    id="seccionVentas"
+                    data-modulo="Ventas"
+                    data-permiso="Ver"
+                    hidden>
                     <a class="nav-link" href="@Url.Action("Index", "Ventas")">
                         Ventas
                     </a>
                 </li>
 
-                  <li class="nav-item" id="seccionCajas">
+                <li class="nav-item"
+                    id="seccionCajas"
+                    data-modulo="Cajas"
+                    data-permiso="Ver"
+                    hidden>
                     <a class="nav-link" href="@Url.Action("Index", "Caja")">
                         Cajas
                     </a>
                 </li>
 
-                <li class="nav-item" id="seccionMonedas">
+                <li class="nav-item"
+                    id="seccionMonedas"
+                    data-modulo="Monedas"
+                    data-permiso="Ver"
+                    hidden>
                     <a class="nav-link" href="@Url.Action("Index", "PaisesMoneda")">
                         Monedas
                     </a>
                 </li>
-              
-                <li class="nav-item" id="seccionTareas">
+
+                <li class="nav-item"
+                    id="seccionTareas"
+                    data-modulo="Tareas"
+                    data-permiso="Ver"
+                    hidden>
                     <a class="nav-link" href="@Url.Action("Index", "Tareas")">
                         Tareas
                     </a>
                 </li>
 
-                <li class="nav-item" id="seccionGastos">
+                <li class="nav-item"
+                    id="seccionGastos"
+                    data-modulo="Gastos"
+                    data-permiso="Ver"
+                    hidden>
                     <a class="nav-link" href="@Url.Action("Index", "Gastos")">
                         Gastos
                     </a>
                 </li>
 
 
-
                 <!-- CONFIGURACIONES -->
-                <li class="nav-item dropdown" id="seccionConfiguraciones" hidden>
-                    <a class="nav-link dropdown-toggle" href="#" id="configDropdownLink" role="button" data-bs-toggle="dropdown">
+                <li class="nav-item dropdown"
+                    id="seccionConfiguraciones"
+                    data-modulo="Configuraciones"
+                    data-permiso="Ver"
+                    hidden>
+
+                    <a class="nav-link dropdown-toggle"
+                       href="#"
+                       id="configDropdownLink"
+                       role="button"
+                       data-bs-toggle="dropdown">
                         Configuraciones
                     </a>
+
                     <ul class="dropdown-menu" aria-labelledby="configDropdownLink">
-                        <li>
-                            <a class="dropdown-item" href="@Url.Action("Index", "Usuarios")">
+
+                        <!-- USUARIOS -->
+                        <li id="seccionUsuarios"
+                            data-modulo="Usuarios"
+                            data-permiso="Ver">
+                            <a class="dropdown-item"
+                               href="@Url.Action("Index", "Usuarios")">
                                 Usuarios
                             </a>
                         </li>
-                        <li>
-                        <li>
-                            <a class="dropdown-item" href="@Url.Action("Index", "Ubicaciones")">
+
+                        <!-- UBICACIONES -->
+                        <li id="seccionUbicaciones"
+                            data-modulo="Ubicaciones"
+                            data-permiso="Ver">
+                            <a class="dropdown-item"
+                               href="@Url.Action("Index", "Ubicaciones")">
                                 Ubicaciones
                             </a>
                         </li>
-                            <a class="dropdown-item" onclick="abrirConfiguraciones()">
+
+                        <!-- OTRAS -->
+                        <li id="seccionOtras"
+                            data-modulo="Otras"
+                            data-permiso="Ver">
+                            <a class="dropdown-item"
+                               href="#"
+                               onclick="abrirConfiguraciones()">
                                 Otras
                             </a>
                         </li>
-                      
+
                     </ul>
                 </li>
 
@@ -603,9 +665,11 @@
 <div id="currencyWidget" class="currency-widget"></div>
 
 
+<partial name="~/Views/Utils/Modals.cshtml" />
 
 <script src="~/js/CurrencyWidget.js?v=1.0"></script>
+<script src="~/js/Permisos.js"></script>
 
 
 
-<script src="~/js/NavBarLogin.js?v=1.3" asp-append-version="true"></script>
+<script src="~/js/NavBarLogin.js?v=1.5" asp-append-version="true"></script>

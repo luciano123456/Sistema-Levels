@@ -75,6 +75,11 @@
 
     async abrirNuevo() {
 
+        if (!Permisos.tiene("Ubicaciones", "Crear")) {
+            errorModal("No tenés permisos.");
+            return;
+        }
+
         this.modo = "nuevo";
 
         this.limpiar();
@@ -88,6 +93,11 @@
     }
 
     async abrirEditar(id) {
+
+        if (!Permisos.tiene("Ubicaciones", "Editar")) {
+            errorModal("No tenés permisos.");
+            return;
+        }
 
         this.modo = "editar";
 
@@ -229,16 +239,32 @@
 
         if (this.modo === "ver") return;
 
+        const id = Number(this.fields.Id.value || 0);
+        const esNuevo = id === 0;
+
+        // 🔥 PERMISOS
+        const puedeCrear = Permisos.tiene("Ubicaciones", "Crear");
+        const puedeEditar = Permisos.tiene("Ubicaciones", "Editar");
+
+        if (esNuevo && !puedeCrear) {
+            errorModal("No tenés permisos para crear ubicaciones.");
+            return;
+        }
+
+        if (!esNuevo && !puedeEditar) {
+            errorModal("No tenés permisos para editar ubicaciones.");
+            return;
+        }
+
+        // 🔥 VALIDACIÓN
         if (!this.validar()) return;
 
         const modelo = {
-            Id: Number(this.fields.Id.value || 0),
+            Id: id,
             Descripcion: this.fields.Descripcion.value,
             Espacio: this.fields.Espacio.value,
             Direccion: this.fields.Direccion.value
         };
-
-        const esNuevo = modelo.Id === 0;
 
         const r = await fetch(
             esNuevo ? "/Ubicaciones/Insertar" : "/Ubicaciones/Actualizar",
@@ -272,6 +298,12 @@
     ========================= */
 
     async eliminar(id) {
+
+        if (!Permisos.tiene("Ubicaciones", "Eliminar")) {
+            errorModal("No tenés permisos.");
+            return;
+        }
+
 
         const ok = await confirmarModal("¿Eliminar ubicación?");
         if (!ok) return;

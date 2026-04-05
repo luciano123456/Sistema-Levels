@@ -1511,6 +1511,10 @@ let modalUbicacionVentas = null;
        INIT
     ========================= */
     document.addEventListener("DOMContentLoaded", async () => {
+
+        Permisos.init();
+        Permisos.aplicarUI("Ventas");
+
         try {
             await initModalArtistaVentas();
             await initModalPersonalVentas();
@@ -1540,19 +1544,34 @@ let modalUbicacionVentas = null;
                 setClienteSeleccionado(Number(VN.init.idCliente), true);
             }
 
+            const btnVenta = document.getElementById("btnGuardarVenta");
+
             // si viene id (editar)
             const idVenta = Number(VN.init.id || document.getElementById("Venta_Id")?.value || 0);
             if (idVenta > 0) {
 
                 const titulo = document.getElementById("tituloVenta");
-                if (titulo) titulo.textContent = " Modificar venta";
+
+                if (!Permisos.tiene("Ventas", "Editar")) {
+                    btnVenta.setAttribute("hidden", "hidden");
+                } else {
+                    if (titulo) titulo.textContent = " Modificar venta";
+                }
 
                 await abrirVenta(idVenta);
 
             } else {
 
                 const titulo = document.getElementById("tituloVenta");
-                if (titulo) titulo.textContent = " Registrar venta";
+
+
+                if (!Permisos.tiene("Ventas", "Crear")) {
+                    btnVenta.setAttribute("hidden", "hidden");
+                } else {
+                    if (titulo) titulo.textContent = " Registrar venta";
+                }
+
+               
 
                 document.getElementById("Venta_Id").value = "0";
 
@@ -1744,6 +1763,11 @@ let modalUbicacionVentas = null;
         const btnEliminar = document.getElementById("btnEliminarVenta");
 
         btnEliminar?.addEventListener("click", async () => {
+
+            if (!Permisos.tiene("Ventas", "Eliminar")) {
+                errorModal("No tenés permisos.");
+                return;
+            }
 
             const id = Number(document.getElementById("Venta_Id")?.value || 0);
 
@@ -3306,10 +3330,24 @@ let modalUbicacionVentas = null;
     ========================= */
     async function guardarVenta() {
 
+       
+
         if (!validarCamposVenta()) return;
 
         const model = buildModel();
         const isNew = Number(model.Id || 0) === 0;
+
+        if (isNew && !Permisos.tiene("Ventas", "Crear")) {
+            errorModal("No tenés permisos.");
+            return;
+        }
+
+        if (!isNew && !Permisos.tiene("Ventas", "Editar")) {
+            errorModal("No tenés permisos.");
+            return;
+        }
+
+
 
         try {
 

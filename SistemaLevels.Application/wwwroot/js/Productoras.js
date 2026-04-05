@@ -28,6 +28,9 @@ const columnConfig = [
 
 $(document).ready(() => {
 
+    Permisos.init();
+    Permisos.aplicarUI("Productoras");
+
     productoraModal = new ProductoraModal(document.body, {
         token: token,
 
@@ -132,7 +135,7 @@ async function configurarDataTable(data) {
                             ver: "verFichaProductora",
                             editar: "editarProductora",
                             eliminar: "eliminarProductora"
-                        });
+                        }, "Productoras");
                     },
                     orderable: false,
                     searchable: false,
@@ -149,21 +152,7 @@ async function configurarDataTable(data) {
             ],
 
             dom: 'Bfrtip',
-            buttons: [
-                {
-                    text: 'Excel',
-                    action: () => abrirModalExportacion(gridProductoras, 'excel', 'Productoras')
-                },
-                {
-                    text: 'PDF',
-                    action: () => abrirModalExportacion(gridProductoras, 'pdf', 'Productoras')
-                },
-                {
-                    text: 'Imprimir',
-                    action: () => abrirModalExportacion(gridProductoras, 'print', 'Productoras')
-                },
-                'pageLength'
-            ],
+            buttons: getBotonesExportacion(gridProductoras, "Productoras"),
 
             orderCellsTop: true,
             fixedHeader: true,

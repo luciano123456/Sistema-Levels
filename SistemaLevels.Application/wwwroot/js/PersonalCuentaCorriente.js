@@ -57,6 +57,9 @@ const authHeaders = () => ({
 
 $(document).ready(async () => {
 
+    Permisos.init();
+    Permisos.aplicarUI("Personal CC");
+
     wireEventos();
 
     inicializarFechasPorDefecto();
@@ -656,7 +659,7 @@ async function configurarDataTable(data) {
                             return renderAccionesGrid(data, {
                                 ver: "verMovimiento",
                                 eliminar: "eliminarMovimiento"
-                            });
+                            }, "Personal CC");
                         }
 
                         return `
@@ -710,12 +713,7 @@ async function configurarDataTable(data) {
             ],
 
             dom: 'Bfrtip',
-            buttons: [
-                { text: 'Excel', action: () => abrirModalExportacion(gridCuentaCorriente, 'excel', 'CuentaCorrientePersonal') },
-                { text: 'PDF', action: () => abrirModalExportacion(gridCuentaCorriente, 'pdf', 'CuentaCorrientePersonal') },
-                { text: 'Imprimir', action: () => abrirModalExportacion(gridCuentaCorriente, 'print', 'CuentaCorrientePersonal') },
-                'pageLength'
-            ],
+            buttons: getBotonesExportacion(gridCuentaCorriente, "Personal CC"),
 
             orderCellsTop: true,
             fixedHeader: true,
@@ -984,6 +982,11 @@ async function eliminarMovimiento(id) {
 
 function abrirModalPago() {
 
+    if (!Permisos.tiene("Personal CC", "Crear")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
     if (!ACC.Personalel) {
         return errorModal("Seleccioná un Personal.");
     }
@@ -1168,6 +1171,11 @@ function verificarErroresPagoGeneral() {
    MODAL AJUSTE
 ========================================================= */
 function abrirModalAjuste() {
+
+    if (!Permisos.tiene("Personal CC", "Crear")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
 
     if (!ACC.Personalel) {
         return errorModal("Seleccioná un Personal.");
@@ -1360,6 +1368,11 @@ function verificarErroresAjusteGeneral() {
 ========================================================= */
 
 function exportarEstadoCuentaPdf() {
+
+    if (!Permisos.tiene("Personal CC", "Exportar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
 
     if (!ACC.Personalel) {
         return errorModal("Seleccioná un Personal.");

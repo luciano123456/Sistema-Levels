@@ -49,6 +49,8 @@ const columnConfig = [
 $(document).ready(() => {
 
 
+    Permisos.init();
+    Permisos.aplicarUI("Artistas");
 
     // Instancia modal (el partial ya está en el HTML)
     artistasModal = new ArtistasModal(document.body, {
@@ -164,7 +166,7 @@ async function configurarDataTable(data) {
                             ver: "verArtista",
                             editar: "editarArtista",
                             eliminar: "eliminarArtista"
-                        });
+                        }, "Artistas");
 
                     },
                     orderable: false,
@@ -209,27 +211,7 @@ async function configurarDataTable(data) {
 
             dom: 'Bfrtip',
 
-            buttons: [
-
-                {
-                    text: 'Excel',
-                    action: () => abrirModalExportacion(gridArtistas, 'excel', 'Artistas')
-                },
-
-                {
-                    text: 'PDF',
-                    action: () => abrirModalExportacion(gridArtistas, 'pdf', 'Artistas')
-                },
-
-                {
-                    text: 'Imprimir',
-                    action: () => abrirModalExportacion(gridArtistas, 'print', 'Artistas')
-                },
-
-                'pageLength'
-
-            ],
-
+            buttons: getBotonesExportacion(gridArtistas, "Artistas"),
             orderCellsTop: true,
             fixedHeader: true,
 

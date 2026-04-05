@@ -181,6 +181,10 @@
 
     document.addEventListener("DOMContentLoaded", async () => {
         try {
+
+            Permisos.init();
+            Permisos.aplicarUI("Personal Sueldos");
+
             initSecciones();
             bindUI();
 
@@ -249,6 +253,12 @@
         });
 
         document.getElementById("btnEliminarSueldo")?.addEventListener("click", async () => {
+
+            if (!Permisos.tiene("Personal Sueldos", "Eliminar")) {
+                errorModal("No tenés permisos.");
+                return;
+            }
+
             const id = Number(document.getElementById("Sueldo_Id")?.value || 0);
 
             if (!id) {
@@ -1055,6 +1065,12 @@
     ========================= */
 
     async function guardarSueldo() {
+
+        if (!Permisos.tiene("Personal Sueldos", "crear")) {
+            errorModal("No tenés permisos.");
+            return;
+        }
+
         if (!validarCamposSueldo()) return;
 
         const model = buildModel();

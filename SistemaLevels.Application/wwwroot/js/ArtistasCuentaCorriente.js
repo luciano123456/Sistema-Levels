@@ -57,6 +57,9 @@ const authHeaders = () => ({
 
 $(document).ready(async () => {
 
+    Permisos.init();
+    Permisos.aplicarUI("ARTISTAS CC");
+
     wireEventos();
 
     inicializarFechasPorDefecto();
@@ -656,7 +659,7 @@ async function configurarDataTable(data) {
                             return renderAccionesGrid(data, {
                                 ver: "verMovimiento",
                                 eliminar: "eliminarMovimiento"
-                            });
+                            }, "Artistas CC");
                         }
 
                         return `
@@ -710,12 +713,7 @@ async function configurarDataTable(data) {
             ],
 
             dom: 'Bfrtip',
-            buttons: [
-                { text: 'Excel', action: () => abrirModalExportacion(gridCuentaCorriente, 'excel', 'CuentaCorrienteArtistas') },
-                { text: 'PDF', action: () => abrirModalExportacion(gridCuentaCorriente, 'pdf', 'CuentaCorrienteArtistas') },
-                { text: 'Imprimir', action: () => abrirModalExportacion(gridCuentaCorriente, 'print', 'CuentaCorrienteArtistas') },
-                'pageLength'
-            ],
+            buttons: getBotonesExportacion(gridCuentaCorriente, "Artistas CC"),
 
             orderCellsTop: true,
             fixedHeader: true,
@@ -984,6 +982,11 @@ async function eliminarMovimiento(id) {
 
 function abrirModalPago() {
 
+    if (!Permisos.tiene("ARTISTAS CC", "Crear")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
     if (!ACC.artistaSel) {
         return errorModal("Seleccioná un artista.");
     }
@@ -1168,6 +1171,11 @@ function verificarErroresPagoGeneral() {
    MODAL AJUSTE
 ========================================================= */
 function abrirModalAjuste() {
+
+    if (!Permisos.tiene("Artistas CC", "Crear")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
 
     if (!ACC.artistaSel) {
         return errorModal("Seleccioná un artista.");
@@ -1360,6 +1368,11 @@ function verificarErroresAjusteGeneral() {
 ========================================================= */
 
 function exportarEstadoCuentaPdf() {
+
+    if (!Permisos.tiene("ARTISTAS CC", "Exportar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
 
     if (!ACC.artistaSel) {
         return errorModal("Seleccioná un artista.");

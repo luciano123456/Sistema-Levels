@@ -252,6 +252,12 @@
         ========================= */
 
         async abrirNuevo() {
+
+            if (!Permisos.tiene("Artistas", "Crear")) {
+                errorModal("No tenés permisos.");
+                return;
+            }
+
             if (typeof this.options.onBeforeOpen === "function") {
                 await this.options.onBeforeOpen("nuevo", this);
             }
@@ -294,6 +300,11 @@
         }
 
         async abrirEditar(id) {
+
+            if (!Permisos.tiene("Artistas", "Editar")) {
+                errorModal("No tenés permisos.");
+                return;
+            }
             const url = this._replaceUrl(this.options.endpoints.editar, { id });
 
             const modelo = await this._fetchJson(url, {
@@ -457,6 +468,12 @@
         }
 
         async eliminar(id) {
+
+            if (!Permisos.tiene("Artistas", "Eliminar")) {
+                errorModal("No tenés permisos.");
+                return;
+            }
+
             let confirmado = true;
 
             if (typeof window.confirmarModal === "function") {

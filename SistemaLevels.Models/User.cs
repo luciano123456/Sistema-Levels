@@ -105,6 +105,12 @@ public partial class User
 
     public virtual ICollection<Tarea> TareaIdUsuarioRegistraNavigations { get; set; } = new List<Tarea>();
 
+    public virtual ICollection<UsuariosPermisosUsuario> UsuariosPermisosUsuarioIdUsuarioModificaNavigations { get; set; } = new List<UsuariosPermisosUsuario>();
+
+    public virtual ICollection<UsuariosPermisosUsuario> UsuariosPermisosUsuarioIdUsuarioNavigations { get; set; } = new List<UsuariosPermisosUsuario>();
+
+    public virtual ICollection<UsuariosPermisosUsuario> UsuariosPermisosUsuarioIdUsuarioRegistraNavigations { get; set; } = new List<UsuariosPermisosUsuario>();
+
     public virtual ICollection<Venta> VentaIdUsuarioModificaNavigations { get; set; } = new List<Venta>();
 
     public virtual ICollection<Venta> VentaIdUsuarioRegistraNavigations { get; set; } = new List<Venta>();

@@ -67,7 +67,10 @@
 
                     <!-- NUEVO -->
                     <button class="btn btn-success d-flex align-items-center px-3 py-2 btnnuevo"
-                            onclick="nuevoPersonal()">
+                            onclick="nuevoPersonal() "
+                            data-permiso="crear"
+                            data-modulo="Personal">
+                            
                         <i class="fa fa-plus-square me-2"></i> Nuevo
                     </button>
 
@@ -200,7 +203,7 @@
 <div id="modalPersonalHost"></div>
 
 <!-- MODAL GENERICO -->
-<partial name="~/Views/Utils/Modals.cshtml" />
+
 <partial name="~/Views/Entities/M_Personal.cshtml" />
 
 @section Scripts {
@@ -229,6 +232,6 @@
 
 
     <!-- SCRIPT PRINCIPAL -->
-    <script src="~/js/Personal.js?v=2.3"></script>
+    <script src="~/js/Personal.js?v=2.4"></script>
 
 }

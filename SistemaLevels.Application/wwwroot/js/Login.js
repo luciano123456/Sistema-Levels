@@ -100,7 +100,7 @@
 
                 }
 
-                window.location.href = "Usuarios";
+                window.location.href = "Dashboard";
 
             })
             .catch(err => {

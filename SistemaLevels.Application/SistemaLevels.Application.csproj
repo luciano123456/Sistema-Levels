@@ -14,11 +14,13 @@
     <Content Remove="wwwroot\js\Clientes.js" />
     <Content Remove="wwwroot\js\ClientesCuentaCorriente.js" />
     <Content Remove="wwwroot\js\CurrencyWidget.js" />
+    <Content Remove="wwwroot\js\Dashboard.js" />
     <Content Remove="wwwroot\js\Gastos.js" />
     <Content Remove="wwwroot\js\Home.js" />
     <Content Remove="wwwroot\js\Login.js" />
     <Content Remove="wwwroot\js\NavBarLogin.js" />
     <Content Remove="wwwroot\js\PaisesMonedas.js" />
+    <Content Remove="wwwroot\js\Permisos.js" />
     <Content Remove="wwwroot\js\Personal.js" />
     <Content Remove="wwwroot\js\PersonalCuentaCorriente.js" />
     <Content Remove="wwwroot\js\PersonalSueldos.js" />
@@ -36,6 +38,8 @@
 
   <ItemGroup>
     <None Include="wwwroot\Imagenes\Clientes.png" />
+    <None Include="wwwroot\js\Dashboard.js" />
+    <None Include="wwwroot\js\Permisos.js" />
     <None Include="wwwroot\js\Caja.js" />
     <None Include="wwwroot\js\PersonalSueldosNuevoModif.js" />
     <None Include="wwwroot\js\PersonalSueldos.js" />

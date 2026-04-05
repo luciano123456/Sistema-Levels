@@ -26,6 +26,10 @@ const columnConfig = [
 
 $(document).ready(() => {
 
+
+    Permisos.init();
+    Permisos.aplicarUI("GASTOS");
+
     $('#dashBody').on('shown.bs.collapse', function () {
         if (gridGastos) {
             const data = gridGastos.rows().data().toArray();
@@ -107,24 +111,45 @@ function initSelect2Modal() {
 ========================= */
 
 function guardarCambios() {
-    if (!validarCampos()) return false;
 
     const id = $("#txtId").val();
+    const esNuevo = id === "";
+
+    // 🔥 PERMISOS
+    const puedeCrear = Permisos.tiene("Gastos", "Crear");
+    const puedeEditar = Permisos.tiene("Gastos", "Editar");
+
+    if (esNuevo && !puedeCrear) {
+        errorModal("No tenés permisos para registrar gastos.");
+        return false;
+    }
+
+    if (!esNuevo && !puedeEditar) {
+        errorModal("No tenés permisos para modificar gastos.");
+        return false;
+    }
+
+    // 🔥 VALIDACIÓN
+    if (!validarCampos()) return false;
 
     const modelo = {
         Id: id !== "" ? Number(id) : 0,
-        Fecha: $("#txtFecha").val(),              // YYYY-MM-DD
+        Fecha: $("#txtFecha").val(),
+
         IdCategoria: Number($("#cmbCategoria").val()),
         IdMoneda: Number($("#cmbMoneda").val()),
         IdCuenta: Number($("#cmbCuenta").val()),
-        IdPersonal: $("#cmbPersonal").val() ? Number($("#cmbPersonal").val()) : null,
+        IdPersonal: $("#cmbPersonal").val()
+            ? Number($("#cmbPersonal").val())
+            : null,
+
         Concepto: ($("#txtConcepto").val() || "").trim(),
         Importe: Number($("#txtImporte").val()),
         NotaInterna: ($("#txtNotaInterna").val() || "").trim()
     };
 
-    const url = id === "" ? "/Gastos/Insertar" : "/Gastos/Actualizar";
-    const method = id === "" ? "POST" : "PUT";
+    const url = esNuevo ? "/Gastos/Insertar" : "/Gastos/Actualizar";
+    const method = esNuevo ? "POST" : "PUT";
 
     fetch(url, {
         method: method,
@@ -139,9 +164,14 @@ function guardarCambios() {
             return r.json();
         })
         .then(_ => {
-            const mensaje = id === "" ? "Gasto registrado correctamente" : "Gasto modificado correctamente";
+
+            const mensaje = esNuevo
+                ? "Gasto registrado correctamente"
+                : "Gasto modificado correctamente";
+
             $('#modalEdicion').modal('hide');
             exitoModal(mensaje);
+
             listaGastos(false);
         })
         .catch(err => {
@@ -149,8 +179,14 @@ function guardarCambios() {
             errorModal("Ha ocurrido un error.");
         });
 }
-
 function nuevoGasto() {
+
+    if (!Permisos.tiene("Gastos", "Crear")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
+
     limpiarModal();
 
     setModalSoloLectura(false);
@@ -254,6 +290,11 @@ const editarGasto = id => {
 };
 async function eliminarGasto(id) {
     
+    if (!Permisos.tiene("Gastos", "Eliminar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
 
     const confirmado = await confirmarModal("¿Desea eliminar este gasto?");
     if (!confirmado) return;
@@ -400,7 +441,7 @@ async function configurarDataTable(data) {
                             ver: "verGasto",
                             editar: "editarGasto",
                             eliminar: "eliminarGasto"
-                        });
+                        }, "Gastos");
                     },
                     orderable: false,
                     searchable: false
@@ -416,21 +457,8 @@ async function configurarDataTable(data) {
             ],
 
             dom: 'Bfrtip',
-            buttons: [
-                {
-                    text: 'Excel',
-                    action: () => abrirModalExportacion(gridGastos, 'excel', 'Gastos')
-                },
-                {
-                    text: 'PDF',
-                    action: () => abrirModalExportacion(gridGastos, 'pdf', 'Gastos')
-                },
-                {
-                    text: 'Imprimir',
-                    action: () => abrirModalExportacion(gridGastos, 'print', 'Gastos')
-                },
-                'pageLength'
-            ],
+            buttons: getBotonesExportacion(gridGastos, "Gastos"),
+
 
 
             orderCellsTop: true,
@@ -687,6 +715,9 @@ async function obtenerLista(url) {
 ========================= */
 
 function renderDashboards(data) {
+
+
+    if (!Permisos.tiene("Gastos", "Dashboard")) return;
 
     if (typeof Chart === "undefined") return;
 

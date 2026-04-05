@@ -67,7 +67,7 @@
                     <!-- NUEVO -->
                     <button class="btn btn-success d-flex align-items-center px-3 py-2 btnnuevo"
                             type="button"
-                            onclick="nuevaProductora()">
+                            onclick="nuevaProductora()" data-permiso="crear" data-modulo="Productoras">
                         <i class="fa fa-plus-square me-2"></i> Nuevo
                     </button>
 
@@ -111,7 +111,7 @@
 <div id="modalProductoraHost"></div>
 
 <!-- MODAL GENERICO -->
-<partial name="~/Views/Utils/Modals.cshtml" />
+
 <partial name="~/Views/Entities/M_Productoras.cshtml" />
 
 @section Scripts {
