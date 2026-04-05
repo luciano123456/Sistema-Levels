@@ -23,6 +23,9 @@ const columnConfig = [
 
 $(document).ready(() => {
 
+    Permisos.init();
+    Permisos.aplicarUI("Ubicaciones");
+
     ubicacionesModal = new UbicacionModal(document.body, {
         token: token,
         onSaved: () => listaUbicaciones(),
@@ -33,7 +36,7 @@ $(document).ready(() => {
     window.editarUbicacion = (id) => ubicacionesModal.abrirEditar(id);
     window.eliminarUbicacion = (id) => ubicacionesModal.eliminar(id);
     window.verFicha = (id) => ubicacionesModal.abrirVer(id);
-
+    window.abrirNuevo = () => ubicacionesModal.abrirNuevo();
     listaUbicaciones();
 });
 
@@ -100,7 +103,7 @@ async function configurarDataTable(data) {
                             ver: "verUbicacion",
                             editar: "editarUbicacion",
                             eliminar: "eliminarUbicacion"
-                        });
+                        }, "Ubicaciones");
 
                     },
                     orderable: false,
@@ -115,21 +118,7 @@ async function configurarDataTable(data) {
 
             dom: 'Bfrtip',
 
-            buttons: [
-                {
-                    text: 'Excel',
-                    action: () => abrirModalExportacion(gridUbicaciones, 'excel', 'Ubicaciones')
-                },
-                {
-                    text: 'PDF',
-                    action: () => abrirModalExportacion(gridUbicaciones, 'pdf', 'Ubicaciones')
-                },
-                {
-                    text: 'Imprimir',
-                    action: () => abrirModalExportacion(gridUbicaciones, 'print', 'Ubicaciones')
-                },
-                'pageLength'
-            ],
+            buttons: getBotonesExportacion(gridUbicaciones, "Ubicaciones"),
 
             orderCellsTop: true,
             fixedHeader: true,

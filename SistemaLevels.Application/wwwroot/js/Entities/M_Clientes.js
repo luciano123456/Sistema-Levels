@@ -374,6 +374,12 @@
 
         async abrirNuevo() {
             try {
+
+                if (!Permisos.tiene("Clientes", "Crear")) {
+                    errorModal("No tenés permisos.");
+                    return;
+                }
+
                 this._ultimoModo = "nuevo";
                 this._modeloActual = null;
 
@@ -439,6 +445,12 @@
 
         async abrirEditar(id) {
             try {
+
+                if (!Permisos.tiene("Clientes", "Editar")) {
+                    errorModal("No tenés permisos.");
+                    return;
+                }
+
                 this._ultimoModo = "editar";
 
                 const url = this._replaceUrl(this.options.endpoints.editar, { id });
@@ -689,6 +701,13 @@
         }
 
         async eliminar(id) {
+
+            if (!Permisos.tiene("Clientes", "Eliminar")) {
+                errorModal("No tenés permisos.");
+                return;
+            }
+
+
             let confirmado = true;
 
             if (typeof window.confirmarModal === "function") {

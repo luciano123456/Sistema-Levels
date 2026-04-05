@@ -58,7 +58,7 @@ function exitoModal(texto) {
 }
 
 function errorModal(texto) {
-    mostrarModalConContador('ErrorModal', texto, 3000);
+    mostrarModalConContador('errorModal', texto, 3000);
 }
 
 function advertenciaModal(texto) {
@@ -417,9 +417,36 @@ function setModalSoloLectura(esSoloLectura) {
 GS-UI — Render Acciones Grid GLOBAL
 ===================================== */
 
-function renderAccionesGrid(id, acciones) {
+function renderAccionesGrid(id, acciones, modulo = null) {
 
-    const btnVer = acciones.ver
+    const user = JSON.parse(localStorage.getItem("userSession"));
+    const permisos = user?.Permisos || [];
+
+    const tienePermiso = (mod, tipo) => {
+
+        const moduloBuscado = (mod || "").toLowerCase().trim();
+        const tipoBuscado = (tipo || "").toLowerCase().trim();
+
+        return permisos.some(p => {
+
+            const nombreModulo = (p.Modulo || "").toLowerCase().trim();
+            const codigoModulo = (p.CodigoModulo || "").toLowerCase().trim();
+
+            if (nombreModulo !== moduloBuscado && codigoModulo !== moduloBuscado) return false;
+
+            if (!p.Permisos) return false;
+
+            const permiso = p.Permisos.find(x =>
+                (x.Codigo || "").toLowerCase() === tipoBuscado
+            );
+
+            return !!permiso?.Activo;
+        });
+    };
+
+    const mod = modulo || acciones.modulo || "";
+
+    const btnVer = (acciones.ver && tienePermiso(mod, "VER"))
         ? `
         <button type="button"
             class="btn btn-sm rp-act rp-act-view"
@@ -429,7 +456,7 @@ function renderAccionesGrid(id, acciones) {
         </button>`
         : "";
 
-    const btnEditar = acciones.editar
+    const btnEditar = (acciones.editar && tienePermiso(mod, "EDITAR"))
         ? `
         <button type="button"
             class="btn btn-sm rp-act rp-act-edit"
@@ -439,7 +466,7 @@ function renderAccionesGrid(id, acciones) {
         </button>`
         : "";
 
-    const btnEliminar = acciones.eliminar
+    const btnEliminar = (acciones.eliminar && tienePermiso(mod, "ELIMINAR"))
         ? `
         <button type="button"
             class="btn btn-sm rp-act rp-act-del"
@@ -457,7 +484,6 @@ function renderAccionesGrid(id, acciones) {
         </div>
     `;
 }
-
 /* ======================================================
 EXPORTADOR GLOBAL DATATABLES
 (usar desde cualquier grid)
@@ -783,4 +809,43 @@ function vnIsoDateOnly(value) {
     const dd = String(d.getDate()).padStart(2, "0");
 
     return `${yyyy}-${mm}-${dd}`;
+}
+
+
+function tienePermiso(modulo, tipo) {
+
+    const user = JSON.parse(localStorage.getItem("userSession"));
+    const permisos = user?.Permisos || [];
+
+    return permisos.some(p =>
+        p.Modulo?.toLowerCase() === modulo.toLowerCase() &&
+        p[tipo] === true
+    );
+}
+
+function getBotonesExportacion(grid,modulo) {
+
+    const botones = [];
+
+    if (tienePermiso(modulo, "Exportar")) {
+        botones.push({
+            text: 'Excel',
+            action: () => abrirModalExportacion(grid, 'excel', modulo)
+        });
+
+        botones.push({
+            text: 'PDF',
+            action: () => abrirModalExportacion(grid, 'pdf', modulo)
+        });
+
+        botones.push({
+            text: 'Imprimir',
+            action: () => abrirModalExportacion(grid, 'print', modulo)
+        });
+    }
+
+    // siempre dejamos este
+    botones.push('pageLength');
+
+    return botones;
 }

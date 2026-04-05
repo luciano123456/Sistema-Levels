@@ -336,6 +336,12 @@
         ========================= */
 
         async abrirNuevo() {
+
+            if (!Permisos.tiene("Personal", "Crear")) {
+                errorModal("No tenés permisos.");
+                return;
+            }
+
             if (typeof this.options.onBeforeOpen === "function") {
                 await this.options.onBeforeOpen("nuevo", this);
             }
@@ -389,6 +395,12 @@
 
         async abrirEditar(id) {
             try {
+
+                if (!Permisos.tiene("Personal", "Editar")) {
+                    errorModal("No tenés permisos.");
+                    return;
+                }
+
                 const url = this._replaceUrl(this.options.endpoints.editar, { id });
                 const modelo = await this._fetchJson(url, {
                     method: "GET",
@@ -615,6 +627,13 @@
         }
 
         async eliminar(id) {
+
+            if (!Permisos.tiene("Personal", "Eliminar")) {
+                errorModal("No tenés permisos.");
+                return;
+            }
+
+
             let confirmado = true;
 
             if (typeof window.confirmarModal === "function") {

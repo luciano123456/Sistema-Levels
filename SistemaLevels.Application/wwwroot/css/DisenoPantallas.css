@@ -1575,7 +1575,7 @@ table.dataTable tbody tr.selected {
 
 
 /* Fondo para modal-body en general, excepto exito/Error/Advertencia */
-.modal:not(#exitoModal):not(#ErrorModal):not(#AdvertenciaModal) .modal-body {
+.modal:not(#exitoModal):not(#errorModal):not(#AdvertenciaModal) .modal-body {
     background: var(--dt-row-zebra2) !important;
 }
 

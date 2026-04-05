@@ -81,6 +81,9 @@ const authHeaders = () => ({
 
 $(document).ready(async () => {
 
+    Permisos.init();
+    Permisos.aplicarUI("Cajas");
+
     // igual que hacés en otros lados
     $(document).off("click.select2fix").on(
         "click.select2fix",
@@ -542,19 +545,14 @@ async function configurarDataTable(data) {
                             if (row.TipoMov === "SALDO_ANTERIOR")
                                 return "";
 
-                            if (typeof renderAccionesGrid === "function") {
-
-                                if (row.PuedeEditar || row.PuedeEliminar) {
+                        if (typeof renderAccionesGrid === "function") {
                                     return renderAccionesGrid(data, {
                                         ver: "verMovimiento",
                                         editar: "editarMovimiento",
-                                        eliminar: "eliminarMovimiento"
-                                    });
-                                }
+                                        eliminar:  "eliminarMovimiento"
+                                    }, "Cajas");
+                                
 
-                                return renderAccionesGrid(data, {
-                                    ver: "verMovimiento"
-                                });
                             }
 
                             return "";
@@ -664,21 +662,7 @@ async function configurarDataTable(data) {
             ],
 
             dom: 'Bfrtip',
-            buttons: [
-                {
-                    text: 'Excel',
-                    action: () => abrirModalExportacion(gridCaja, 'excel', 'Caja')
-                },
-                {
-                    text: 'PDF',
-                    action: () => abrirModalExportacion(gridCaja, 'pdf', 'Caja')
-                },
-                {
-                    text: 'Imprimir',
-                    action: () => abrirModalExportacion(gridCaja, 'print', 'Caja')
-                },
-                'pageLength'
-            ],
+            buttons: getBotonesExportacion(gridCaja, "Cajas"),
 
             orderCellsTop: true,
             fixedHeader: true,
@@ -1080,6 +1064,11 @@ async function editarMovimiento(id) {
 }
 
 async function eliminarMovimiento(id) {
+
+    if (!Permisos.tiene("Cajas", "Eliminar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
 
     const confirmado = await confirmarModal("¿Desea eliminar este movimiento?");
     if (!confirmado) return;

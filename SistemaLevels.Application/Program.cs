@@ -125,6 +125,9 @@ builder.Services.AddScoped<ICajaService, CajaService>();
 builder.Services.AddScoped<IPersonalSueldosService, PersonalSueldosService>();
 builder.Services.AddScoped<IPersonalSueldosRepository<PersonalSueldo>, PersonalSueldosRepository>();
 
+builder.Services.AddScoped<IUsuariosPermisosRepository, UsuariosPermisosRepository>();
+builder.Services.AddScoped<IUsuariosPermisosService, UsuariosPermisosService>();
+
 
 
 builder.Services.AddControllersWithViews()

@@ -27,6 +27,9 @@ const columnConfig = [
 
 $(document).ready(() => {
 
+    Permisos.init();
+    Permisos.aplicarUI("Personal");
+
     personalModal = new PersonalModal(document.body, {
 
         token: token,
@@ -130,7 +133,8 @@ async function configurarDataTable(data) {
                             ver: "verPersonal",
                             editar: "editarPersonal",
                             eliminar: "eliminarPersonal"
-                        });
+                        }, "Personal");
+                        
                     },
                     orderable: false,
                     searchable: false,
@@ -146,12 +150,7 @@ async function configurarDataTable(data) {
             ],
 
             dom: 'Bfrtip',
-            buttons: [
-                { text: 'Excel', action: () => abrirModalExportacion(gridPersonal, 'excel', 'Personal') },
-                { text: 'PDF', action: () => abrirModalExportacion(gridPersonal, 'pdf', 'Personal') },
-                { text: 'Imprimir', action: () => abrirModalExportacion(gridPersonal, 'print', 'Personal') },
-                'pageLength'
-            ],
+            buttons: getBotonesExportacion(gridPersonal, "Personal"),
 
             orderCellsTop: true,
             fixedHeader: true,

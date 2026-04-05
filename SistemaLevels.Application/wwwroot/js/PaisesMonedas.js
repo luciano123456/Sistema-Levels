@@ -3,6 +3,10 @@ let paisesCache = [];
 
 $(document).ready(() => {
 
+    Permisos.init();
+    Permisos.aplicarUI("Monedas");
+
+
     window.addEventListener("cw:monedasActualizadas", (e) => {
 
         const cambios = e.detail?.cambios || [];
@@ -95,24 +99,35 @@ async function listarMonedas() {
     const cont = document.getElementById("contenedorMonedas");
     cont.innerHTML = "";
 
+    // 🔥 PERMISOS
+    const puedeEditar = Permisos.tiene("Monedas", "Editar");
+    const puedeEliminar = Permisos.tiene("Monedas", "Eliminar");
+
     (monedas || []).forEach(m => {
         const cot = Number(m.Cotizacion ?? 0);
 
-        const pinned = window.CurrencyWidget?.getPinnedIds?.() || [];
-
         cont.innerHTML += `
             <div class="moneda-card">
+
                 <div class="moneda-acciones">
-                <button class="btn-card btn-pin ${monedasPin.includes(m.Id) ? 'active' : ''}"
-        onclick="togglePin(${m.Id})">
-    <i class="fa fa-thumb-tack"></i>
-</button>
-                    <button class="btn-card" onclick="editarMoneda(${m.Id})">
-                        <i class="fa fa-pencil"></i>
+
+                    <button class="btn-card btn-pin ${monedasPin.includes(m.Id) ? 'active' : ''}"
+                            onclick="togglePin(${m.Id})">
+                        <i class="fa fa-thumb-tack"></i>
                     </button>
-                    <button class="btn-card" onclick="eliminarMoneda(${m.Id})">
-                        <i class="fa fa-trash"></i>
-                    </button>
+
+                    ${puedeEditar ? `
+                        <button class="btn-card" onclick="editarMoneda(${m.Id})">
+                            <i class="fa fa-pencil"></i>
+                        </button>
+                    ` : ""}
+
+                    ${puedeEliminar ? `
+                        <button class="btn-card" onclick="eliminarMoneda(${m.Id})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    ` : ""}
+
                 </div>
 
                 <div>
@@ -124,11 +139,11 @@ async function listarMonedas() {
                 <div class="moneda-cotizacion">
                     ${cot.toLocaleString("es-AR", { minimumFractionDigits: 2 })}
                 </div>
+
             </div>
         `;
     });
 }
-
 /* COMBOS */
 
 async function cargarPaises() {
@@ -151,6 +166,11 @@ async function cargarPaises() {
 
 /* CRUD */
 function nuevaMoneda() {
+
+    if (!Permisos.tiene("Monedas", "Crear")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
 
     const form = document.querySelector("#modalEdicion");
 
@@ -189,6 +209,13 @@ function limpiarValidaciones() {
 
 
 function editarMoneda(id) {
+
+    if (!Permisos.tiene("Monedas", "Editar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
+
     const m = monedas.find(x => x.Id === id);
     if (!m) return;
 
@@ -206,6 +233,12 @@ function editarMoneda(id) {
 }
 
 async function guardarMoneda() {
+
+    if (!Permisos.tiene("Monedas", "Editar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
     if (!validarCampos()) return;
 
     const id = $("#txtId").val();
@@ -248,6 +281,13 @@ async function guardarMoneda() {
 }
 
 async function eliminarMoneda(id) {
+
+    if (!Permisos.tiene("Monedas", "Eliminar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
+
+
     const ok = await confirmarModal("¿Desea eliminar esta moneda?");
     if (!ok) return;
 

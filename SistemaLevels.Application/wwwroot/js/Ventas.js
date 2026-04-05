@@ -35,10 +35,21 @@ const authHeaders = () => ({
 
 $(document).ready(async () => {
 
+
+    Permisos.init();
+    Permisos.aplicarUI("Ventas");
+
+
     // eventos
     $("#btnRefresh").on("click", cargarTodo);
 
     $("#btnNuevaVenta").on("click", () => {
+
+        if (!Permisos.tiene("Ventas", "Crear")) {
+            errorModal("No tenés permisos.");
+            return;
+        }
+
         window.location = "/Ventas/NuevoModif";
     });
 
@@ -593,6 +604,9 @@ function wireFiltrosVentasUX() {
 ========================= */
 
 function abrirVenta(id) {
+    //if (!Permisos.tiene("Ventas", "Editar")) {
+    //    return;
+    //}
     window.location = `/Ventas/NuevoModif?id=${id}`;
 }
 

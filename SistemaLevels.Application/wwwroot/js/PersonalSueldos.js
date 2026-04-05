@@ -32,6 +32,9 @@ const authHeaders = () => ({
 
 $(document).ready(async () => {
 
+    Permisos.init();
+    Permisos.aplicarUI("Personal Sueldos");
+
     $("#btnRefresh").on("click", cargarTodo);
 
     $("#btnNuevoSueldo").on("click", () => {
@@ -472,6 +475,11 @@ function actualizarKpis() {
 ========================= */
 
 function exportarSueldosPdf() {
+
+    if (!Permisos.tiene("Personal Sueldos", "Exportar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
 
     const lista = (SI.sueldos || []).map(s => ([
         `#${s.Id}`,

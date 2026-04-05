@@ -53,7 +53,7 @@
                             id="configColumnasMenu"></ul>
                     </div>
 
-                    <a class="btn btn-success btnnuevo" onclick="artistasModal.abrirNuevo()">
+                    <a class="btn btn-success btnnuevo" onclick="artistasModal.abrirNuevo()" data-permiso="crear" data-modulo="Artistas">
                         <i class="fa fa-plus-square me-2"></i> Nuevo
                     </a>
 
@@ -93,7 +93,7 @@
 
 <div id="modalArtistaHost"></div>
 
-<partial name="~/Views/Utils/Modals.cshtml" />
+
 <partial name="~/Views/Entities/M_Artistas.cshtml" />
 
 
@@ -110,6 +110,6 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    <script src="~/js/Artistas.js?v=2.3"></script>
+    <script src="~/js/Artistas.js?v=2.4"></script>
 
 }

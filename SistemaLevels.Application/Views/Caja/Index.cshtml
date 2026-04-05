@@ -41,19 +41,35 @@
 
             <div class="ms-auto d-flex gap-2 flex-wrap">
 
-                <button id="btnRefreshCaja" class="btn btn-outline-light vi-btn" type="button">
+                <button id="btnRefreshCaja"
+                        class="btn btn-outline-light vi-btn"
+                        type="button"
+                        data-permiso="ver"
+                        data-modulo="Caja">
                     <i class="fa fa-refresh me-2"></i> Actualizar
                 </button>
 
-                <button id="btnIngreso" class="btn btn-success vi-btn" type="button">
+                <button id="btnIngreso"
+                        class="btn btn-success vi-btn"
+                        type="button"
+                        data-permiso="crear"
+                        data-modulo="Caja">
                     <i class="fa fa-plus me-2"></i> Ingreso
                 </button>
 
-                <button id="btnEgreso" class="btn btn-danger vi-btn" type="button">
+                <button id="btnEgreso"
+                        class="btn btn-danger vi-btn"
+                        type="button"
+                        data-permiso="crear"
+                        data-modulo="Caja">
                     <i class="fa fa-minus me-2"></i> Egreso
                 </button>
 
-                <button id="btnTransferencia" class="btn btn-warning vi-btn" type="button">
+                <button id="btnTransferencia"
+                        class="btn btn-warning vi-btn"
+                        type="button"
+                        data-permiso="crear"
+                        data-modulo="Caja">
                     <i class="fa fa-exchange me-2"></i> Transferencia
                 </button>
 
@@ -658,7 +674,7 @@
     </div>
 </div>
 
-<partial name="~/Views/Utils/Modals.cshtml" />
+
 
 @section Scripts {
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
@@ -685,5 +701,5 @@
     <script src="~/js/utils/moment.js"></script>
 
     <!-- tu JS -->
-    <script src="~/js/Caja.js?v=1.1"></script>
+    <script src="~/js/Caja.js?v=1.2"></script>
 }

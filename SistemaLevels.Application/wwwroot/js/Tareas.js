@@ -19,6 +19,12 @@ const columnConfig = [
 
 $(document).ready(() => {
 
+
+
+    Permisos.init();
+    Permisos.aplicarUI("Tareas");
+
+
     listaTareas();
 
 
@@ -103,9 +109,26 @@ function inicializarSelect2Filtro($select) {
 ========================= */
 
 function guardarTarea() {
-    if (!validarCampos()) return false;
 
     const id = $("#txtId").val();
+    const esNuevo = id === "";
+
+    // 🔥 PERMISOS
+    const puedeCrear = Permisos.tiene("Tareas", "Crear");
+    const puedeEditar = Permisos.tiene("Tareas", "Editar");
+
+    if (esNuevo && !puedeCrear) {
+        errorModal("No tenés permisos para crear tareas.");
+        return false;
+    }
+
+    if (!esNuevo && !puedeEditar) {
+        errorModal("No tenés permisos para editar tareas.");
+        return false;
+    }
+
+    // 🔥 VALIDACIÓN
+    if (!validarCampos()) return false;
 
     const modelo = {
         Id: id !== "" ? parseInt(id, 10) : 0,
@@ -113,14 +136,19 @@ function guardarTarea() {
         Fecha: $("#dtpFecha").val() || null,
         FechaLimite: $("#dtpFechaLimite").val() || null,
 
-        IdPersonal: $("#cmbPersonal").val() ? parseInt($("#cmbPersonal").val(), 10) : null,
-        IdEstado: $("#cmbEstado").val() ? parseInt($("#cmbEstado").val(), 10) : null,
+        IdPersonal: $("#cmbPersonal").val()
+            ? parseInt($("#cmbPersonal").val(), 10)
+            : null,
+
+        IdEstado: $("#cmbEstado").val()
+            ? parseInt($("#cmbEstado").val(), 10)
+            : null,
 
         Descripcion: ($("#txtDescripcion").val() || "").trim(),
     };
 
-    const url = id === "" ? "/Tareas/Insertar" : "/Tareas/Actualizar";
-    const method = id === "" ? "POST" : "PUT";
+    const url = esNuevo ? "/Tareas/Insertar" : "/Tareas/Actualizar";
+    const method = esNuevo ? "POST" : "PUT";
 
     const scrollY = window.scrollY;
 
@@ -139,18 +167,27 @@ function guardarTarea() {
         .then(_ => {
             $('#modalEdicion').modal('hide');
 
-            const mensaje = id === "" ? "Tarea registrada correctamente" : "Tarea modificada correctamente";
+            const mensaje = esNuevo
+                ? "Tarea registrada correctamente"
+                : "Tarea modificada correctamente";
+
             exitoModal(mensaje);
 
-            return listaTareas().then(() => window.scrollTo({ top: scrollY, behavior: "instant" }));
+            return listaTareas().then(() =>
+                window.scrollTo({ top: scrollY, behavior: "instant" })
+            );
         })
         .catch(err => {
             console.error('Error:', err);
             errorModal("Ha ocurrido un error.");
         });
 }
-
 function nuevaTarea() {
+
+    if (!Permisos.tiene("Tareas", "Crear")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
     limpiarModal();
 
     setModalSoloLectura(false);
@@ -180,6 +217,9 @@ function nuevaTarea() {
 }
 
 async function mostrarModal(modelo) {
+
+   
+
     limpiarModal();
 
     setModalSoloLectura(false);
@@ -232,7 +272,11 @@ async function mostrarModal(modelo) {
 }
 
 const editarTarea = id => {
-    
+
+    if (!Permisos.tiene("Tareas", "Editar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
 
     fetch("/Tareas/EditarInfo?id=" + id, {
         method: 'GET',
@@ -254,6 +298,11 @@ const editarTarea = id => {
 
 async function eliminarTarea(id) {
     
+
+    if (!Permisos.tiene("Tareas", "Eliminar")) {
+        errorModal("No tenés permisos.");
+        return;
+    }
 
     const confirmado = await confirmarModal("¿Desea eliminar esta tarea?");
     if (!confirmado) return;
@@ -342,7 +391,7 @@ async function configurarDataTable(data) {
                             ver: "verTarea",
                             editar: "editarTarea",
                             eliminar: "eliminarTarea"
-                        });
+                        }, "Tareas");
                     },
                     orderable: false,
                     searchable: false,
@@ -355,22 +404,7 @@ async function configurarDataTable(data) {
             ],
 
             dom: 'Bfrtip',
-            buttons: [
-                {
-                    text: 'Excel',
-                    action: () => abrirModalExportacion(gridTareas, 'excel', 'Tareas')
-                },
-                {
-                    text: 'PDF',
-                    action: () => abrirModalExportacion(gridTareas, 'pdf', 'Tareas')
-                },
-                {
-                    text: 'Imprimir',
-                    action: () => abrirModalExportacion(gridTareas, 'print', 'Tareas')
-                },
-                'pageLength'
-            ],
-
+            buttons: getBotonesExportacion(gridTareas, "Tareas"),
 
             orderCellsTop: true,
             fixedHeader: true,
