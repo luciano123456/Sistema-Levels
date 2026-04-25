@@ -43,7 +43,18 @@ function renderDashboard() {
     cont.innerHTML = "";
 
     const user = JSON.parse(localStorage.getItem("userSession"));
-    if (!user || !user.Permisos) return;
+
+    // 🔴 1. NO HAY USER
+    if (!user) {
+        window.location.href = "/Login";
+        return;
+    }
+
+    // 🔴 2. USER SIN PERMISOS (NULL / UNDEFINED)
+    if (!user.Permisos) {
+        renderSinPermisos(cont);
+        return;
+    }
 
     const modulos = user.Permisos.filter(m =>
         (m.Permisos || []).some(p =>
@@ -51,6 +62,13 @@ function renderDashboard() {
         )
     );
 
+    // 🔴 3. SIN ACCESO A NADA
+    if (modulos.length === 0) {
+        renderSinPermisos(cont);
+        return;
+    }
+
+    // 🟢 NORMAL
     modulos.forEach(m => {
 
         const nombre = m.Modulo || m.CodigoModulo || "Modulo";
@@ -69,6 +87,36 @@ function renderDashboard() {
             </div>
         `;
     });
+}
+
+function renderSinPermisos(cont) {
+
+    cont.innerHTML = `
+        <div class="dash-empty-pro">
+
+            <div class="dash-empty-card">
+
+                <div class="dash-empty-icon-pro">
+                    <i class="fa fa-lock"></i>
+                </div>
+
+                <div class="dash-empty-title-pro">
+                    Acceso restringido
+                </div>
+
+                <div class="dash-empty-text-pro">
+                    No tenés permisos para acceder a ningún módulo.<br>
+                    Si creés que esto es un error, hablá con un administrador.
+                </div>
+
+                <button class="dash-empty-btn" onclick="location.reload()">
+                    Reintentar
+                </button>
+
+            </div>
+
+        </div>
+    `;
 }
 
 /* =========================
